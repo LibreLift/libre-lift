@@ -1,6 +1,12 @@
-# expo_suite
+# libre-lift
 
-Source code for LibreLift mobile app. Built with React Native Web and Expo framework.
+LibreLift is a native mobile app that provides exercise templating/planning and logging for free. It is ideal for those who want to plan and log workouts using their phone, without paying for a subscription plan.
+
+**Status**: DESIGN - LibreLift is currently in the design phase, development will begin soon.
+
+## Quickstart
+
+Because this app is still in the design phase, it is not runnable yet. As development begins this section will be updated accordingly.
 
 ## Design
 
@@ -17,6 +23,14 @@ The design document for this project is found [here](./docs/design.md). It outli
 
 This is the starting point for understanding this project. 
 
+## Contributing
+
+For instructions on how to get involved and contribute, see the [contributing guidelines](./CONTRIBUTING.md)
+
 ## Maintainers:
 
 - James Teuscher
+
+## License
+
+This project uses the Gnu General Public License (GPL) to keep the code open to the public.
