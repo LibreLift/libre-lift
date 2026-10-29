@@ -9,7 +9,8 @@ To run this project locally, the following is required:
 - Expo
 - TypeScript
 - Node.js
-- Postgres
+- Docker
+- Supabase CLI
 
 ## Steps
 
