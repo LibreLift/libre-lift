@@ -34,3 +34,5 @@ For instructions on how to get involved and contribute, see the [contributing gu
 ## License
 
 This project uses the Gnu General Public License (GPL) to keep the code open to the public.
+
+This license was selected to ensure the fulfillment of the project's purpose: providing exercise and fitness tool to the general public free of charge. This license aids that purpose by ensuring that any replications or extensions of this source code remains open source and available to the public. 
