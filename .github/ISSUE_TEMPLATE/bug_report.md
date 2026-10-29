@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report about one failure found in the project
 title: "[Summarize the failure]"
-labels: ''
+labels: documentation
 assignees: ''
 
 ---
