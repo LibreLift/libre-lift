@@ -50,6 +50,10 @@ expect that instead.
 
 ## Definition of done
 
-**The rule**: A PR is merged to `main` after adequate review and passing CI, and is verified in production. Then, and documentation change issues are filed, implemented, and completed.
+**The rule**: A PR is merged to `main` after adequate review and passing tests locally and in CI (using `npm run test` from the repo root locally, this is the testing command used in the CI pipeline). Additionally, the PR must then be audited in the production environment to ensure functionality.
 
-**The reason**: A task is not truly "done" until we can verify that it works in production. Documentation updates is part of being "done" because that is part of the development process, not a separate, administrative one.
+To get a PR merged you must also implement necessary documentation updates, either as part of the PR or by filing the issue(s) for the documentation changes needed and including the issue link in the PR description. If the documentation change is made separately, it must be be completed and have a PR created before the feature PR will be merged.
+
+**Definitions:** "adequate review" means that the "Review" rule above have been applied: one non-author contributor has reviewed the PR and given it their approval. "Necessary documentation changes" includes, but is not limited to: updating the [design doc](./design.md) if actual implementation differs from documented design or design decisions that are made, adding or editing a component description, or adding/editing code comments. Documentation changes (excluding code comments) will be reviewed and approved by a maintainer.
+
+**The reason**: A task is not truly "done" until we can verify that it passes tests and works in production. And, documentation updates are part of being "done" because they are part of the development process, not a separate, administrative task.
