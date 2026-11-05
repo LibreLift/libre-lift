@@ -55,7 +55,7 @@ There will only be one type of user interacting with this system. They will crea
 | DataAccess     | Adjusts HTTP payloads to be ready for DB reads/writes                            | DB, HTTPHandlers                    | function calls, HTTP                  |
 | DB             | Stores data persistently, supplies data for app UI                               | DataAccess                          | HTTP                                  |
 
-![component diagram](./design-images/component-diagram.jpg)
+![component diagram](./design-images/component-diagram.JPG)
 
 ### Core flow - Making a workout template
 
