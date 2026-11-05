@@ -161,7 +161,7 @@ There will only be one type of user interacting with this system. They will crea
 
 | Milestone | What works when it's done                                                                                                                     | Depends on | Build hours (estimate) |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------- |
-| 1         | The first core flow (template creation) works, without "one-rep" maximum support                                                              | —          | 12                     |
+| 1         | The first core flow (template creation) works, without "one-rep" maximum support. Editing and deleting templates is also supported.                                                              | —          | 12                     |
 | 2         | Both core flows (template creation and workout sessions) work and  support "one-rep" maximum recording and calculations based off that value. | 1          | 8                      |
 
 
