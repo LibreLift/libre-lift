@@ -28,6 +28,9 @@ This is the starting point for understanding this project.
 See the [roadmap](./docs/roadmap.md) for the scoped MVP and its two milestones,
 features planned next, longer-term ideas, and features outside the current plan.
 
+Track current work, priorities, and milestone progress on the
+[LibreLift MVP project board](https://github.com/orgs/LibreLift/projects/1).
+
 ## Contributing
 
 For instructions on how to get involved and contribute, see the [contributing guidelines](./CONTRIBUTING.md)

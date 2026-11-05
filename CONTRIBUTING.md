@@ -4,13 +4,15 @@ This project welcomes the time and efforts of the community.
 
 ## First Steps
 
-To get started do these three things:
+To get started do these four things:
 
 - Fork the repo and walk through the [setup guide](./docs/setup.md) to get the app running on your local machine. Ensure that you have a mobile device to test app builds on, or can access iOS/Android simulators.
 
 - Review the [communication standards](./docs/communication-standards.md). This outlines where project communication happens and when to expect responses. 
 
 - Review the [git standards](./docs/git-standards.md) before working. This outlines the process we have established to keep the project organized and maintainable. All contributors and maintainers are expected to follow them.
+
+- Review the [project management guide](./docs/project-mgmt.md) to learn how to use the project board, choose work, and follow the triage and milestone process.
 
 ## Developing
 
