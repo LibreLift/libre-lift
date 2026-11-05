@@ -121,7 +121,7 @@ There will only be one type of user interacting with this system. They will crea
 | Template exercise | template_exercise_id, exercise_id, template_id, position                               | part of Workout template, is an exercise, has sets                        | MVP            |
 | Template set      | template_exercise_id, set_number, target_weight, target_reps                           | part of Template exercise                                                 | MVP            |
 | User exercise max | user_id, exercise_id, max_weight                                                       | belongs to User, describes exercise                                       | MVP            |
-| Workout session   | session_id, user_id, template_id, started_at, completed_at                             | belongs to user, filled by workout template, contains session exercises   | MVP            |
+| Workout session   | session_id, user_id, template_id, start_time, end_time                             | belongs to user, filled by workout template, contains session exercises   | MVP            |
 | Session exercise  | session_exercise_id, session_id, exercise_id, position                                 | part of Workout session, has session sets                                 | MVP            |
 | Session sets      | sesson_exercise_id, set_number, target_weight, target_reps, actual_weight, actual_reps | part of session workout                                                   | MVP            |
 
