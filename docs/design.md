@@ -5,7 +5,7 @@
 | **Authors**      | James Teuscher                                                                                                                                            |
 | **Reviewers**    | [who reviewed it — a teammate, the instructor, a design-review partner]                                                                                   |
 | **Status**       | In review                                                                                                                                                 |
-| **Last updated** | 10-21-26                                                                                                                                                  |
+| **Last updated** | 11-4-26                                                                                                                                                  |
 | **Links**        | [proposal](../cp3/cp3-proposal) · [repository](https://github.com/LibreLift/expo_suite) · [issue tracker](https://github.com/LibreLift/expo_suite/issues) |
 
 ## Revision history
@@ -15,6 +15,7 @@
 | 10-16-26 | James Teuscher | First draft         |
 | 10-20-26 | James Teuscher | First full draft    |
 | 10-21-26 | James Teuscher | Finished first copy |
+| 11-4-26  | James Teuscher | Revised to respond to feedback  |
 
 ---
 
@@ -38,9 +39,9 @@ LibreLift is a native mobile app for planning, logging, and tracking workouts fo
 
 ## 3. System-context diagram
 
-There will only be one type of user interacting with this system. They will create plans and log workouts. The other external component interacting with this system is the CDN/API that provides a catalog of exercises. It will interact with the system by providing the exercise catalog via HTTP.
+There will only be one type of user interacting with this system. They will create plans and log workouts. The CDN/API that provides a catalog of exercises will interact with the system by providing the exercise catalog via HTTP. Lastly, Supabase will interact with the system by providing the authentication service, database and data access layer, and serverless backend to handle HTTP requests for auth and data access.
 
-![diagram](./design-images/system-context-diagram.JPG)
+![diagram](./design-images/system-context-diagram.jpg)
 
 ## 4. Architecture and components
 
@@ -120,12 +121,13 @@ There will only be one type of user interacting with this system. They will crea
 | Template exercise | template_exercise_id, exercise_id, template_id, position                               | part of Workout template, is an exercise, has sets                        | MVP            |
 | Template set      | template_exercise_id, set_number, target_weight, target_reps                           | part of Template exercise                                                 | MVP            |
 | User exercise max | user_id, exercise_id, max_weight                                                       | belongs to User, describes exercise                                       | MVP            |
-| Workout session   | session_id, user_id, template_id, started_at, completed_at                             | belongs to user, filled by workout template, contains session exercises   | MVP            |
+| Workout session   | session_id, user_id, template_id, start_time, end_time                             | belongs to user, filled by workout template, contains session exercises   | MVP            |
 | Session exercise  | session_exercise_id, session_id, exercise_id, position                                 | part of Workout session, has session sets                                 | MVP            |
 | Session sets      | sesson_exercise_id, set_number, target_weight, target_reps, actual_weight, actual_reps | part of session workout                                                   | MVP            |
 
 **ERD:**
 ![Entity-Relationship Diagram](./design-images/librelift-erd.jpg)
+
 
 ## 6. Technology choices and alternatives considered
 
@@ -136,33 +138,32 @@ There will only be one type of user interacting with this system. They will crea
 - **Why the chosen option wins, given our goals:** There is a free starter license, and the example images are superior than those in free-exercise-db
 - **Evidence:** The spike utilized RepDB, while a personal side project has utilized free-exercise-db, and the RepDB images are superior, while muscle grouping, exercises available, and instructions are roughly equivalent.
 - **What would change our mind:** If the user base grows enough that the RepDB free license is no longer usable, I would want to switch to the free alternative of free-exercise-db
-### Decision: What DBMS will be used to store user data
+### Decision: Which Backend as a Service (BaaS) technology will be used?
 
-- **Chosen**: PostgreSQL
-- **Alternative considered:** SQLite
-- **Why the chosen option wins, given our goals**: PostgreSQL is better for larger applications that will be deployed. It is also provided with Supabase, which is the backend computing service that will be used.
-- **Evidence**: The client-server model of Postgres natively supports more traffic than the file-based model of SQLite. Also, the [Supabase docs](https://supabase.com/docs/guides/database/overview) detail why Postgres is supported for their services.
-- **What would change our mind:** Frankly, there isn't anything that would change my mind from Postgres to SQLite, but potentially if the data access layer becomes a bottleneck, a NoSQL database would be considered.
+- **Chosen**: Supabase
+- **Alternative considered**: Firebase
+- **Why the chosen option wins, given our goals**: 2 main reasons: First, Supabase is better build for open-source contributions, since contributors can run a local version of the backend without needing access to the production credentials. Second, the data model for LibreLift (workouts, exercises, template vs session) fits well in a relational model, which is more readily available in Supabase. One advantage that Firebase does have is out of the box support for offline-synchronization.
+- **Evidence**: The Supabase CLI allows any developer to run backend services locally with one command (`npx supabase start`). This is a huge asset for an open-source project. Supabase is naturally relational with PostgreSQL, and Firebase is natively NoSQL. Firebase does support SQL using SQL Connect, which requires some additional configuration. Offline synchronization is possible with Supabase, but requires more manual configuration than Firebase.
+- **What would change our mind**: If offline synchronization became too complex with Supabase, switching to Firebase would become a real consideration. Or, if the scale of the project grows enough and pricing between Supabase and Firebase favor Firebase, that would also merit considering a switch.
 
 ## 7. Risks and open questions
 
-| Risk or question                                                                                                         | Why it matters                                                                                                         | Owner | How we'll find out, and by when                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------- |
-| How precisely to represent workout and exercise templates vs workout and exercise sessions/completions in the data model | Doing so inefficiently can erode DB performance, and add unnecessary overhead to the Data Access component             | James | Do research during milestone 1, determine the ideal data model                                           |
-| How to provision Supabase Edge functions and DB                                                                          | This is where all of the data storage and backend computing will live. Without this, the app does not provide value.   | James | Read Supabase docs and run through quick starts for DB and Edge functions before starting milestone 3    |
-| What method of authentication to use                                                                                     | Poor credential selection can impede user experience, or introduce security overhead (which is not strictly negative.) | James | Determine top 3 credential options and weigh pros and cons. Make a selection before starting milestone 3 |
+| Risk or question                                                                                                          | Why it matters                                                                                                                                                                                                  | Owner | How we'll find out, and by when                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------- |
+| How precisely to represent workout and exercise templates vs workout and exercise sessions/completions in the data model? | Doing so inefficiently can erode DB performance, and add unnecessary overhead to the Data Access component                                                                                                      | James | Do research during M1, determine the ideal data model                                                 |
+| How to provision Supabase Edge functions and DB                                                                           | This is where all of the data storage and backend computing will live. Without this, the app does not provide value.                                                                                            | James | Read Supabase docs and run through quick starts for DB and Edge functions during  M1                  |
+| What method of authentication to use                                                                                      | Poor credential selection can impede user experience, or introduce security overhead (which is not strictly negative.)                                                                                          | James | Determine top 3 credential options and weigh pros and cons. Make a selection as part of  M1           |
+| How to distribute to iOS devices without the $99/year developer profile fee?                                              | Purchasing the developer profile would significantly increase the cost of the project. But, iOS is a major mobile OS that cannot be simply neglected, but must be supported                                     | James | Research distribution methods during M1 and M2, select a long-term solution with a fallback plan.     |
+| RepDB's Starter license has limited terms                                                                                 | Misunderstanding the limits could lead to legal liability, necessity to purchase their expensive paid license, or pivot to another exercise catalog                                                             | James | Determine and document limits of free version of license during M2, before public demo and release    |
+| Will workouts be lost if the final save fails?                                                                            | Some gyms have spotty wifi, so the final save to the DB failing is a very real possibility. Users losing their logged progress due to this would be a major failure in one of the primary intentions of the app | James | During M2, research methods to backup copies of the workout session and recover if the DB write fails |
 
 ## 8. Implementation plan
 
-| Milestone | What works when it's done                                                                                              | Depends on |
-| --------- | ---------------------------------------------------------------------------------------------------------------------- | ---------- |
-| 1         | The app UI has a few basic screens with stubbed data                                                                   | —          |
-| 2         | The external exercise catalog loads into the app                                                                       | 1          |
-| 3         | User authentication with selected credential method                                                                    | 1          |
-| 4         | Workout templates can be created, edited, and deleted, and persist across app sessions                                 | 2,3        |
-| 5         | Users can record a "one-rep" maximum for exercises, plan a percentage of that maximum in workout templates             | 4          |
-| 6         | Workout templates can be "instantiated" and used in a workout session, logging weights and reps used (saved in-memory) | 5          |
-| 7         | Workout sessions can be completed and logged to the database, then viewed in the app.                                  | 6          |
+| Milestone | What works when it's done                                                                                                                     | Depends on | Build hours (estimate) |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------- |
+| 1         | The first core flow (template creation) works, without "one-rep" maximum support. Editing and deleting templates is also supported.                                                              | —          | 12                     |
+| 2         | Both core flows (template creation and workout sessions) work and  support "one-rep" maximum recording and calculations based off that value. | 1          | 8                      |
+
 
 ---
 
@@ -171,4 +172,3 @@ There will only be one type of user interacting with this system. They will crea
 | Reviewer | Role   | Date   | Approved |
 | -------- | ------ | ------ | -------- |
 | [name]   | [role] | [date] | ☐        |
-
