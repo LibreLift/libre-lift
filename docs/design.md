@@ -41,7 +41,7 @@ LibreLift is a native mobile app for planning, logging, and tracking workouts fo
 
 There will only be one type of user interacting with this system. They will create plans and log workouts. The other external component interacting with this system is the CDN/API that provides a catalog of exercises. It will interact with the system by providing the exercise catalog via HTTP.
 
-![diagram](./system-context-diagram.JPG)
+![diagram](./design-images/system-context-diagram.JPG)
 
 ## 4. Architecture and components
 
@@ -55,7 +55,7 @@ There will only be one type of user interacting with this system. They will crea
 | DataAccess     | Adjusts HTTP payloads to be ready for DB reads/writes                            | DB, HTTPHandlers                    | function calls, HTTP                  |
 | DB             | Stores data persistently, supplies data for app UI                               | DataAccess                          | HTTP                                  |
 
-![component diagram](./component-diagram.JPG)
+![component diagram](./design-images/component-diagram.JPG)
 
 ### Core flow - Making a workout template
 
@@ -126,7 +126,7 @@ There will only be one type of user interacting with this system. They will crea
 | Session sets      | sesson_exercise_id, set_number, target_weight, target_reps, actual_weight, actual_reps | part of session workout                                                   | MVP            |
 
 **ERD:**
-![Entity-Relationship Diagram](librelift-erd.jpg)
+![Entity-Relationship Diagram](./design-images/librelift-erd.jpg)
 
 
 ## 6. Technology choices and alternatives considered
