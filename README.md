@@ -23,6 +23,11 @@ The design document for this project is found [here](./docs/design.md). It outli
 
 This is the starting point for understanding this project. 
 
+## Roadmap
+
+See the [roadmap](./docs/roadmap.md) for the scoped MVP and its two milestones,
+features planned next, longer-term ideas, and features outside the current plan.
+
 ## Contributing
 
 For instructions on how to get involved and contribute, see the [contributing guidelines](./CONTRIBUTING.md)
