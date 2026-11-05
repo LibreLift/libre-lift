@@ -39,7 +39,7 @@ LibreLift is a native mobile app for planning, logging, and tracking workouts fo
 
 ## 3. System-context diagram
 
-There will only be one type of user interacting with this system. They will create plans and log workouts. The other external component interacting with this system is the CDN/API that provides a catalog of exercises. It will interact with the system by providing the exercise catalog via HTTP.
+There will only be one type of user interacting with this system. They will create plans and log workouts. The CDN/API that provides a catalog of exercises will interact with the system by providing the exercise catalog via HTTP. Lastly, Supabase will interact with the system by providing the authentication service, database and data access layer, and serverless backend to handle HTTP requests for auth and data access.
 
 ![diagram](./design-images/system-context-diagram.jpg)
 
