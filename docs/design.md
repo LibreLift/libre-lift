@@ -146,6 +146,14 @@ There will only be one type of user interacting with this system. They will crea
 - **Evidence**: The Supabase CLI allows any developer to run backend services locally with one command (`npx supabase start`). This is a huge asset for an open-source project. Supabase is naturally relational with PostgreSQL, and Firebase is natively NoSQL. Firebase does support SQL using SQL Connect, which requires some additional configuration. Offline synchronization is possible with Supabase, but requires more manual configuration than Firebase.
 - **What would change our mind**: If offline synchronization became too complex with Supabase, switching to Firebase would become a real consideration. Or, if the scale of the project grows enough and pricing between Supabase and Firebase favor Firebase, that would also merit considering a switch.
 
+### Decision: What authentication method will be used
+
+**Chosen**: Offer both Email + password and Email OTP
+**Alternatives considered**: Email magic link, Google OAuth, Apple OAuth.
+**Why the chosen option wins, given our goals**: They provide some flexibility for users to make a password or not, without introducing the overhead required for OAuth providers.
+**Evidence**: Email + password and Email OTP options are provided by default with Supabase auth, and the docs even contain code for implementing them in React Native. Google and Apple OAuth require things like making a Google Cloud project, setting up OAuth scopes, getting clientIDs, or with Apple, rotating keys every 6 months.
+**What would change our mind**: Strong user demand for Google/Apple OAuth options. They will likely be added to the roadmap anyway, just after M2.
+
 ## 7. Risks and open questions
 
 | Risk or question                                                                                                          | Why it matters                                                                                                                                                                                                  | Owner | How we'll find out, and by when                                                                       |
