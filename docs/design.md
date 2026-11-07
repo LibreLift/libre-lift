@@ -5,17 +5,17 @@
 | **Authors**      | James Teuscher                                                                                                                                            |
 | **Reviewers**    | [who reviewed it — a teammate, the instructor, a design-review partner]                                                                                   |
 | **Status**       | In review                                                                                                                                                 |
-| **Last updated** | 11-4-26                                                                                                                                                  |
+| **Last updated** | 11-4-26                                                                                                                                                   |
 | **Links**        | [proposal](../cp3/cp3-proposal) · [repository](https://github.com/LibreLift/expo_suite) · [issue tracker](https://github.com/LibreLift/expo_suite/issues) |
 
 ## Revision history
 
-| Date     | Author         | What changed        |
-| -------- | -------------- | ------------------- |
-| 10-16-26 | James Teuscher | First draft         |
-| 10-20-26 | James Teuscher | First full draft    |
-| 10-21-26 | James Teuscher | Finished first copy |
-| 11-4-26  | James Teuscher | Revised to respond to feedback  |
+| Date     | Author         | What changed                   |
+| -------- | -------------- | ------------------------------ |
+| 10-16-26 | James Teuscher | First draft                    |
+| 10-20-26 | James Teuscher | First full draft               |
+| 10-21-26 | James Teuscher | Finished first copy            |
+| 11-4-26  | James Teuscher | Revised to respond to feedback |
 
 ---
 
@@ -121,7 +121,7 @@ There will only be one type of user interacting with this system. They will crea
 | Template exercise | template_exercise_id, exercise_id, template_id, position                               | part of Workout template, is an exercise, has sets                        | MVP            |
 | Template set      | template_exercise_id, set_number, target_weight, target_reps                           | part of Template exercise                                                 | MVP            |
 | User exercise max | user_id, exercise_id, max_weight                                                       | belongs to User, describes exercise                                       | MVP            |
-| Workout session   | session_id, user_id, template_id, start_time, end_time                             | belongs to user, filled by workout template, contains session exercises   | MVP            |
+| Workout session   | session_id, user_id, template_id, start_time, end_time                                 | belongs to user, filled by workout template, contains session exercises   | MVP            |
 | Session exercise  | session_exercise_id, session_id, exercise_id, position                                 | part of Workout session, has session sets                                 | MVP            |
 | Session sets      | sesson_exercise_id, set_number, target_weight, target_reps, actual_weight, actual_reps | part of session workout                                                   | MVP            |
 
@@ -160,7 +160,6 @@ There will only be one type of user interacting with this system. They will crea
 | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------- |
 | How precisely to represent workout and exercise templates vs workout and exercise sessions/completions in the data model? | Doing so inefficiently can erode DB performance, and add unnecessary overhead to the Data Access component                                                                                                      | James | Do research during M1, determine the ideal data model                                                 |
 | How to provision Supabase Edge functions and DB                                                                           | This is where all of the data storage and backend computing will live. Without this, the app does not provide value.                                                                                            | James | Read Supabase docs and run through quick starts for DB and Edge functions during  M1                  |
-| What method of authentication to use                                                                                      | Poor credential selection can impede user experience, or introduce security overhead (which is not strictly negative.)                                                                                          | James | Determine top 3 credential options and weigh pros and cons. Make a selection as part of  M1           |
 | How to distribute to iOS devices without the $99/year developer profile fee?                                              | Purchasing the developer profile would significantly increase the cost of the project. But, iOS is a major mobile OS that cannot be simply neglected, but must be supported                                     | James | Research distribution methods during M1 and M2, select a long-term solution with a fallback plan.     |
 | RepDB's Starter license has limited terms                                                                                 | Misunderstanding the limits could lead to legal liability, necessity to purchase their expensive paid license, or pivot to another exercise catalog                                                             | James | Determine and document limits of free version of license during M2, before public demo and release    |
 | Will workouts be lost if the final save fails?                                                                            | Some gyms have spotty wifi, so the final save to the DB failing is a very real possibility. Users losing their logged progress due to this would be a major failure in one of the primary intentions of the app | James | During M2, research methods to backup copies of the workout session and recover if the DB write fails |
@@ -169,7 +168,7 @@ There will only be one type of user interacting with this system. They will crea
 
 | Milestone | What works when it's done                                                                                                                     | Depends on | Build hours (estimate) |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------- |
-| 1         | The first core flow (template creation) works, without "one-rep" maximum support. Editing and deleting templates is also supported.                                                              | —          | 12                     |
+| 1         | The first core flow (template creation) works, without "one-rep" maximum support. Editing and deleting templates is also supported.           | —          | 12                     |
 | 2         | Both core flows (template creation and workout sessions) work and  support "one-rep" maximum recording and calculations based off that value. | 1          | 8                      |
 
 
