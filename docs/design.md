@@ -57,6 +57,26 @@ There will only be one type of user interacting with this system. They will crea
 
 ![component diagram](./design-images/component-diagram.JPG)
 
+### Initial frontend foundation (#38)
+
+The Expo/TypeScript frontend follows MVVM: View components render hooks in the
+ViewModel layer, which depend on an injected asynchronous `WorkoutService`.
+The root layout supplies a sample implementation until backend integration is
+available. Template targets and historical session values are separate snapshots.
+
+Expo Router provides three bottom tabs: Templates (initial), Workouts, and Account.
+Templates and workout history have read-only detail screens. Account links to a
+sign-in placeholder and Settings. These screens use sample records; they do not
+implement authentication, template editing, or workout logging.
+
+Settings offers Light, Dark, and System appearance, defaulting to System. The
+preference is stored locally through an injected storage interface. Both themes
+use the [selected palette](https://colorhunt.co/palette/2c36393f4e4fa27b5cdcd7c9)
+with additional neutral colors for readability. Sample weights use pounds.
+
+The app uses SDK 58 to match the Expo Go version installed on the review device.
+See [setup](./setup.md) for compatibility and device review instructions.
+
 ### Core flow - Making a workout template
 
 1. A user logs in or signs up with credentials

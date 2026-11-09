@@ -2,11 +2,20 @@
 
 LibreLift is a native mobile app that provides exercise templating/planning and logging for free. It is ideal for those who want to plan and log workouts using their phone, without paying for a subscription plan.
 
-**Status**: DESIGN - LibreLift is currently in the design phase, development will begin soon.
+**Status**: UI foundation — the Expo app has navigable templates, workout history,
+and account screens using sample data. Feature integrations are under development.
 
 ## Quickstart
 
-Because this app is still in the design phase, it is not runnable yet. As development begins this section will be updated accordingly.
+With Node.js 24 LTS and Expo Go for SDK 58 installed:
+
+```sh
+npm ci
+npm start
+```
+
+Connect your phone to the same Wi-Fi network and scan the terminal QR code.
+See the [setup guide](./docs/setup.md) for iPhone instructions and validation commands.
 
 ## Design
 
