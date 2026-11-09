@@ -1,0 +1,49 @@
+{
+  "name": "librelift",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "main": "expo-router/entry",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "expo start --go",
+    "ios": "expo start --go --ios",
+    "android": "expo start --go --android",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ]
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~58.0.23",
+    "expo-asset": "~58.0.20",
+    "expo-constants": "~58.0.15",
+    "expo-font": "~58.0.11",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-status-bar": "~58.0.4",
+    "expo-system-ui": "~58.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1"
+  },
+  "devDependencies": {
+    "@react-native/jest-preset": "0.88.1",
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "~19.3.0",
+    "jest": "^30.0.0",
+    "jest-expo": "~58.0.14",
+    "typescript": "~6.0.3"
+  }
+}

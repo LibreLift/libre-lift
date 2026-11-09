@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "LibreLift",
+    "slug": "libre-lift",
+    "version": "0.1.0",
+    "scheme": "librelift",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-asset"
+    ],
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
