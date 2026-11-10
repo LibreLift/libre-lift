@@ -1,0 +1,69 @@
+# Generated with Supabase CLI 3.1.0. Run commands from the repository root.
+# This config defines the local stack; it is not automatically applied to hosted.
+project_id = "librelift"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+# Feature migrations must explicitly grant access and enable RLS.
+auto_expose_new_tables = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+# Placeholder until the Expo/auth tasks establish app redirects.
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = []
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enabled = true
+enable_confirmations = true
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+inspector_port = 8083
+deno_version = 2
+
+[analytics]
+enabled = false
+
+[functions.health]
+enabled = true
+# Public liveness check only: no database access, credentials, or user data.
+# Feature functions must define their own authentication/authorization.
+verify_jwt = false
+entrypoint = "./functions/health/index.ts"
