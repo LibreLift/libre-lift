@@ -71,9 +71,17 @@ The root layout supplies a sample implementation until backend integration is
 available. Template targets and historical session values are separate snapshots.
 
 Expo Router provides three bottom tabs: Templates (initial), Workouts, and Account.
-Templates and workout history have read-only detail screens. Account links to a
-sign-in placeholder and Settings. These screens use sample records; they do not
-implement authentication, template editing, or workout logging.
+Templates have detail screens with inline title/description editing and
+session-local Save/Cancel. Workout history has independently collapsible exercise
+sections. Account links to a sign-in placeholder and Settings. These screens use
+sample records; authentication, full template CRUD, backend persistence, and
+workout logging remain feature integrations.
+
+The root owns a sample service instance for the app session. Successful metadata
+updates invalidate the template ViewModels so both list and detail reload saved
+values. A shared pending-save state locks tab navigation; the editor also guards
+Back/swipe and preserves drafts on failures. See the
+[UI iteration decisions](./ui-foundation.md#approved-ui-iteration) for exact behavior.
 
 Settings offers Light, Dark, and System appearance, defaulting to System. The
 preference is stored locally through an injected storage interface. Both themes

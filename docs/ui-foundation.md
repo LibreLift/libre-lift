@@ -44,8 +44,9 @@ of eight repetitions and a recorded result of six without changing its target.
 ## Approved UI iteration
 
 The maintainer approved the following refinement of the original foundation on
-November 9, 2026. These are planned follow-ups, not behavior already implemented
-by this documentation update.
+November 9, 2026. The #62–#64 behavior below is implemented on the local foundation
+branch. Physical-device review and the published foundation remain prerequisites
+for completing the tracker workflow. The #65 investigation is deferred.
 
 - [#62: Template presentation](https://github.com/LibreLift/libre-lift/issues/62)
   changes the list heading to “Templates,” shows exercise and total-set counts,
