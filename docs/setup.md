@@ -10,7 +10,7 @@ app installation and launch instructions will follow when the scaffold merges.
 ## 1. Get the project
 
 Install [Git](https://git-scm.com/downloads) and [Node.js](https://nodejs.org/en/download)
-(version 20 or later, including npm). Open a terminal and run:
+(version 24 LTS, including npm; see `.nvmrc`). Open a terminal and run:
 
 ```sh
 git clone https://github.com/LibreLift/libre-lift.git

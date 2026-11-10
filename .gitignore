@@ -150,5 +150,10 @@ vite.config.ts.timestamp-*
 
 # Other
 .DS_Store
+# Expo local state and generated native projects
+.expo/
+android/
+ios/
+
 # Supabase local credentials
 supabase/signing_keys.json
