@@ -41,6 +41,33 @@ of eight repetitions and a recorded result of six without changing its target.
 | Device review | A physical iPhone running Expo Go is the first review target; Android remains supported. |
 | SDK | SDK 58 matches the Expo Go version reported on the review device. This superseded the initial SDK 54 selection; the current version is recorded in `package.json`. |
 
+## Approved UI iteration
+
+The maintainer approved the following refinement of the original foundation on
+November 9, 2026. These are planned follow-ups, not behavior already implemented
+by this documentation update.
+
+- [#62: Template presentation](https://github.com/LibreLift/libre-lift/issues/62)
+  changes the list heading to “Templates,” shows exercise and total-set counts,
+  and removes the template list/detail preview footers. Exercise counts already
+  exist; the added total counts all sets across the template's exercises.
+- [#63: Title/description editor](https://github.com/LibreLift/libre-lift/issues/63)
+  adds explicit Save/Cancel and saves metadata for the running app session through
+  the service/ViewModel boundary. This revises the original read-only stub scope;
+  it does not add cross-restart persistence or complete the full editor in #46.
+- [#64: Collapsible session sets](https://github.com/LibreLift/libre-lift/issues/64)
+  makes each session-detail exercise independently expandable and initially
+  collapsed, with its name and set count visible. Target and recorded performance
+  remain unchanged, and expanding one exercise does not close another.
+- [#65: Duration-estimate investigation](https://github.com/LibreLift/libre-lift/issues/65)
+  compares approaches and missing timing inputs before a display or formula is
+  selected. The investigation itself adds no estimates to the app.
+
+The metadata and history refinements are sub-issues of #46 and #48 respectively;
+the template presentation refinement is also under #46. All four tasks depend on
+#38 for a published app foundation. The accepted scope does not imply readiness
+from the default branch while that dependency remains unresolved.
+
 ## Scope and remaining questions
 
 The sample-data preview does not remove authentication or training-data
