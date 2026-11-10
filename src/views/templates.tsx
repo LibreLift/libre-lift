@@ -10,7 +10,7 @@ export function TemplatesScreen() {
       <Copy kind="label">YOUR TRAINING, YOUR WAY</Copy>
       <Copy kind="title">Make a plan.{'\n'}Make it yours.</Copy>
       <Copy kind="muted">A few good exercises. A plan you can come back to.</Copy>
-      <Copy kind="heading">Workout templates</Copy>
+      <Copy kind="heading">Templates</Copy>
       <Resource {...model}>
         {(templates) =>
           templates.length ? (
@@ -19,7 +19,7 @@ export function TemplatesScreen() {
                 key={template.id}
                 title={template.title}
                 subtitle={template.description}
-                detail={`${template.exercises.length} exercises`}
+                detail={template.summary}
                 icon="barbell-outline"
                 onPress={() => router.push({ pathname: '/templates/[id]', params: { id: template.id } })}
               />
@@ -31,7 +31,6 @@ export function TemplatesScreen() {
           )
         }
       </Resource>
-      <Copy kind="muted">Sample templates · Template creation is coming next.</Copy>
     </Screen>
   );
 }
@@ -62,9 +61,6 @@ export function TemplateDetailScreen() {
                   ))}
                 </Card>
               ))}
-              <Copy kind="muted">
-                Sample plan · Editing and starting workouts are coming in later updates.
-              </Copy>
             </>
           ) : (
             <Card>
