@@ -56,6 +56,12 @@ by this documentation update.
   with explicit Save/Cancel. It saves metadata for the running app session through
   the service/ViewModel boundary. This revises the original read-only stub scope;
   it does not add cross-restart persistence or complete the full editor in #46.
+  Tab changes preserve an unsaved draft while not saving. Back/swipe with unsaved
+  changes prompts Discard changes / Keep editing; explicit Cancel discards the
+  draft and returns to read-only detail. While Save is pending, show Saving… and
+  disable fields, Save, Cancel, Back/swipe, and tab switching until the request
+  succeeds or fails. Success returns to read-only detail; failure retains the
+  draft for retry and restores editing and navigation controls.
 - [#64: Collapsible session sets](https://github.com/LibreLift/libre-lift/issues/64)
   makes each session-detail exercise independently expandable and initially
   collapsed, with its name and set count visible. Target and recorded performance
