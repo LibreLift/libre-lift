@@ -52,16 +52,20 @@ by this documentation update.
   and removes the template list/detail preview footers. Exercise counts already
   exist; the added total counts all sets across the template's exercises.
 - [#63: Title/description editor](https://github.com/LibreLift/libre-lift/issues/63)
-  adds explicit Save/Cancel and saves metadata for the running app session through
+  uses inline editing at the top of template detail, keeping exercises visible,
+  with explicit Save/Cancel. It saves metadata for the running app session through
   the service/ViewModel boundary. This revises the original read-only stub scope;
   it does not add cross-restart persistence or complete the full editor in #46.
 - [#64: Collapsible session sets](https://github.com/LibreLift/libre-lift/issues/64)
   makes each session-detail exercise independently expandable and initially
   collapsed, with its name and set count visible. Target and recorded performance
-  remain unchanged, and expanding one exercise does not close another.
+  remain unchanged, and expanding one exercise does not close another. Switching
+  tabs preserves expansion state on the still-open detail screen; leaving detail
+  and opening a session again starts collapsed.
 - [#65: Duration-estimate investigation](https://github.com/LibreLift/libre-lift/issues/65)
-  compares approaches and missing timing inputs before a display or formula is
-  selected. The investigation itself adds no estimates to the app.
+  is deferred to M2: MVP. It will compare approaches and missing timing inputs
+  before a display or formula is selected; duration meaning and acceptable inputs
+  remain undecided for that milestone. The current UI iteration adds no estimates.
 
 The metadata and history refinements are sub-issues of #46 and #48 respectively;
 the template presentation refinement is also under #46. All four tasks depend on

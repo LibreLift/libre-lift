@@ -31,6 +31,10 @@ A reusable workout description containing exercises and their planned sets.
 “Template” is its short name.
 _Avoid_: Plan, routine (as separate domain concepts)
 
+**Template draft**:
+Unsaved changes to a workout template. These changes are separate from the saved
+template until the user saves them.
+
 **Template exercise**:
 An exercise included in a workout template, together with its planned sets.
 _Avoid_: Exercise when referring specifically to its inclusion in a template
