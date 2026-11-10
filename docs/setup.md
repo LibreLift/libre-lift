@@ -24,7 +24,14 @@ only the appearance preference locally.
 
 ## Install and launch
 
-From a fresh checkout, run these commands in the repository root:
+For a fresh checkout, clone the project first:
+
+```sh
+git clone https://github.com/LibreLift/libre-lift.git
+cd libre-lift
+```
+
+From the repository root, install and launch the app:
 
 ```sh
 npm ci
@@ -99,4 +106,81 @@ detail records are supported. Sample weights use pounds (`lb`).
 
 These instructions provide the runnable setup requested by [#38](https://github.com/LibreLift/libre-lift/issues/38)
 and the frontend portion of [#13](https://github.com/LibreLift/libre-lift/issues/13).
-Backend setup must be documented when those services become available.
+Backend setup for contributions and future service integration is documented below.
+
+## Backend setup
+
+Supabase provides the database and backend services. This setup is for backend
+contributions and future service integration; it is optional for the UI stub.
+
+### Configure the hosted connection
+
+Copy `.env.example` to a new file named `.env` in the same folder. In `.env`:
+
+1. Keep the supplied `EXPO_PUBLIC_SUPABASE_URL`.
+2. Ask a maintainer for the development project's **publishable key** and replace
+   `replace-with-project-publishable-key` with it.
+
+You do not need a Supabase account or dashboard access. Use only the publishable
+key; database passwords and secret/service-role keys must never go in app settings.
+Git ignores `.env`, so your settings stay on your computer.
+
+### Check the backend
+
+Open this URL in your browser:
+
+<https://jibzcwwursyzvvthazby.supabase.co/functions/v1/health>
+
+You should see `{"status":"ok"}`. This confirms the hosted health function is
+reachable; it does not test your app settings or database access. If it fails,
+ask a maintainer to check the deployment.
+
+The current UI stub uses sample data and does not read these settings. Service
+integration will connect workout reads and writes to the development backend.
+
+### Optional: run your own local backend
+
+Use this when testing backend changes without affecting the shared deployment.
+It needs no hosted credentials. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/),
+open it, and wait until it reports that its engine is running.
+
+In your project terminal, run:
+
+```sh
+npx --yes supabase@3.1.0 start
+npx --yes supabase@3.1.0 status
+npx --yes supabase@3.1.0 db query --read-only 'select 1 as connected'
+```
+
+`npx` downloads and runs our required Supabase CLI version, **3.1.0**. The first
+start downloads service images and can take several minutes. The final command
+should return `connected: 1`, confirming the local database works.
+
+To point the app at this backend, change **both** values in `.env`: set the URL
+to `http://127.0.0.1:54321` and use the local publishable key shown by `status`.
+For an Android emulator, use `http://10.0.2.2:54321`; for a physical phone, use
+your computer's LAN IP instead of `127.0.0.1`, on the same trusted network.
+Restart Expo after changing these values when testing backend integrations.
+
+To check the local health function, run this in a second terminal in the project:
+
+```sh
+npx --yes supabase@3.1.0 functions serve health
+```
+
+Open <http://127.0.0.1:54321/functions/v1/health> in your browser. Expect
+`{"status":"ok"}`. Local database browsing is at <http://127.0.0.1:54323>;
+local test emails appear at <http://127.0.0.1:54324>.
+
+When finished, press Ctrl-C in the function terminal, then stop the backend:
+
+```sh
+npx --yes supabase@3.1.0 stop
+```
+
+Stopping preserves local data. If startup cannot connect to Docker, check that
+Docker Desktop is running (`docker info`). If ports are busy, stop any other
+local Supabase stack first. Keep local services on a trusted network.
+
+For backend contributions, see the [local migration workflow](../supabase/migrations/README.md).
+Hosted administration and deployments are covered in the [maintainer guide](maintainers.md).

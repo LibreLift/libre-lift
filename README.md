@@ -16,6 +16,8 @@ npm start
 
 Connect your phone to the same Wi-Fi network and scan the terminal QR code.
 See the [setup guide](./docs/setup.md) for iPhone instructions and validation commands.
+It also covers shared hosted Supabase development, an optional local Docker backend,
+and maintainer deployment instructions. The UI stub runs without backend credentials.
 
 ## Design
 
