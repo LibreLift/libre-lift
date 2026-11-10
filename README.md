@@ -6,7 +6,9 @@ LibreLift is a native mobile app that provides exercise templating/planning and 
 
 ## Quickstart
 
-Because this app is still in the design phase, it is not runnable yet. As development begins this section will be updated accordingly.
+The Expo app scaffold is in progress. The Supabase backend can be used now; see
+the [setup guide](./docs/setup.md) for shared hosted development, an optional local
+Docker backend, and maintainer deployment instructions.
 
 ## Design
 
