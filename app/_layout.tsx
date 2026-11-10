@@ -6,18 +6,21 @@ import {
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
-import { sampleWorkoutService } from '../src/services/sample-workout-service';
+import { useState } from 'react';
+import { createSampleWorkoutService } from '../src/services/sample-workout-service';
+import type { WorkoutService } from '../src/services/workout-service';
 import { themePreferenceStore } from '../src/services/theme-preference-store';
 import { ThemeProvider, useTheme } from '../src/viewmodels/theme';
-import { WorkoutServiceContext } from '../src/viewmodels/workouts';
+import { WorkoutProvider } from '../src/viewmodels/workout-provider';
 
-export default function RootLayout() {
+export default function RootLayout({ service: providedService }: { service?: WorkoutService } = {}) {
+  const [service] = useState(() => providedService ?? createSampleWorkoutService());
   return (
-    <WorkoutServiceContext.Provider value={sampleWorkoutService}>
+    <WorkoutProvider service={service}>
       <ThemeProvider store={themePreferenceStore}>
         <Navigation />
       </ThemeProvider>
-    </WorkoutServiceContext.Provider>
+    </WorkoutProvider>
   );
 }
 

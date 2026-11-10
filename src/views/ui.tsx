@@ -1,5 +1,15 @@
 import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../viewmodels/theme';
@@ -7,10 +17,22 @@ import type { LoadState } from '../viewmodels/workouts';
 
 export function Screen({ children }: PropsWithChildren) {
   const { colors } = useTheme();
+  const headerHeight = useHeaderHeight();
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={styles.screen}>{children}</ScrollView>
-    </SafeAreaView>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={headerHeight}
+    >
+      <SafeAreaView
+        edges={['left', 'right', 'bottom']}
+        style={{ flex: 1, backgroundColor: colors.background }}
+      >
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.screen}>
+          {children}
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
