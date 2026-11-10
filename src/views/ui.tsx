@@ -100,7 +100,7 @@ export function LinkCard({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${title}. ${subtitle}`}
+      accessibilityLabel={`${title}. ${[subtitle, detail].filter(Boolean).join(' ')}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.link,
