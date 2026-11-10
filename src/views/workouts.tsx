@@ -1,4 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import type { SessionExercise } from '../models/workout';
+import { useTheme } from '../viewmodels/theme';
 import { sessionSummary, useSessionsViewModel, useSessionViewModel } from '../viewmodels/workouts';
 import { Card, Copy, LinkCard, Resource, Screen } from './ui';
 
@@ -48,24 +53,8 @@ export function WorkoutDetailScreen() {
               <Copy kind="label">COMPLETED WORKOUT</Copy>
               <Copy kind="title">{session.title}</Copy>
               <Copy kind="muted">{sessionSummary(session.startedAt, session.endedAt)}</Copy>
-              {session.exercises.map((exercise) => (
-                <Card key={exercise.id}>
-                  <Copy kind="heading">{exercise.name}</Copy>
-                  <Copy kind="muted">
-                    {exercise.muscles} · {exercise.equipment}
-                  </Copy>
-                  {exercise.sets.map((set) => (
-                    <Card key={set.setNumber}>
-                      <Copy kind="label">SET {set.setNumber}</Copy>
-                      <Copy>
-                        Recorded · {set.actualReps} reps × {set.actualWeight} lb
-                      </Copy>
-                      <Copy kind="muted">
-                        Target · {set.targetReps} reps × {set.targetWeight} lb
-                      </Copy>
-                    </Card>
-                  ))}
-                </Card>
+              {session.exercises.map((exercise, position) => (
+                <SessionExerciseCard key={`${session.id}:${position}`} exercise={exercise} />
               ))}
               <Copy kind="muted">Sample workout · Recorded values are separate from template targets.</Copy>
             </>
@@ -77,5 +66,48 @@ export function WorkoutDetailScreen() {
         }
       </Resource>
     </Screen>
+  );
+}
+
+function SessionExerciseCard({ exercise }: { exercise: SessionExercise }) {
+  const [expanded, setExpanded] = useState(false);
+  const { colors } = useTheme();
+  const count = `${exercise.sets.length} ${exercise.sets.length === 1 ? 'set' : 'sets'}`;
+  return (
+    <Card>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${exercise.name}, ${count}`}
+        accessibilityState={{ expanded }}
+        onPress={() => setExpanded((value) => !value)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }}
+      >
+        <View style={{ flex: 1, gap: 6 }}>
+          <Copy kind="heading">{exercise.name}</Copy>
+          <Copy kind="muted">
+            {count} · {exercise.muscles} · {exercise.equipment}
+          </Copy>
+        </View>
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={22}
+          color={colors.text}
+          accessible={false}
+        />
+      </Pressable>
+      {expanded
+        ? exercise.sets.map((set) => (
+            <Card key={set.setNumber}>
+              <Copy kind="label">SET {set.setNumber}</Copy>
+              <Copy>
+                Recorded · {set.actualReps} reps × {set.actualWeight} lb
+              </Copy>
+              <Copy kind="muted">
+                Target · {set.targetReps} reps × {set.targetWeight} lb
+              </Copy>
+            </Card>
+          ))
+        : null}
+    </Card>
   );
 }
