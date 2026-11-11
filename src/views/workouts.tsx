@@ -77,7 +77,7 @@ function SessionExerciseCard({ exercise }: { exercise: SessionExercise }) {
     <Card>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${exercise.name}, ${count}`}
+        accessibilityLabel={`${exercise.name}, ${count}, ${exercise.muscles}, ${exercise.equipment}`}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }}
