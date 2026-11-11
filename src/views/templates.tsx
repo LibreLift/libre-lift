@@ -3,6 +3,7 @@ import { Alert, TextInput } from 'react-native';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
 import { useTheme } from '../viewmodels/theme';
+import { ExerciseSummary } from './exercise-summary';
 import { Button, Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function TemplatesScreen() {
@@ -116,9 +117,7 @@ export function TemplateDetailScreen() {
                   <Card key={exercise.id}>
                     <Copy kind="label">EXERCISE {index + 1}</Copy>
                     <Copy kind="heading">{exercise.name}</Copy>
-                    <Copy kind="muted">
-                      {exercise.muscles} · {exercise.equipment}
-                    </Copy>
+                    <ExerciseSummary exercise={exercise} />
                     {exercise.sets.map((set) => (
                       <Copy key={set.setNumber}>
                         Set {set.setNumber} · {set.targetReps} reps × {set.targetWeight} lb

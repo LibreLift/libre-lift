@@ -13,7 +13,7 @@ test('opens templates first and navigates template, history, account, and settin
 
   await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
-  await fireEvent.press(await screen.findByRole('button', { name: 'Bench press, 3 sets, Chest · Triceps, Barbell' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell' }));
   expect(await screen.findByText('Recorded · 6 reps × 115 lb')).toBeVisible();
   expect(screen.getAllByText('Target · 8 reps × 115 lb')).toHaveLength(2);
   await testRouter.back('/workouts');
@@ -35,19 +35,19 @@ test('an unknown template shows a useful missing-record state', async () => {
 test('session exercises expand independently, survive tab changes, and reset on reopening', async () => {
   await renderRouter('./app', { initialUrl: '/workouts' });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
-  const bench = await screen.findByRole('button', { name: 'Bench press, 3 sets, Chest · Triceps, Barbell', expanded: false });
+  const bench = await screen.findByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell', expanded: false });
   expect(screen.queryByText('Recorded · 6 reps × 115 lb')).toBeNull();
   await fireEvent.press(bench);
-  await fireEvent.press(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Back · Biceps, Dumbbell' }));
-  expect(screen.getByRole('button', { name: 'Bench press, 3 sets, Chest · Triceps, Barbell', expanded: true })).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Back · Biceps, Dumbbell', expanded: true })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Primary muscles · Back · Secondary muscles · Biceps · Equipment · Dumbbell' }));
+  expect(screen.getByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell', expanded: true })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Primary muscles · Back · Secondary muscles · Biceps · Equipment · Dumbbell', expanded: true })).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: /^Templates, tab/ }));
   await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
   expect(screen.getByText('Recorded · 6 reps × 115 lb')).toBeVisible();
-  await fireEvent.press(screen.getByRole('button', { name: 'Bench press, 3 sets, Chest · Triceps, Barbell' }));
-  expect(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Back · Biceps, Dumbbell', expanded: true })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell' }));
+  expect(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Primary muscles · Back · Secondary muscles · Biceps · Equipment · Dumbbell', expanded: true })).toBeVisible();
   await testRouter.back('/workouts');
   await fireEvent.press(screen.getByRole('button', { name: /Upper body/ }));
-  expect(await screen.findByRole('button', { name: 'Bench press, 3 sets, Chest · Triceps, Barbell', expanded: false })).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Back · Biceps, Dumbbell', expanded: false })).toBeVisible();
+  expect(await screen.findByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell', expanded: false })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Dumbbell row, 2 sets, Primary muscles · Back · Secondary muscles · Biceps · Equipment · Dumbbell', expanded: false })).toBeVisible();
 });

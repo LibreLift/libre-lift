@@ -26,6 +26,28 @@ and equipment.
 The collection of exercises available for inclusion in workout templates.
 _Avoid_: Workout catalog, template library
 
+**Catalog exercise**:
+A named movement in the exercise catalog, with an identity shared by every template
+or session that references it.
+_Avoid_: Template exercise, session exercise
+
+**Primary muscles**:
+The muscles identified by the catalog as the main targets of an exercise. Missing
+targets remain unspecified rather than being inferred.
+_Avoid_: All target muscles
+
+**Secondary muscles**:
+The muscles identified by the catalog as supporting targets of an exercise,
+distinct from its primary muscles. Missing targets remain unspecified rather than
+being inferred.
+_Avoid_: Primary muscles
+
+**No equipment**:
+An exercise's explicit lack of required equipment, identified from the catalog's
+bodyweight designation when equipment is absent. Missing equipment without that
+designation is not evidence that no equipment is required.
+_Avoid_: Unknown equipment
+
 **Workout template**:
 A reusable workout description containing exercises and their planned sets.
 “Template” is its short name.
@@ -36,7 +58,9 @@ Unsaved changes to a workout template. These changes are separate from the saved
 template until the user saves them.
 
 **Template exercise**:
-An exercise included in a workout template, together with its planned sets.
+A placement of a catalog exercise within a workout template, with its own identity,
+saved exercise details, and planned sets. The same catalog exercise can appear in
+multiple placements; catalog changes do not change saved templates.
 _Avoid_: Exercise when referring specifically to its inclusion in a template
 
 **Template set**:
@@ -52,8 +76,9 @@ its short name.
 _Avoid_: Workout when the distinction from a workout template matters
 
 **Session exercise**:
-An exercise included in a particular workout session, together with its session
-sets.
+A placement of a catalog exercise within a workout session, with its own identity,
+saved exercise details, and session sets. Its catalog identity is retained, and
+catalog changes do not change saved workout history.
 _Avoid_: Template exercise when referring to a session's exercise
 
 **Session set**:

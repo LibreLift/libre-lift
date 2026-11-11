@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { SessionExercise } from '../models/workout';
 import { useTheme } from '../viewmodels/theme';
 import { sessionSummary, useSessionsViewModel, useSessionViewModel } from '../viewmodels/workouts';
+import { ExerciseSummary, exerciseSummaryText } from './exercise-summary';
 import { Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function WorkoutsScreen() {
@@ -53,8 +54,8 @@ export function WorkoutDetailScreen() {
               <Copy kind="label">COMPLETED WORKOUT</Copy>
               <Copy kind="title">{session.title}</Copy>
               <Copy kind="muted">{sessionSummary(session.startedAt, session.endedAt)}</Copy>
-              {session.exercises.map((exercise, position) => (
-                <SessionExerciseCard key={`${session.id}:${position}`} exercise={exercise} />
+              {session.exercises.map((exercise) => (
+                <SessionExerciseCard key={exercise.id} exercise={exercise} />
               ))}
               <Copy kind="muted">Sample workout · Recorded values are separate from template targets.</Copy>
             </>
@@ -77,16 +78,15 @@ function SessionExerciseCard({ exercise }: { exercise: SessionExercise }) {
     <Card>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${exercise.name}, ${count}, ${exercise.muscles}, ${exercise.equipment}`}
+        accessibilityLabel={`${exercise.name}, ${count}, ${exerciseSummaryText(exercise)}`}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }}
       >
         <View style={{ flex: 1, gap: 6 }}>
           <Copy kind="heading">{exercise.name}</Copy>
-          <Copy kind="muted">
-            {count} · {exercise.muscles} · {exercise.equipment}
-          </Copy>
+          <Copy kind="muted">{count}</Copy>
+          <ExerciseSummary exercise={exercise} />
         </View>
         <Ionicons
           name={expanded ? 'chevron-up' : 'chevron-down'}

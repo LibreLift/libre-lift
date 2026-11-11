@@ -91,6 +91,22 @@ with additional neutral colors for readability. Sample weights use pounds.
 The app uses SDK 58 to match the Expo Go version installed on the review device.
 See [setup](./setup.md) for compatibility and device review instructions.
 
+### Exercise catalog boundary (#44)
+
+RepDB JSON is validated at the service boundary into a shared catalog exercise
+model with a namespaced catalog identifier, English name, separate primary and
+secondary muscles, and explicit equipment requirements. Optional images,
+instructions, and German/Spanish content are retained for future features.
+Usable records are returned with diagnostics for malformed data; an unusable
+response has a distinct failure result. Live transport and catalog browsing are
+separate tasks.
+
+Template exercises and session exercises each have their own placement identity
+and copy descriptive exercise details and sets, retaining the shared catalog
+identity. Upstream catalog changes cannot alter saved templates or history.
+See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
+[identity decision](./adr/issue-44-catalog-identity-and-snapshots.md).
+
 ### Core flow - Making a workout template
 
 1. A user logs in or signs up with credentials
