@@ -37,7 +37,19 @@ function useWorkoutService() {
 
 export function useTemplatesViewModel() {
   const service = useWorkoutService();
-  return useResource(useCallback(() => service.listTemplates(), [service]));
+  return useResource(
+    useCallback(async () => {
+      const templates = await service.listTemplates();
+      return templates.map((template) => {
+        const exercises = template.exercises.length;
+        const sets = template.exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
+        return {
+          ...template,
+          summary: `${exercises} ${exercises === 1 ? 'exercise' : 'exercises'} · ${sets} ${sets === 1 ? 'set' : 'sets'}`,
+        };
+      });
+    }, [service]),
+  );
 }
 
 export function useTemplateViewModel(id: string) {
