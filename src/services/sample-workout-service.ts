@@ -1,4 +1,4 @@
-import type { WorkoutSession, WorkoutTemplate } from '../models/workout';
+import { createSessionExercise, createTemplateExercise, type WorkoutSession, type WorkoutTemplate } from '../models/workout';
 import type { WorkoutService } from './workout-service';
 
 const templates: readonly WorkoutTemplate[] = [
@@ -7,27 +7,27 @@ const templates: readonly WorkoutTemplate[] = [
     title: 'Upper body',
     description: 'A little push. A little pull.',
     exercises: [
-      {
-        id: 'bench-press',
+      createTemplateExercise('placement-bench-press', {
+        catalogId: 'repdb:bench-press',
         name: 'Bench press',
-        muscles: 'Chest · Triceps',
-        equipment: 'Barbell',
-        sets: [
-          { setNumber: 1, targetWeight: 95, targetReps: 8 },
-          { setNumber: 2, targetWeight: 115, targetReps: 8 },
-          { setNumber: 3, targetWeight: 115, targetReps: 8 },
-        ],
-      },
-      {
-        id: 'dumbbell-row',
+        primaryMuscles: ['Chest'],
+        secondaryMuscles: ['Triceps'],
+        equipment: { kind: 'required', name: 'Barbell' },
+      }, [
+        { setNumber: 1, targetWeight: 95, targetReps: 8 },
+        { setNumber: 2, targetWeight: 115, targetReps: 8 },
+        { setNumber: 3, targetWeight: 115, targetReps: 8 },
+      ]),
+      createTemplateExercise('placement-dumbbell-row', {
+        catalogId: 'repdb:dumbbell-row',
         name: 'Dumbbell row',
-        muscles: 'Back · Biceps',
-        equipment: 'Dumbbell',
-        sets: [
-          { setNumber: 1, targetWeight: 35, targetReps: 10 },
-          { setNumber: 2, targetWeight: 35, targetReps: 10 },
-        ],
-      },
+        primaryMuscles: ['Back'],
+        secondaryMuscles: ['Biceps'],
+        equipment: { kind: 'required', name: 'Dumbbell' },
+      }, [
+        { setNumber: 1, targetWeight: 35, targetReps: 10 },
+        { setNumber: 2, targetWeight: 35, targetReps: 10 },
+      ]),
     ],
   },
   {
@@ -35,27 +35,27 @@ const templates: readonly WorkoutTemplate[] = [
     title: 'Lower body',
     description: 'Build from the ground up.',
     exercises: [
-      {
-        id: 'squat',
+      createTemplateExercise('placement-squat', {
+        catalogId: 'repdb:squat',
         name: 'Back squat',
-        muscles: 'Quads · Glutes',
-        equipment: 'Barbell',
-        sets: [
-          { setNumber: 1, targetWeight: 135, targetReps: 5 },
-          { setNumber: 2, targetWeight: 135, targetReps: 5 },
-          { setNumber: 3, targetWeight: 135, targetReps: 5 },
-        ],
-      },
-      {
-        id: 'romanian-deadlift',
+        primaryMuscles: ['Quads'],
+        secondaryMuscles: ['Glutes'],
+        equipment: { kind: 'required', name: 'Barbell' },
+      }, [
+        { setNumber: 1, targetWeight: 135, targetReps: 5 },
+        { setNumber: 2, targetWeight: 135, targetReps: 5 },
+        { setNumber: 3, targetWeight: 135, targetReps: 5 },
+      ]),
+      createTemplateExercise('placement-romanian-deadlift', {
+        catalogId: 'repdb:romanian-deadlift',
         name: 'Romanian deadlift',
-        muscles: 'Hamstrings · Glutes',
-        equipment: 'Barbell',
-        sets: [
-          { setNumber: 1, targetWeight: 95, targetReps: 10 },
-          { setNumber: 2, targetWeight: 95, targetReps: 10 },
-        ],
-      },
+        primaryMuscles: ['Hamstrings'],
+        secondaryMuscles: ['Glutes'],
+        equipment: { kind: 'required', name: 'Barbell' },
+      }, [
+        { setNumber: 1, targetWeight: 95, targetReps: 10 },
+        { setNumber: 2, targetWeight: 95, targetReps: 10 },
+      ]),
     ],
   },
 ];
@@ -67,27 +67,27 @@ const sessions: readonly WorkoutSession[] = [
     startedAt: '2026-11-06T17:00:00Z',
     endedAt: '2026-11-06T17:42:00Z',
     exercises: [
-      {
-        id: 'bench-press',
+      createSessionExercise('session-bench-press', {
+        catalogId: 'repdb:bench-press',
         name: 'Bench press',
-        muscles: 'Chest · Triceps',
-        equipment: 'Barbell',
-        sets: [
-          { setNumber: 1, targetWeight: 95, targetReps: 8, actualWeight: 95, actualReps: 8 },
-          { setNumber: 2, targetWeight: 115, targetReps: 8, actualWeight: 115, actualReps: 8 },
-          { setNumber: 3, targetWeight: 115, targetReps: 8, actualWeight: 115, actualReps: 6 },
-        ],
-      },
-      {
-        id: 'dumbbell-row',
+        primaryMuscles: ['Chest'],
+        secondaryMuscles: ['Triceps'],
+        equipment: { kind: 'required', name: 'Barbell' },
+      }, [
+        { setNumber: 1, targetWeight: 95, targetReps: 8, actualWeight: 95, actualReps: 8 },
+        { setNumber: 2, targetWeight: 115, targetReps: 8, actualWeight: 115, actualReps: 8 },
+        { setNumber: 3, targetWeight: 115, targetReps: 8, actualWeight: 115, actualReps: 6 },
+      ]),
+      createSessionExercise('session-dumbbell-row', {
+        catalogId: 'repdb:dumbbell-row',
         name: 'Dumbbell row',
-        muscles: 'Back · Biceps',
-        equipment: 'Dumbbell',
-        sets: [
-          { setNumber: 1, targetWeight: 35, targetReps: 10, actualWeight: 35, actualReps: 10 },
-          { setNumber: 2, targetWeight: 35, targetReps: 10, actualWeight: 35, actualReps: 10 },
-        ],
-      },
+        primaryMuscles: ['Back'],
+        secondaryMuscles: ['Biceps'],
+        equipment: { kind: 'required', name: 'Dumbbell' },
+      }, [
+        { setNumber: 1, targetWeight: 35, targetReps: 10, actualWeight: 35, actualReps: 10 },
+        { setNumber: 2, targetWeight: 35, targetReps: 10, actualWeight: 35, actualReps: 10 },
+      ]),
     ],
   },
   {
@@ -96,17 +96,17 @@ const sessions: readonly WorkoutSession[] = [
     startedAt: '2026-11-04T17:00:00Z',
     endedAt: '2026-11-04T17:35:00Z',
     exercises: [
-      {
-        id: 'squat',
+      createSessionExercise('session-squat', {
+        catalogId: 'repdb:squat',
         name: 'Back squat',
-        muscles: 'Quads · Glutes',
-        equipment: 'Barbell',
-        sets: [
-          { setNumber: 1, targetWeight: 135, targetReps: 5, actualWeight: 135, actualReps: 5 },
-          { setNumber: 2, targetWeight: 135, targetReps: 5, actualWeight: 135, actualReps: 5 },
-          { setNumber: 3, targetWeight: 135, targetReps: 5, actualWeight: 135, actualReps: 5 },
-        ],
-      },
+        primaryMuscles: ['Quads'],
+        secondaryMuscles: ['Glutes'],
+        equipment: { kind: 'required', name: 'Barbell' },
+      }, [
+        { setNumber: 1, targetWeight: 135, targetReps: 5, actualWeight: 135, actualReps: 5 },
+        { setNumber: 2, targetWeight: 135, targetReps: 5, actualWeight: 135, actualReps: 5 },
+        { setNumber: 3, targetWeight: 135, targetReps: 5, actualWeight: 135, actualReps: 5 },
+      ]),
     ],
   },
 ];

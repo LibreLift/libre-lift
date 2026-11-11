@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { sessionSummary, useSessionsViewModel, useSessionViewModel } from '../viewmodels/workouts';
+import { ExerciseSummary } from './exercise-summary';
 import { Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function WorkoutsScreen() {
@@ -51,9 +52,7 @@ export function WorkoutDetailScreen() {
               {session.exercises.map((exercise) => (
                 <Card key={exercise.id}>
                   <Copy kind="heading">{exercise.name}</Copy>
-                  <Copy kind="muted">
-                    {exercise.muscles} · {exercise.equipment}
-                  </Copy>
+                  <ExerciseSummary exercise={exercise} />
                   {exercise.sets.map((set) => (
                     <Card key={set.setNumber}>
                       <Copy kind="label">SET {set.setNumber}</Copy>

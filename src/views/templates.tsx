@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTemplatesViewModel, useTemplateViewModel } from '../viewmodels/workouts';
+import { ExerciseSummary } from './exercise-summary';
 import { Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function TemplatesScreen() {
@@ -52,9 +53,7 @@ export function TemplateDetailScreen() {
                 <Card key={exercise.id}>
                   <Copy kind="label">EXERCISE {index + 1}</Copy>
                   <Copy kind="heading">{exercise.name}</Copy>
-                  <Copy kind="muted">
-                    {exercise.muscles} · {exercise.equipment}
-                  </Copy>
+                  <ExerciseSummary exercise={exercise} />
                   {exercise.sets.map((set) => (
                     <Copy key={set.setNumber}>
                       Set {set.setNumber} · {set.targetReps} reps × {set.targetWeight} lb
