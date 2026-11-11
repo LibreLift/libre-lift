@@ -71,38 +71,47 @@ export function mapRepDbResponse(response: unknown): CatalogMappingResult {
   return { status: diagnostics.length ? 'partial' : 'success', exercises, diagnostics };
 }
 
+interface RecordDiagnosticContext {
+  readonly diagnostics: CatalogDiagnostic[];
+  readonly recordIndex: number;
+  readonly catalogId?: string;
+}
+
+function addInvalidDiagnostic(context: RecordDiagnosticContext, field: string) {
+  const { diagnostics, recordIndex, catalogId } = context;
+  diagnostics.push({ recordIndex, catalogId, field, reason: 'invalid_value' });
+}
+
 function mapRecord(
   record: unknown,
   recordIndex: number,
   diagnostics: CatalogDiagnostic[],
 ): CatalogExercise | undefined {
   const catalogId = isObject(record) && isText(record.id) ? `repdb:${record.id}` as const : undefined;
-  function invalid(field: string) {
-    diagnostics.push({ recordIndex, catalogId, field, reason: 'invalid_value' });
-  }
+  const context: RecordDiagnosticContext = { diagnostics, recordIndex, catalogId };
   if (!isObject(record)) {
-    invalid('record');
+    addInvalidDiagnostic(context, 'record');
     return;
   }
   const start = diagnostics.length;
-  if (!isText(record.id)) invalid('id');
-  if (!isText(record.name_en)) invalid('name_en');
+  if (!isText(record.id)) addInvalidDiagnostic(context, 'id');
+  if (!isText(record.name_en)) addInvalidDiagnostic(context, 'name_en');
   const primary = record.primary_muscles === undefined ? [] : record.primary_muscles;
   const secondary = record.secondary_muscles === undefined ? [] : record.secondary_muscles;
-  if (!isTextList(primary)) invalid('primary_muscles');
-  if (!isTextList(secondary)) invalid('secondary_muscles');
+  if (!isTextList(primary)) addInvalidDiagnostic(context, 'primary_muscles');
+  if (!isTextList(secondary)) addInvalidDiagnostic(context, 'secondary_muscles');
   const noEquipment = record.equipment === undefined && record.is_bodyweight === true;
-  if (!noEquipment && !isText(record.equipment)) invalid('equipment');
+  if (!noEquipment && !isText(record.equipment)) addInvalidDiagnostic(context, 'equipment');
   if (diagnostics.length !== start || !catalogId || !isText(record.name_en) ||
       !isTextList(primary) || !isTextList(secondary)) return;
-  if (record.instructions_en !== undefined && !isTextList(record.instructions_en)) invalid('instructions_en');
+  if (record.instructions_en !== undefined && !isTextList(record.instructions_en)) addInvalidDiagnostic(context, 'instructions_en');
   const instructions = record.instructions_en === undefined ? undefined : isTextList(record.instructions_en) ? [...record.instructions_en] : undefined;
   const translations: NonNullable<CatalogExercise['translations']> = Object.fromEntries(
     (['de', 'es'] as const).flatMap((locale) => {
       const name = record[`name_${locale}`];
       const steps = record[`instructions_${locale}`];
-      if (name !== undefined && !isText(name)) invalid(`name_${locale}`);
-      if (steps !== undefined && !isTextList(steps)) invalid(`instructions_${locale}`);
+      if (name !== undefined && !isText(name)) addInvalidDiagnostic(context, `name_${locale}`);
+      if (steps !== undefined && !isTextList(steps)) addInvalidDiagnostic(context, `instructions_${locale}`);
       if (!isText(name) && !isTextList(steps)) return [];
       return [[locale, {
         name: isText(name) ? name : record.name_en,
@@ -110,7 +119,7 @@ function mapRecord(
       }]];
     }),
   );
-  const images = mapImages(record.images, invalid);
+  const images = mapImages(record.images, context);
   return {
     catalogId,
     name: record.name_en,
@@ -123,30 +132,34 @@ function mapRecord(
   };
 }
 
-function mapImages(value: unknown, invalid: (field: string) => void): ExerciseImages | undefined {
+function mapImages(value: unknown, context: RecordDiagnosticContext): ExerciseImages | undefined {
   if (value === undefined) return;
   if (!isObject(value) || !isObject(value.flat)) {
-    invalid('images.flat');
+    addInvalidDiagnostic(context, 'images.flat');
     return;
   }
-  function imageUrl(pose: string): string | undefined {
-    const path = isObject(value) && isObject(value.flat) ? value.flat[pose] : undefined;
-    if (path === undefined) return;
-    if (isText(path)) {
-      try {
-        const url = new URL(path, 'https://exercise-dataset.com/');
-        if (url.protocol === 'https:' || url.protocol === 'http:') return url.href;
-      } catch { /* Report an invalid URL below. */ }
-    }
-    invalid(`images.flat.${pose}`);
-    return;
-  }
-  const main = imageUrl('main');
-  const start = imageUrl('start');
-  const peak = imageUrl('peak');
+  const main = mapImageUrl(value.flat.main, 'main', context);
+  const start = mapImageUrl(value.flat.start, 'start', context);
+  const peak = mapImageUrl(value.flat.peak, 'peak', context);
   if (start && peak) return { preferred: 'pair', pair: { start, peak }, ...(main ? { main } : {}) };
-  if (value.flat.start !== undefined || value.flat.peak !== undefined) invalid('images.flat.pair');
+  if (value.flat.start !== undefined || value.flat.peak !== undefined) addInvalidDiagnostic(context, 'images.flat.pair');
   if (main) return { preferred: 'main', main };
-  invalid('images.flat');
+  addInvalidDiagnostic(context, 'images.flat');
+  return;
+}
+
+function mapImageUrl(
+  path: unknown,
+  pose: 'main' | 'start' | 'peak',
+  context: RecordDiagnosticContext,
+): string | undefined {
+  if (path === undefined) return;
+  if (isText(path)) {
+    try {
+      const url = new URL(path, 'https://exercise-dataset.com/');
+      if (url.protocol === 'https:' || url.protocol === 'http:') return url.href;
+    } catch { /* Report an invalid URL below. */ }
+  }
+  addInvalidDiagnostic(context, `images.flat.${pose}`);
   return;
 }
