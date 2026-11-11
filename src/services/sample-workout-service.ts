@@ -1,4 +1,4 @@
-import { createSessionExercise, createTemplateExercise, type WorkoutSession, type WorkoutTemplate } from '../models/workout';
+import { createSessionExercise, createTemplateExercise, validateTemplateDetails, type WorkoutSession, type WorkoutTemplate } from '../models/workout';
 import type { WorkoutService } from './workout-service';
 
 const templates: readonly WorkoutTemplate[] = [
@@ -111,18 +111,28 @@ const sessions: readonly WorkoutSession[] = [
   },
 ];
 
-// Matches the async boundary a backend implementation will use, without fake latency.
-export const sampleWorkoutService: WorkoutService = {
-  async listTemplates() {
-    return templates;
-  },
-  async getTemplate(id) {
-    return templates.find((template) => template.id === id) ?? null;
-  },
-  async listSessions() {
-    return sessions;
-  },
-  async getSession(id) {
-    return sessions.find((session) => session.id === id) ?? null;
-  },
-};
+// A new service instance starts a fresh app session, without changing the fixtures.
+export function createSampleWorkoutService(): WorkoutService {
+  let savedTemplates = templates;
+  return {
+    async listTemplates() {
+      return savedTemplates;
+    },
+    async getTemplate(id) {
+      return savedTemplates.find((template) => template.id === id) ?? null;
+    },
+    async updateTemplateDetails(id, details) {
+      const template = savedTemplates.find((value) => value.id === id);
+      if (!template) throw new Error('This template couldn’t be found.');
+      const updated = { ...template, ...validateTemplateDetails(details) };
+      savedTemplates = savedTemplates.map((value) => (value.id === id ? updated : value));
+      return updated;
+    },
+    async listSessions() {
+      return sessions;
+    },
+    async getSession(id) {
+      return sessions.find((session) => session.id === id) ?? null;
+    },
+  };
+}

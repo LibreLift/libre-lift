@@ -1,9 +1,13 @@
 # libre-lift
 
-LibreLift is a native mobile app that provides exercise templating/planning and logging for free. It is ideal for those who want to plan and log workouts using their phone, without paying for a subscription plan.
+LibreLift is a native mobile app for creating workout templates, recording workout
+sessions, and reviewing workout history. It is designed for people who want to
+plan and record their training on a phone without paying for a subscription.
 
 **Status**: UI foundation — the Expo app has navigable templates, workout history,
-and account screens using sample data. Feature integrations are under development.
+and account screens using sample data. Templates show exercise/set counts and
+support title/description edits for the running app session. History sets expand
+by exercise. Feature integrations are under development.
 
 ## Quickstart
 
@@ -33,6 +37,11 @@ The design document for this project is found [here](./docs/design.md). It outli
 - Implementation plan 
 
 This is the starting point for understanding this project. 
+
+Use the [glossary](./GLOSSARY.md) for shared product terminology. The
+[architecture decision records](./docs/adr/README.md) explain the main frontend
+boundaries, and the [UI foundation decisions](./docs/ui-foundation.md) capture the
+agreed scope and presentation choices for #38.
 
 ## Roadmap
 

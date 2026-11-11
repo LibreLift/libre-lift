@@ -69,8 +69,8 @@ their closing explanation.
 | `enhancement` | A feature suggestion or improvement; check triage status before implementing it. |
 | `documentation` | A documentation addition or correction. |
 | `help wanted` | Community assistance is requested. |
-| `question` | A reader needs clarification from the issue author or assignee. |
-| `awaiting response` | The issue author or assignee needs a reply from someone else. |
+| `question` | Further information is requested from the issue author. |
+| `awaiting response` | The issue author is waiting for communication from a maintainer. |
 
 Start with an unassigned Ready task, preferably a `good first issue` for your
 first contribution. Read its acceptance criteria and dependencies, then request

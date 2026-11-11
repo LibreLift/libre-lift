@@ -19,8 +19,9 @@ The installed Expo Go build must support the project's SDK version. Android
 users can get matching builds from [Expo Go downloads](https://expo.dev/go).
 
 Docker, Supabase CLI, backend credentials, and a paid Apple developer membership
-are not required for the UI stub. The app uses bundled sample data and stores
-only the appearance preference locally.
+are not required for the UI stub. The app uses bundled sample data and persists
+only the appearance preference across app restarts. Template metadata edits live
+in memory for the running app session.
 
 ## Install and launch
 
@@ -67,7 +68,9 @@ npx expo-doctor
 ```
 
 The TypeScript check validates app, service, and ViewModel types. Tests cover
-navigation and the asynchronous ViewModel/theme boundaries. Expo Doctor checks
+navigation, template counts, metadata updates, draft/save guards, history
+expansion, and asynchronous ViewModel/theme boundaries. Controlled service
+responses exercise pending saves, failures, and retry. Expo Doctor checks
 SDK and native dependency compatibility. No CI pipeline is configured yet.
 
 To check native JavaScript bundles without a device:
@@ -80,15 +83,25 @@ This checks bundling; it does not replace launching on a physical device.
 
 ## Device review
 
-- Launch on Templates. Open both sample templates and return with Back.
-- Switch to Workouts, open a session, and compare target and recorded sets.
+- Launch on Templates. Both samples show 2 exercises and 5 sets. Open their detail
+  screens and confirm the template preview footers are absent.
+- Edit a title/description and Save. Return to the list and reopen the template;
+  the saved values should remain. Cancel another edit and confirm it is discarded.
+- With an unsaved draft, switch tabs and return; the draft should remain. Back or
+  swipe prompts Discard changes / Keep editing. Check the fields remain reachable
+  with the keyboard open and with increased text size.
+- Switch to Workouts and open a session. Exercise sections start collapsed; expand
+  them to compare target and recorded sets. Expansion survives tab changes, while
+  returning to the list and opening a session again starts collapsed.
 - Open Account → Settings. Select Light, Dark, and System; navigation and screen
   colors should follow the selection. For System, change the phone's appearance.
 - Reload the app and confirm the selected appearance is retained.
 - Open Account → Sign in to see the account-access placeholder.
 
-Sample plans/history are fixed fixtures; authentication, editing, workout logging,
-catalog access, and backend persistence are implemented in their feature tasks.
+Sample exercises and history are fixed fixtures. Template title/description edits
+reset to the bundled values in a fresh app session; a normal tab change or screen
+reopening does not reset them. Authentication, full template editing, workout
+logging, catalog access, and backend persistence remain in their feature tasks.
 
 ## Frontend structure
 
@@ -99,7 +112,9 @@ catalog access, and backend persistence are implemented in their feature tasks.
 - `src/services/`: Async workout interface, sample implementation, and preference storage.
 - `src/theme/`: Shared light/dark color tokens based on the chosen palette.
 
-The root layout injects the workout service and preference store. To integrate
+The root layout creates the session-local workout service and injects it with the
+preference store. The workout provider refreshes template reads after successful
+metadata updates and exposes the save-in-progress state used by navigation. To integrate
 real data, implement `WorkoutService` and replace the injected implementation;
 views never import fixtures. Loading, errors, retry, empty lists, and missing
 detail records are supported. Sample weights use pounds (`lb`).

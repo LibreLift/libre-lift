@@ -1,10 +1,8 @@
-import { Slot } from 'expo-router';
-import { renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { createTemplateExercise, createSessionExercise, type WorkoutTemplate, type WorkoutSession } from '../src/models/workout';
 import { mapRepDbResponse } from '../src/services/repdb-exercise-mapper';
 import type { WorkoutService } from '../src/services/workout-service';
-import { WorkoutServiceContext } from '../src/viewmodels/workouts';
-import { ThemeProvider } from '../src/viewmodels/theme';
+import RootLayout from '../app/_layout';
 import { TemplateDetailScreen } from '../src/views/templates';
 import { WorkoutDetailScreen } from '../src/views/workouts';
 
@@ -46,6 +44,7 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
   editable.primaryMuscles[0] = 'Changed template muscle';
   const service: WorkoutService = {
     async listTemplates() { return [template]; }, async getTemplate() { return template; },
+    async updateTemplateDetails(_id, details) { return { ...template, ...details }; },
     async listSessions() { return [session]; }, async getSession() { return session; },
   };
   for (const saved of [(await service.getTemplate('plan'))!, (await service.getSession('log'))!]) {
@@ -56,11 +55,7 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
     });
   }
   await renderRouter({
-    _layout: () => (
-      <WorkoutServiceContext.Provider value={service}>
-        <ThemeProvider store={{ read: async () => 'light', write: async () => {} }}><Slot /></ThemeProvider>
-      </WorkoutServiceContext.Provider>
-    ),
+    _layout: () => <RootLayout service={service} />,
     'templates/[id]': TemplateDetailScreen,
     'workouts/[id]': WorkoutDetailScreen,
   }, { initialUrl });
@@ -72,6 +67,9 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
     expect(screen.getByText('Set 1 · 8 reps × 95 lb')).toBeVisible();
     expect(screen.getByText('Set 1 · 12 reps × 95 lb')).toBeVisible();
   } else {
+    for (const placement of screen.getAllByRole('button', { name: /^Bench press,/ })) {
+      await fireEvent.press(placement);
+    }
     expect(screen.getByText('Target · 8 reps × 95 lb')).toBeVisible();
     expect(screen.getByText('Target · 12 reps × 95 lb')).toBeVisible();
   }

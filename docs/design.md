@@ -5,7 +5,7 @@
 | **Authors**      | James Teuscher                                                                                                                                            |
 | **Reviewers**    | [who reviewed it — a teammate, the instructor, a design-review partner]                                                                                   |
 | **Status**       | In review                                                                                                                                                 |
-| **Last updated** | 11-4-26                                                                                                                                                   |
+| **Last updated** | 11-9-26                                                                                                                                                   |
 | **Links**        | [proposal](../cp3/cp3-proposal) · [repository](https://github.com/LibreLift/expo_suite) · [issue tracker](https://github.com/LibreLift/expo_suite/issues) |
 
 ## Revision history
@@ -16,6 +16,7 @@
 | 10-20-26 | James Teuscher | First full draft               |
 | 10-21-26 | James Teuscher | Finished first copy            |
 | 11-4-26  | James Teuscher | Revised to respond to feedback |
+| 11-9-26  | Codex | Record frontend decisions and clarify shared terminology |
 
 ---
 
@@ -23,13 +24,18 @@
 
 LibreLift is a native mobile app for planning, logging, and tracking workouts for those who want to use their phones to do so. It aims to provide the basic functions of creating reusable workout templates, using a template for a workout and logging reps and weight, and reviewing the details of past workouts. For more information about the context of this project, see the [proposal document](../cp3/cp3-proposal).
 
+Use the [glossary](../GLOSSARY.md) for canonical domain terms. The
+[architecture decision records](./adr/README.md) and
+[UI foundation decision summary](./ui-foundation.md) explain the frontend choices
+recorded during #38.
+
 ## 2. Goals and non-goals
 
 **Goals**
 
 - Connect to RepDB, an external exercise DB, and load the catalog of ~500 free exercises into the app for use. Besides name, the exercises in the app should be identifiable by target muscles and equipment.
-- Support creation, persistence, editing, and deletion of reusable exercise templates.
-- Support starting, stopping, and completing workout sessions for an existing template. Workout session allow logging repetitions performed and weight used for each exercise in a plan.
+- Support creation, persistence, editing, and deletion of reusable workout templates.
+- Support starting, stopping, and completing workout sessions for an existing template. Workout sessions allow recording repetitions performed and weight used for each session exercise.
 - Support storing "one-rep" maximum weight for certain exercises, and enter weight in template exercises as a percentage of that maximum.
 
 **Non-goals**
@@ -39,7 +45,7 @@ LibreLift is a native mobile app for planning, logging, and tracking workouts fo
 
 ## 3. System-context diagram
 
-There will only be one type of user interacting with this system. They will create plans and log workouts. The CDN/API that provides a catalog of exercises will interact with the system by providing the exercise catalog via HTTP. Lastly, Supabase will interact with the system by providing the authentication service, database and data access layer, and serverless backend to handle HTTP requests for auth and data access.
+There will only be one type of user interacting with this system. They will create workout templates and record workout sessions. The CDN/API that provides a catalog of exercises will interact with the system by providing the exercise catalog via HTTP. Lastly, Supabase will interact with the system by providing the authentication service, database and data access layer, and serverless backend to handle HTTP requests for auth and data access.
 
 ![diagram](./design-images/system-context-diagram.jpg)
 
@@ -65,9 +71,17 @@ The root layout supplies a sample implementation until backend integration is
 available. Template targets and historical session values are separate snapshots.
 
 Expo Router provides three bottom tabs: Templates (initial), Workouts, and Account.
-Templates and workout history have read-only detail screens. Account links to a
-sign-in placeholder and Settings. These screens use sample records; they do not
-implement authentication, template editing, or workout logging.
+Templates have detail screens with inline title/description editing and
+session-local Save/Cancel. Workout history has independently collapsible exercise
+sections. Account links to a sign-in placeholder and Settings. These screens use
+sample records; authentication, full template CRUD, backend persistence, and
+workout logging remain feature integrations.
+
+The root owns a sample service instance for the app session. Successful metadata
+updates invalidate the template ViewModels so both list and detail reload saved
+values. A shared pending-save state locks tab navigation; the editor also guards
+Back/swipe and preserves drafts on failures. See the
+[UI iteration decisions](./ui-foundation.md#approved-ui-iteration) for exact behavior.
 
 Settings offers Light, Dark, and System appearance, defaulting to System. The
 preference is stored locally through an injected storage interface. Both themes
@@ -96,7 +110,7 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 ### Core flow - Making a workout template
 
 1. A user logs in or signs up with credentials
-2. User taps the screen to create a plan
+2. User taps the screen to create a workout template
 3. View layer sends input to ViewModel
 4. ViewModel navigates to template creator business logic, calls service to load catalog
 5. Service calls the Exercise CDN to load catalog, returns data to ViewModel
@@ -104,17 +118,17 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 7. View displays exercises
 8. User chooses exercises, weight, reps
 9. View sends selections to ViewModel
-10. ViewModel saves plan in-memory as user builds template
+10. ViewModel saves the workout template in-memory as the user builds it
 11. User taps "Save plan"
 12. View call ViewModel's save function
-13. ViewModel sends plan data to service via function call
-14. Service serializes the plan into JSON, calls backend via HTTP
-15. HTTPHandler receives plan JSON, passes to DataAccess layer via function call
-16. DataAccess layer deserializes JSON, writes to DB via HTTP 
+13. ViewModel sends workout template data to service via function call
+14. Service serializes the workout template into JSON, calls backend via HTTP
+15. HTTPHandler receives workout template JSON, passes to DataAccess layer via function call
+16. DataAccess layer deserializes JSON, writes to DB via HTTP
 
 ### The failure case
 
-1. User taps the screen to create a plan
+1. User taps the screen to create a workout template
 2. View layer sends input to ViewModel
 3. ViewModel navigates to template creator business logic, calls service to load catalog
 4. Service checks if the catalog is cached. If not, call the Service layer
@@ -131,11 +145,11 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 3. A stopwatch/counter displays workout duration, and lists the exercises in the workout.
 4. For each exercise, the user is able to tap it and see a detailed view 
 5. The user can adjust actual weight and reps used if it differs from the templated amounts
-6. After doing a one round of exercises, the user clicks complete, and the next round is presented.
-7. This is repeated for all the templated amount of rounds, for each exercise.
+6. After performing a set of one exercise, the user marks that set complete.
+7. This is repeated for the planned sets of each exercise; the MVP does not group exercises into circuit rounds.
 8. When finished, the user taps "Finish workout"
-9. The workout is completed and added to the User's log
-10. The user can navigate to a history/log screen and see the details of their session
+9. The workout session is completed and added to the user's workout history
+10. The user can navigate to workout history and see the details of their session
 
 ### The failure case
 

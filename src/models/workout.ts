@@ -61,6 +61,14 @@ export interface WorkoutTemplate {
   readonly exercises: readonly TemplateExercise[];
 }
 
+export type TemplateDetails = Pick<WorkoutTemplate, 'title' | 'description'>;
+
+export function validateTemplateDetails(details: TemplateDetails): TemplateDetails {
+  const title = details.title.trim();
+  if (!title) throw new Error('Enter a title for this template.');
+  return { title, description: details.description };
+}
+
 // Session values are snapshots; editing a template must not change history.
 export interface WorkoutSession {
   readonly id: string;

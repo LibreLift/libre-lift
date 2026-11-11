@@ -6,18 +6,14 @@ function label(value: string) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+export function exerciseSummaryText(exercise: CatalogExercise): string {
+  return [
+    ...(exercise.primaryMuscles.length ? [`Primary muscles · ${exercise.primaryMuscles.map(label).join(' · ')}`] : []),
+    ...(exercise.secondaryMuscles.length ? [`Secondary muscles · ${exercise.secondaryMuscles.map(label).join(' · ')}`] : []),
+    `Equipment · ${exercise.equipment.kind === 'none' ? 'No equipment' : label(exercise.equipment.name)}`,
+  ].join(' · ');
+}
+
 export function ExerciseSummary({ exercise }: { exercise: CatalogExercise }) {
-  return (
-    <>
-      {exercise.primaryMuscles.length > 0 && (
-        <Copy kind="muted">Primary muscles · {exercise.primaryMuscles.map(label).join(' · ')}</Copy>
-      )}
-      {exercise.secondaryMuscles.length > 0 && (
-        <Copy kind="muted">Secondary muscles · {exercise.secondaryMuscles.map(label).join(' · ')}</Copy>
-      )}
-      <Copy kind="muted">
-        Equipment · {exercise.equipment.kind === 'none' ? 'No equipment' : label(exercise.equipment.name)}
-      </Copy>
-    </>
-  );
+  return <Copy kind="muted">{exerciseSummaryText(exercise)}</Copy>;
 }
