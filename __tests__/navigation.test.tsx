@@ -2,7 +2,9 @@ import { fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-route
 
 test('opens templates first and navigates template, history, account, and settings screens', async () => {
   const app = await renderRouter('./app');
-  const upperBody = await screen.findByRole('button', { name: /Upper body/ });
+  const upperBody = await screen.findByRole('button', {
+    name: 'Upper body. A little push. A little pull. 2 exercises · 5 sets',
+  });
   expect(app.getPathname()).toBe('/templates');
   await fireEvent.press(upperBody);
   expect(await screen.findByText('Bench press')).toBeVisible();

@@ -5,7 +5,9 @@ sessions, and reviewing workout history. It is designed for people who want to
 plan and record their training on a phone without paying for a subscription.
 
 **Status**: UI foundation — the Expo app has navigable templates, workout history,
-and account screens using sample data. Feature integrations are under development.
+and account screens using sample data. Templates show exercise/set counts and
+support title/description edits for the running app session. History sets expand
+by exercise. Feature integrations are under development.
 
 ## Quickstart
 

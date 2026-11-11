@@ -1,7 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import type { WorkoutService } from '../services/workout-service';
-
-export const WorkoutServiceContext = createContext<WorkoutService | null>(null);
+import { useCallback, useEffect, useState } from 'react';
+import { useWorkouts } from './workout-provider';
 
 export type LoadState<T> =
   | { status: 'loading' }
@@ -29,14 +27,8 @@ export function useResource<T>(load: () => Promise<T>) {
   return { state, retry: () => setAttempt((value) => value + 1) };
 }
 
-function useWorkoutService() {
-  const service = useContext(WorkoutServiceContext);
-  if (!service) throw new Error('WorkoutServiceContext is required.');
-  return service;
-}
-
 export function useTemplatesViewModel() {
-  const service = useWorkoutService();
+  const { service, templatesVersion } = useWorkouts();
   return useResource(
     useCallback(async () => {
       const templates = await service.listTemplates();
@@ -48,22 +40,22 @@ export function useTemplatesViewModel() {
           summary: `${exercises} ${exercises === 1 ? 'exercise' : 'exercises'} · ${sets} ${sets === 1 ? 'set' : 'sets'}`,
         };
       });
-    }, [service]),
+    }, [service, templatesVersion]),
   );
 }
 
 export function useTemplateViewModel(id: string) {
-  const service = useWorkoutService();
-  return useResource(useCallback(() => service.getTemplate(id), [service, id]));
+  const { service, templatesVersion } = useWorkouts();
+  return useResource(useCallback(() => service.getTemplate(id), [service, id, templatesVersion]));
 }
 
 export function useSessionsViewModel() {
-  const service = useWorkoutService();
+  const { service } = useWorkouts();
   return useResource(useCallback(() => service.listSessions(), [service]));
 }
 
 export function useSessionViewModel(id: string) {
-  const service = useWorkoutService();
+  const { service } = useWorkouts();
   return useResource(useCallback(() => service.getSession(id), [service, id]));
 }
 
