@@ -25,7 +25,7 @@ of eight repetitions and a recorded result of six without changing its target.
 
 | Area | Agreed behavior |
 | --- | --- |
-| Architecture | Views render ViewModel state; ViewModels consume injected asynchronous services. Sample data follows the same boundary intended for real data. See [ADR 0001](./adr/0001-use-mvvm-with-injected-services.md). |
+| Architecture | Views render ViewModel state; ViewModels consume injected asynchronous services. Sample data follows the same boundary intended for real data. See [ADR 0002](./adr/0002-use-mvvm-with-injected-services.md). |
 | Stub depth | Clickable sample lists and read-only details make navigation reviewable. Authentication forms, template editing, and workout logging belong to later feature tasks. |
 | Navigation | Three bottom tabs: Templates, Workouts, and Account. Templates opens first. Account access does not gate this preview. |
 | Templates | A sample template opens a detail screen showing its exercises and target sets. |
@@ -37,7 +37,7 @@ of eight repetitions and a recorded result of six without changing its target.
 | Units | Sample weights use pounds (`lb`). Unit conversion and a units preference are deferred. |
 | Palette | Both themes use `#2C3639`, `#3F4E4F`, `#A27B5C`, and `#DCD7C9`, with supporting neutral colors for readability. |
 | Data states | The frontend represents loading, error/retry, empty lists, and missing detail records. |
-| History integrity | Session values remain independent of later template edits. See [ADR 0002](./adr/0002-preserve-independent-session-history.md). |
+| History integrity | Session values remain independent of later template edits. See [ADR 0003](./adr/0003-preserve-independent-session-history.md). |
 | Device review | A physical iPhone running Expo Go is the first review target; Android remains supported. |
 | SDK | SDK 58 matches the Expo Go version reported on the review device. This superseded the initial SDK 54 selection; the current version is recorded in `package.json`. |
 
