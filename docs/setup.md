@@ -4,7 +4,7 @@
 
 - Node.js 24 LTS (see `.nvmrc`) and npm. With nvm installed, run `nvm install`
   and `nvm use` from the repository root.
-- Expo Go compatible with **SDK 58** on an iPhone or Android device.
+- Expo Go mobile app on an iPhone or Android device.
 - A computer and phone on the same Wi-Fi network.
 
 The app targets SDK 58 to match the Expo Go version on the review device.
