@@ -9,6 +9,10 @@ export interface SessionSet extends TemplateSet {
   readonly actualReps: number;
 }
 
+export interface SessionExercise extends Omit<TemplateExercise, 'sets'> {
+  readonly sets: readonly SessionSet[];
+}
+
 export interface TemplateExercise {
   readonly id: string;
   readonly name: string;
@@ -30,7 +34,5 @@ export interface WorkoutSession {
   readonly title: string;
   readonly startedAt: string;
   readonly endedAt: string;
-  readonly exercises: readonly (Omit<TemplateExercise, 'sets'> & {
-    readonly sets: readonly SessionSet[];
-  })[];
+  readonly exercises: readonly SessionExercise[];
 }
