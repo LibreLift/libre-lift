@@ -50,7 +50,7 @@ expect that instead.
 
 ## Definition of done
 
-**The rule**: A PR is merged to `main` after adequate review and passing tests locally and in CI. Use `npm run test` from the repo root locally, this is the testing command used in the CI pipeline (testing is currently not supported while the project is in the design phase). Additionally, the PR must then be audited in the production environment to ensure functionality.
+**The rule**: A PR is merged to `main` after adequate review and passing tests locally and in CI. Use `npm run test` from the repo root for local tests. A CI pipeline has not been configured yet. Additionally, the PR must then be audited in the production environment to ensure functionality.
 
 To get a PR merged you must also implement necessary documentation updates, either as part of the PR or by filing the issue(s) for the documentation changes needed and including the issue link in the PR description. If the documentation change is made separately, it must be be completed and have a PR created before the feature PR will be merged.
 
