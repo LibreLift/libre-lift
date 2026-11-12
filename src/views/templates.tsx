@@ -15,6 +15,7 @@ export function TemplatesScreen() {
       <Copy kind="title">Make a plan.{'\n'}Make it yours.</Copy>
       <Copy kind="muted">A few good exercises. A plan you can come back to.</Copy>
       <Copy kind="heading">Templates</Copy>
+      <Button label="Exercise catalog" onPress={() => router.push('/templates/catalog')} />
       <Resource {...model}>
         {(templates) =>
           templates.length ? (

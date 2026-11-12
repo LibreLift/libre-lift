@@ -33,7 +33,7 @@ recorded during #38.
 
 **Goals**
 
-- Connect to RepDB, an external exercise DB, and load the catalog of ~500 free exercises into the app for use. Besides name, the exercises in the app should be identifiable by target muscles and equipment.
+- Connect to RepDB, an external exercise DB, and load its free exercise catalog into the app for use. Besides name, the exercises in the app should be identifiable by target muscles and equipment.
 - Support creation, persistence, editing, and deletion of reusable workout templates.
 - Support starting, stopping, and completing workout sessions for an existing template. Workout sessions allow recording repetitions performed and weight used for each session exercise.
 - Support storing "one-rep" maximum weight for certain exercises, and enter weight in template exercises as a percentage of that maximum.
@@ -98,8 +98,25 @@ model with a namespaced catalog identifier, English name, separate primary and
 secondary muscles, and explicit equipment requirements. Optional images,
 instructions, and German/Spanish content are retained for future features.
 Usable records are returned with diagnostics for malformed data; an unusable
-response has a distinct failure result. Live transport and catalog browsing are
-separate tasks.
+response has a distinct failure result.
+
+The #83 implementation adds a temporary standalone catalog screen opened from
+Templates. A separately injected catalog service receives an HTTP request
+function and loads the single JSON document at
+`https://exercise-dataset.com/exercises.json`, using the existing mapper. The
+ViewModel exposes loading, usable results, and defined transport/response failure
+states. A virtualized list shows exercises alphabetically with colloquial muscle
+groups and equipment. Primary and secondary groups remain separate; raw muscles
+remain unchanged in the model. Rejected records produce a quiet partial-results
+notice; optional-content diagnostics alone do not. Each visit loads afresh,
+retaining results while open, with Back available on failure. Caching, retries,
+and adding or saving exercises in the template editor remain separate work.
+The #84 implementation combines case-insensitive exercise-name search with one
+primary muscle-group filter, defaulting to All muscles. Secondary targets never
+cause filter matches. No-match results offer Clear search and filter without
+another request. Search/filter state survives tab changes while the route stays
+open and resets on leaving and reopening. The catalog and README credit RepDB.
+See [the agreed catalog behavior](./issue-53-exercise-catalog.md).
 
 Template exercises and session exercises each have their own placement identity
 and copy descriptive exercise details and sets, retaining the shared catalog

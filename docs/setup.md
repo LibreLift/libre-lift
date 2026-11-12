@@ -97,11 +97,23 @@ This checks bundling; it does not replace launching on a physical device.
   colors should follow the selection. For System, change the phone's appearance.
 - Reload the app and confirm the selected appearance is retained.
 - Open Account → Sign in to see the account-access placeholder.
+- Open Templates → Exercise catalog with internet access. Confirm the loading
+  indicator gives way to alphabetically ordered live exercises, grouped primary
+  and secondary muscles, and equipment. Search names using different casing and
+  choose a muscle group; both controls should narrow the results together, using
+  primary targets only. Clear a no-match result to restore all exercises without
+  reloading. Scroll the full list, open the RepDB
+  credit link, and check both themes. Switch tabs and return to retain the open
+  catalog and its search/filter state; Back and reopening resets the controls
+  and starts a fresh request. With networking unavailable,
+  confirm the clear failure message and Back control; no Retry button is provided.
 
 Sample exercises and history are fixed fixtures. Template title/description edits
 reset to the bundled values in a fresh app session; a normal tab change or screen
 reopening does not reset them. Authentication, full template editing, workout
-logging, catalog access, and backend persistence remain in their feature tasks.
+logging, template exercise selection, and backend persistence remain in their
+feature tasks. The standalone exercise catalog loads real RepDB data; it does not
+change the sample templates or history.
 
 ## Frontend structure
 
@@ -118,6 +130,13 @@ metadata updates and exposes the save-in-progress state used by navigation. To i
 real data, implement `WorkoutService` and replace the injected implementation;
 views never import fixtures. Loading, errors, retry, empty lists, and missing
 detail records are supported. Sample weights use pounds (`lb`).
+
+The root also injects a separate exercise catalog service. Its construction API
+accepts an HTTP request function: production supplies real HTTP, while route tests
+supply controlled responses through the same API. The catalog ViewModel uses the
+existing mapper, presents familiar muscle groups, and retains results only for
+the open screen. The temporary route uses a virtualized list rather than loading
+the catalog into the sample workout service. Catalog caching and retry are deferred.
 
 These instructions provide the runnable setup requested by [#38](https://github.com/LibreLift/libre-lift/issues/38)
 and the frontend portion of [#13](https://github.com/LibreLift/libre-lift/issues/13).

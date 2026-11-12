@@ -12,14 +12,22 @@ import type { WorkoutService } from '../src/services/workout-service';
 import { themePreferenceStore } from '../src/services/theme-preference-store';
 import { ThemeProvider, useTheme } from '../src/viewmodels/theme';
 import { WorkoutProvider } from '../src/viewmodels/workout-provider';
+import { createExerciseCatalogService, type ExerciseCatalogService } from '../src/services/exercise-catalog-service';
+import { ExerciseCatalogProvider } from '../src/viewmodels/exercise-catalog';
 
-export default function RootLayout({ service: providedService }: { service?: WorkoutService } = {}) {
+export default function RootLayout({ service: providedService, catalogService: providedCatalogService }: {
+  service?: WorkoutService;
+  catalogService?: ExerciseCatalogService;
+} = {}) {
   const [service] = useState(() => providedService ?? createSampleWorkoutService());
+  const [catalogService] = useState(() => providedCatalogService ?? createExerciseCatalogService((url) => fetch(url)));
   return (
     <WorkoutProvider service={service}>
-      <ThemeProvider store={themePreferenceStore}>
-        <Navigation />
-      </ThemeProvider>
+      <ExerciseCatalogProvider service={catalogService}>
+        <ThemeProvider store={themePreferenceStore}>
+          <Navigation />
+        </ThemeProvider>
+      </ExerciseCatalogProvider>
     </WorkoutProvider>
   );
 }

@@ -9,6 +9,11 @@ and account screens using sample data. Templates show exercise/set counts and
 support title/description edits for the running app session. History sets expand
 by exercise. Feature integrations are under development.
 
+Templates also opens a temporary live exercise catalog, with alphabetical
+browsing, case-insensitive name search, one primary muscle-group filter, primary
+and secondary muscle-group summaries, and equipment. Catalog browsing
+does not add exercises to templates yet.
+
 ## Quickstart
 
 With Node.js 24 LTS and Expo Go for SDK 58 installed:
@@ -60,6 +65,9 @@ For instructions on how to get involved and contribute, see the [contributing gu
 - James Teuscher
 
 ## License
+
+Exercise data by [RepDB](https://repdb.co), fetched from its free public catalog.
+The exercise data has its own [data license](https://github.com/RepDB/exercise-dataset/blob/main/LICENSE-DATA.md).
 
 This project uses the Gnu General Public License (GPL) to keep the code open to the public.
 
