@@ -94,6 +94,20 @@ test('unrecognized upstream muscle values cannot become presentation groups', as
   expect(screen.queryByText(/^Secondary muscles:/)).toBeNull();
 });
 
+test('secondary-only aliases never create primary filter matches', async () => {
+  await openCatalog(async () => response([{
+    ...bench,
+    primary_muscles: ['forearms', 'serratus_anterior', 'supraspinatus'],
+    secondary_muscles: ['forearms', 'serratus_anterior', 'supraspinatus'],
+  }]));
+  expect(await screen.findByText('Primary muscles: Not specified')).toBeVisible();
+  expect(screen.getByText('Secondary muscles: Forearms · Chest · Shoulders')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Muscle group: All muscles' }));
+  expect(screen.queryByRole('button', { name: 'Chest' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Forearms' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Shoulders' })).toBeNull();
+});
+
 const failures: readonly [string, CatalogRequest][] = [
   ['network', async () => { throw new Error('offline'); }],
   ['HTTP', async () => ({ ok: false, async json() { throw new Error('HTTP body must not be decoded'); } })],

@@ -28,11 +28,16 @@ const muscleGroups: Readonly<Record<string, string>> = {
   gastrocnemius: 'Calves',
   soleus: 'Calves',
   tibialis_anterior: 'Shins',
+};
+
+const secondaryMuscleGroups: Readonly<Record<string, string>> = {
+  ...muscleGroups,
   forearms: 'Forearms',
   serratus_anterior: 'Chest',
   supraspinatus: 'Shoulders',
 };
 
-export function groupMuscles(muscles: readonly string[]): readonly string[] {
-  return [...new Set(muscles.flatMap((muscle) => Object.hasOwn(muscleGroups, muscle) ? [muscleGroups[muscle]] : []))];
+export function groupMuscles(muscles: readonly string[], target: 'primary' | 'secondary'): readonly string[] {
+  const mapping = target === 'primary' ? muscleGroups : secondaryMuscleGroups;
+  return [...new Set(muscles.flatMap((muscle) => Object.hasOwn(mapping, muscle) ? [mapping[muscle]] : []))];
 }

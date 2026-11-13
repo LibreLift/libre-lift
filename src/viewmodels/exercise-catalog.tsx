@@ -40,8 +40,8 @@ export function useExerciseCatalogViewModel() {
         .sort((a, b) => a.name.localeCompare(b.name, 'en'))
         .map((exercise) => ({
           exercise,
-          primaryGroups: groupMuscles(exercise.primaryMuscles),
-          secondaryGroups: groupMuscles(exercise.secondaryMuscles),
+          primaryGroups: groupMuscles(exercise.primaryMuscles, 'primary'),
+          secondaryGroups: groupMuscles(exercise.secondaryMuscles, 'secondary'),
           equipment: exercise.equipment.kind === 'none' ? 'No equipment' : equipmentLabel(exercise.equipment.name),
         }));
       setState({ status: 'ready', exercises, rejectedRecords: result.rejectedRecords });
