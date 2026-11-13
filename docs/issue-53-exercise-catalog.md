@@ -116,5 +116,7 @@ reviews reported no actionable findings.
 
 Expo Doctor passes 19 of 20 checks; the remaining check reports patch-version
 mismatches in unchanged Expo dependencies. No simulator devices are available
-on this host, so supported-device review and the production audit remain pending.
-These checks do not establish the repository's complete definition of done.
+on this host. On November 13, 2026, the maintainer reported satisfactory output
+on an Android tablet and iPhone and approved wrapping up the task. Independent
+PR review, merge, and the production audit remain part of the repository's
+definition of done.

@@ -39,7 +39,8 @@ HTTP(S) URLs and report load/error state independently of catalog loading.
 Tests use the existing approved route boundary: controlled HTTP responses pass
 through the actual catalog service, mapper, ViewModel, and screens. Native image
 load/error and swipe events exercise the gallery through its rendered controls.
-Native scrolling and image downloads still require supported-device review.
+The maintainer subsequently reviewed the output on an Android tablet and iPhone
+and reported both satisfactory on November 13, 2026.
 
 ## Verification
 
@@ -48,7 +49,8 @@ TypeScript checking and iOS/Android bundle exports pass. The Standards review's
 duplicated summary-rule finding was resolved with a shared presentation component;
 there are no remaining Standards or Spec findings.
 
-Expo Doctor still reports the existing Expo dependency patch-version mismatches
-(19 of 20 checks pass). No simulator devices are available on this host, so native
-swiping, real image downloads, scroll restoration, and visual/device review remain
-pending. Bundle exports and rendered route tests do not substitute for that review.
+At implementation time, Expo Doctor reported Expo dependency patch-version
+mismatches (19 of 20 checks passed). The automated checks used the committed
+dependencies. The maintainer's subsequent Android tablet and iPhone review was
+satisfactory; this records their device review without implying that each failure
+scenario or the post-merge production audit was separately exercised.
