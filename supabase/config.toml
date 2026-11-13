@@ -42,7 +42,7 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-# Placeholder until the Expo/auth tasks establish app redirects.
+# Required base URL; email OTP is entered in-app and needs no redirect.
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = []
 enable_signup = true
@@ -51,6 +51,9 @@ enable_anonymous_sign_ins = false
 [auth.email]
 enabled = true
 enable_confirmations = true
+otp_length = 6
+otp_expiry = 600
+max_frequency = "1m"
 
 [edge_runtime]
 enabled = true
@@ -67,3 +70,11 @@ enabled = true
 # Feature functions must define their own authentication/authorization.
 verify_jwt = false
 entrypoint = "./functions/health/index.ts"
+
+[auth.email.template.confirmation]
+subject = "Your LibreLift code"
+content_path = "./supabase/templates/email-code.html"
+
+[auth.email.template.magic_link]
+subject = "Your LibreLift code"
+content_path = "./supabase/templates/email-code.html"

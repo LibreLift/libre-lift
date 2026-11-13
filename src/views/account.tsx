@@ -1,32 +1,38 @@
+import { useState } from 'react';
+import { usePreventRemove } from 'expo-router/react-navigation';
+import { useAuth } from '../viewmodels/auth';
+import { AccountInput } from './account-access';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import type { ThemePreference } from '../services/theme-preference-store';
 import { useTheme } from '../viewmodels/theme';
-import { Card, Copy, LinkCard, Screen } from './ui';
+import { Button, Card, Copy, FormError, Screen } from './ui';
 
 export function AccountScreen() {
   const router = useRouter();
+  const model = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState('');
+  usePreventRemove(model.pending, () => {});
   return (
     <Screen>
       <Copy kind="label">LIBRELIFT</Copy>
-      <Copy kind="title">Room for you.</Copy>
-      <Copy kind="muted">Your training belongs to you.</Copy>
+      <Copy kind="title">Your account</Copy>
       <Card>
-        <Copy kind="heading">Welcome to LibreLift</Copy>
-        <Copy>Explore sample plans and workout history while we build your training companion.</Copy>
+        {editing ? <>
+          <AccountInput label="Account name" value={name} onChangeText={setName} disabled={model.pending} kind="name" />
+          <FormError message={model.error ?? ''} />
+          {model.nameWait > 0 ? <Copy>Try again in {model.nameWait}s.</Copy> : null}
+          <Button label={model.pending ? 'Saving…' : 'Save name'} disabled={model.pending || model.nameWait > 0}
+            onPress={() => { void model.saveName(name).then((saved) => { if (saved) setEditing(false); }); }} />
+          <Button label="Cancel" disabled={model.pending} onPress={() => { model.clearError(); setEditing(false); }} />
+        </> : <>
+          <Copy kind="heading">{model.session?.account.name}</Copy>
+          <Button label="Edit name" onPress={() => { model.clearError(); setName(model.session?.account.name ?? ''); setEditing(true); }} />
+        </>}
+        <Copy>{model.session?.account.email}</Copy>
       </Card>
-      <LinkCard
-        title="Settings"
-        subtitle="Make yourself at home"
-        icon="settings-outline"
-        onPress={() => router.push('/account/settings')}
-      />
-      <LinkCard
-        title="Sign in"
-        subtitle="Account access preview"
-        icon="person-circle-outline"
-        onPress={() => router.push('/account/sign-in')}
-      />
+      <Button label="Settings" disabled={model.pending} onPress={() => router.push('/account/settings')} />
     </Screen>
   );
 }
@@ -71,7 +77,7 @@ export function SettingsScreen() {
             );
           })}
         </View>
-        {model.error ? <Copy>{model.error}</Copy> : null}
+        <FormError message={model.error ?? ''} />
         <Copy kind="muted">
           {model.error
             ? 'Choose an appearance to try again.'
@@ -93,21 +99,5 @@ function CopySelection({ label, selected }: { label: string; selected: boolean }
       {label}
       {selected ? '  ✓' : ''}
     </Text>
-  );
-}
-
-export function SignInScreen() {
-  return (
-    <Screen>
-      <Copy kind="label">ACCOUNT ACCESS PREVIEW</Copy>
-      <Copy kind="title">Your next chapter.</Copy>
-      <Card>
-        <Copy kind="heading">Sign-in is on the way</Copy>
-        <Copy>
-          You’ll be able to create an account and sign in with email and a password, or an email code.
-        </Copy>
-        <Copy kind="muted">For now, explore the sample templates and workouts. No account is needed.</Copy>
-      </Card>
-    </Screen>
   );
 }

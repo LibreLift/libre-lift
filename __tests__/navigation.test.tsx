@@ -1,7 +1,8 @@
-import { fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
+import { renderAuthenticatedRouter } from '../test-support/authenticated-router';
+import { fireEvent, screen, testRouter, waitFor } from 'expo-router/testing-library';
 
 test('opens templates first and navigates template, history, account, and settings screens', async () => {
-  const app = await renderRouter('./app');
+  const app = await renderAuthenticatedRouter();
   const upperBody = await screen.findByRole('button', {
     name: 'Upper body. A little push. A little pull. 2 exercises · 5 sets',
   });
@@ -23,17 +24,17 @@ test('opens templates first and navigates template, history, account, and settin
   await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
   await waitFor(() => expect(screen.getByRole('radio', { name: /Dark/ })).toBeChecked());
   await testRouter.back('/account');
-  await fireEvent.press(screen.getByRole('button', { name: /Sign in/ }));
-  expect(screen.getByText('Sign-in is on the way')).toBeVisible();
+  expect(screen.getByText('alex@example.com')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Edit name' })).toBeVisible();
 });
 
 test('an unknown template shows a useful missing-record state', async () => {
-  await renderRouter('./app', { initialUrl: '/templates/missing' });
+  await renderAuthenticatedRouter( { initialUrl: '/templates/missing' });
   expect(await screen.findByText('This template couldn’t be found.')).toBeVisible();
 });
 
 test('session exercises expand independently, survive tab changes, and reset on reopening', async () => {
-  await renderRouter('./app', { initialUrl: '/workouts' });
+  await renderAuthenticatedRouter( { initialUrl: '/workouts' });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   const bench = await screen.findByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell', expanded: false });
   expect(screen.queryByText('Recorded · 6 reps × 115 lb')).toBeNull();

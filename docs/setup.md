@@ -18,10 +18,10 @@ and run `npx expo install --fix` to align native packages, then `npx expo-doctor
 The installed Expo Go build must support the project's SDK version. Android
 users can get matching builds from [Expo Go downloads](https://expo.dev/go).
 
-Docker, Supabase CLI, backend credentials, and a paid Apple developer membership
-are not required for the UI stub. The app uses bundled sample data and persists
-only the appearance preference across app restarts. Template metadata edits live
-in memory for the running app session.
+Account access requires the public Supabase app settings described below and a
+backend configured to send email codes. A paid Apple developer membership is not
+required. Training screens still use bundled sample data; template metadata edits
+live in memory for the running app session. Appearance persists locally.
 
 ## Install and launch
 
@@ -83,7 +83,16 @@ This checks bundling; it does not replace launching on a physical device.
 
 ## Device review
 
-- Launch on Templates. Both samples show 2 exercises and 5 sets. Open their detail
+- Launch on account access. Enter your email, request a code, and enter the
+  six-digit code from the email. A missing account name must be saved before
+  Templates opens. Codes expire after ten minutes; resend becomes available
+  after sixty seconds. Wrong codes and request failures allow correction/retry.
+- Change email returns to the populated email field and abandons that attempt.
+  The sent code expires naturally at Supabase; this does not revoke it. Closing
+  the app before verification starts account access afresh.
+- Appearance Settings is available before signing in. Once signed in, Account
+  displays name/email and supports Edit name, Save, Cancel, and save retry.
+- In Templates, both samples show 2 exercises and 5 sets. Open their detail
   screens and confirm the template preview footers are absent.
 - Edit a title/description and Save. Return to the list and reopen the template;
   the saved values should remain. Cancel another edit and confirm it is discarded.
@@ -96,16 +105,21 @@ This checks bundling; it does not replace launching on a physical device.
 - Open Account → Settings. Select Light, Dark, and System; navigation and screen
   colors should follow the selection. For System, change the phone's appearance.
 - Reload the app and confirm the selected appearance is retained.
-- Open Account → Sign in to see the account-access placeholder.
+- Opening a training route while signed out must lead to account access.
+  After successful access, Back must not return to an unfinished attempt.
 
 Sample exercises and history are fixed fixtures. Template title/description edits
 reset to the bundled values in a fresh app session; a normal tab change or screen
-reopening does not reset them. Authentication, full template editing, workout
-logging, catalog access, and backend persistence remain in their feature tasks.
+reopening does not reset them. The auth SDK stores renewable sessions, but this
+change does not restore them into the app on relaunch: #43 owns restoration,
+expiration handling, sign-out, and account-specific cleanup. Full template
+editing, workout logging, catalog access, and training-data persistence remain
+in their feature tasks.
 
 ## Frontend structure
 
-- `app/`: Expo Router tabs and nested stacks. Templates is the initial tab.
+- `app/`: Expo Router account access, required name collection, and guarded tabs.
+  Templates is the first tab after successful account access.
 - `src/views/`: Native screen components; they render ViewModel state.
 - `src/viewmodels/`: Hooks for asynchronous loading, retry, cancellation, and theme state.
 - `src/models/`: Readonly template/session types. Sessions store independent snapshots.
@@ -126,7 +140,7 @@ Backend setup for contributions and future service integration is documented bel
 ## Backend setup
 
 Supabase provides the database and backend services. This setup is for backend
-contributions and future service integration; it is optional for the UI stub.
+contributions and authentication and future training-data service integration.
 
 ### Configure the hosted connection
 
@@ -150,8 +164,9 @@ You should see `{"status":"ok"}`. This confirms the hosted health function is
 reachable; it does not test your app settings or database access. If it fails,
 ask a maintainer to check the deployment.
 
-The current UI stub uses sample data and does not read these settings. Service
-integration will connect workout reads and writes to the development backend.
+Account access reads these public settings through the shared Supabase client.
+Missing/invalid settings produce an account-access error with retry. Training
+reads and writes continue to use sample data pending their persistence tasks.
 
 ### Optional: run your own local backend
 
@@ -199,3 +214,46 @@ local Supabase stack first. Keep local services on a trusted network.
 
 For backend contributions, see the [local migration workflow](../supabase/migrations/README.md).
 Hosted administration and deployments are covered in the [maintainer guide](maintainers.md).
+
+## Email OTP configuration and verification
+
+The local Auth configuration sets six-digit codes, a 600-second expiry, and a
+one-minute send frequency. Both confirmation (new account) and magic-link
+(returning account) email template slots use the committed code-only email
+content. The returning-account template slot is named “Magic Link” by Supabase;
+it must contain the token, not a sign-in URL. No mobile callback is required.
+
+For hosted development, a maintainer must apply the same email template content,
+OTP length, expiry, and send frequency in Auth settings. Keep email signup
+available. Configure SMTP/delivery restrictions for the intended testers; the
+built-in mail service has recipient and project-wide rate limits. Committing
+local config does not apply hosted settings. Never put a secret/service-role key
+in the Expo environment. Account names are saved in authenticated user metadata;
+no public profile table is introduced.
+
+The app injects an asynchronous auth service, uses the SDK's native session
+storage and process lock, and keeps SDK tokens out of View components. #43 must
+restore persisted sessions into app state and manage their lifecycle. There is
+no app-imposed maximum session lifetime or inactivity timeout in #42.
+
+An opt-in check exercises the actual service against a **disposable local** stack
+and its Mailpit inbox, without sending external email:
+
+```sh
+AUTH_TEST_WORKDIR=/absolute/path/to/disposable-supabase-project node scripts/check-auth.cjs
+```
+
+Start that stack with the committed auth settings and templates first. Use a
+separate project ID and free ports if another stack is running. The script checks
+new and returning access, code-only email, invalid and reused codes, account-name
+persistence, and resend behavior, including waiting for the real sixty-second
+interval. To check time-based expiry quickly, set only the disposable stack’s
+OTP expiry to two seconds, restart it, and run the same script with
+`AUTH_TEST_EXPIRY_SECONDS=2`. The committed application setting remains 600
+seconds. The expiry mode verifies an unused code is rejected after its deadline.
+The script creates a test account and emails in that disposable stack. Ordinary
+`npm test` uses injected services and clocks and needs no backend or credentials.
+
+The existing router tests exercise forms, protected routes, appearance Settings,
+resend timing, abandoned attempts, name editing, and recoverable failures. Native
+bundle checks do not replace device review or hosted email-delivery verification.

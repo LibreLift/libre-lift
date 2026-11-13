@@ -48,6 +48,12 @@ export function Copy({
   );
 }
 
+export function FormError({ message }: { message: string }) {
+  const { colors } = useTheme();
+  if (!message) return null;
+  return <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: colors.text, fontSize: 16 }}>{message}</Text>;
+}
+
 export function Card({ children }: PropsWithChildren) {
   const { colors } = useTheme();
   return (

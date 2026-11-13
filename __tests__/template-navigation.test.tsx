@@ -1,3 +1,4 @@
+import { renderAuthenticatedRouter, authenticatedSession } from '../test-support/authenticated-router';
 import { Alert } from 'react-native';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
@@ -7,7 +8,7 @@ import type { WorkoutService } from '../src/services/workout-service';
 afterEach(() => jest.restoreAllMocks());
 
 test('inline template edits save to both detail and list, while Cancel discards changes', async () => {
-  await renderRouter('./app');
+  await renderAuthenticatedRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
   expect(screen.getByText('Bench press')).toBeVisible();
@@ -28,7 +29,7 @@ test('inline template edits save to both detail and list, while Cancel discards 
 
 test('drafts survive tab changes and Back requires an explicit discard choice', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  const app = await renderRouter('./app');
+  const app = await renderAuthenticatedRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.changeText(screen.getByLabelText('Template title'), 'My draft');
@@ -82,7 +83,7 @@ test('saving locks fields and all navigation, then a failed save restores the dr
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const app = await renderRouter({
     appDir: './app',
-    overrides: { _layout: () => <RootLayout service={service} /> },
+    overrides: { _layout: () => <RootLayout service={service} initialSession={authenticatedSession} /> },
   });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
