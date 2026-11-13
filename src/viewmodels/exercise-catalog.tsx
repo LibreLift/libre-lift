@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
 import type { CatalogExercise } from '../models/exercise';
 import type { CatalogLoadResult, ExerciseCatalogService } from '../services/exercise-catalog-service';
 import { groupMuscles } from './catalog-muscle-groups';
@@ -6,17 +6,15 @@ import { groupMuscles } from './catalog-muscle-groups';
 interface CatalogContextValue {
   readonly service: ExerciseCatalogService;
   readonly selectedExercise: CatalogExerciseSummary | null;
-  selectExercise(exercise: CatalogExerciseSummary): void;
-  clearSelection(): void;
+  selectExercise(exercise: CatalogExerciseSummary | null): void;
 }
 
 const CatalogContext = createContext<CatalogContextValue | null>(null);
 
 export function ExerciseCatalogProvider({ service, children }: PropsWithChildren<{ service: ExerciseCatalogService }>) {
   const [selectedExercise, selectExercise] = useState<CatalogExerciseSummary | null>(null);
-  const clearSelection = useCallback(() => selectExercise(null), []);
   return (
-    <CatalogContext.Provider value={{ service, selectedExercise, selectExercise, clearSelection }}>
+    <CatalogContext.Provider value={{ service, selectedExercise, selectExercise }}>
       {children}
     </CatalogContext.Provider>
   );
@@ -46,7 +44,7 @@ type CatalogState =
   | { readonly status: 'ready'; readonly exercises: readonly CatalogExerciseSummary[]; readonly rejectedRecords: number };
 
 export function useExerciseCatalogViewModel() {
-  const { service, selectExercise, clearSelection } = useCatalogContext();
+  const { service, selectExercise } = useCatalogContext();
   const [state, setState] = useState<CatalogState>({ status: 'loading' });
   const [query, setQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -73,19 +71,20 @@ export function useExerciseCatalogViewModel() {
       active = false;
       // Detail shares only this visit's selected record. Leaving the catalog
       // releases it rather than keeping an app-wide catalog cache.
-      clearSelection();
+      selectExercise(null);
     };
-  }, [service, clearSelection]);
+  }, [service, selectExercise]);
   const search = query.trim().toLowerCase();
+  const exercises = state.status === 'ready' ? state.exercises : [];
+  const visibleExercises = exercises.filter((item) => {
+    const matchesName = item.exercise.name.toLowerCase().includes(search);
+    const matchesGroup = selectedGroup === null || item.primaryGroups.includes(selectedGroup);
+    return matchesName && matchesGroup;
+  });
+  const groups = [...new Set(exercises.flatMap((item) => item.primaryGroups))].sort();
   return {
-    state: state.status === 'ready'
-      ? { ...state, exercises: state.exercises.filter((item) =>
-          item.exercise.name.toLowerCase().includes(search)
-          && (selectedGroup === null || item.primaryGroups.includes(selectedGroup))) }
-      : state,
-    groups: state.status === 'ready'
-      ? [...new Set(state.exercises.flatMap((item) => item.primaryGroups))].sort()
-      : [],
+    state: state.status === 'ready' ? { ...state, exercises: visibleExercises } : state,
+    groups,
     query,
     setQuery,
     selectedGroup,
