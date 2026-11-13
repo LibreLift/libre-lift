@@ -44,7 +44,7 @@ and reported both satisfactory on November 13, 2026.
 
 ## Verification
 
-All 61 tests across 11 suites pass, including seven new detail route tests.
+All 62 tests across 11 suites pass, including seven new detail route tests.
 TypeScript checking and iOS/Android bundle exports pass. The Standards review's
 duplicated summary-rule finding was resolved with a shared presentation component;
 there are no remaining Standards or Spec findings.

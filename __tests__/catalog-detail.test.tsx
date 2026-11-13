@@ -30,7 +30,7 @@ test('a catalog card opens image-first details and Back preserves the filtered v
   await fireEvent.changeText(screen.getByRole('search', { name: 'Search exercises' }), 'PRESS');
   await fireEvent.press(screen.getByRole('button', { name: 'Muscle group: All muscles' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Chest' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press. Primary muscles: Chest. Secondary muscles: Triceps. Equipment: Barbell' }));
   expect(app.getPathname()).toBe('/templates/catalog-exercise');
   expect(screen.getByRole('image', { name: 'Bench press — Start image' })).toHaveProp('source', { uri: 'https://exercise-dataset.com/images/start.webp' });
   expect(screen.getByText('Start · 1 of 2')).toBeVisible();
@@ -47,7 +47,7 @@ test('a catalog card opens image-first details and Back preserves the filtered v
 
 test('paired illustrations support swiping and accessible previous/next controls', async () => {
   await openCatalog();
-  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^View Bench press(?:\.|$)/ }));
   expect(screen.getByRole('button', { name: 'Previous image' })).toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: 'Next image' }));
   expect(screen.getByText('Peak · 2 of 2')).toBeVisible();
@@ -63,7 +63,7 @@ test('paired illustrations support swiping and accessible previous/next controls
 
 test('image loading and failure are independent of the other pose and exercise information', async () => {
   await openCatalog();
-  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^View Bench press(?:\.|$)/ }));
   expect(screen.getByLabelText('Loading Start image')).toBeVisible();
   await fireEvent(screen.getByRole('image', { name: 'Bench press — Start image' }), 'error', { nativeEvent: { error: 'offline' } });
   expect(screen.getByText('Image unavailable')).toBeVisible();
@@ -80,7 +80,7 @@ test('image loading and failure are independent of the other pose and exercise i
 
 test('main-only images use the large illustration without pose controls or missing instructions', async () => {
   await openCatalog([{ ...bench, instructions_en: undefined, images: { flat: { main: 'images/main.webp' } } }]);
-  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^View Bench press(?:\.|$)/ }));
   expect(screen.getByRole('image', { name: 'Bench press — Illustration image' })).toHaveProp('source', { uri: 'https://exercise-dataset.com/images/main.webp' });
   expect(screen.queryByRole('button', { name: 'Next image' })).toBeNull();
   expect(screen.queryByText('Instructions')).toBeNull();
@@ -88,7 +88,7 @@ test('main-only images use the large illustration without pose controls or missi
 
 test('an exercise without imagery still opens its information with an unavailable placeholder', async () => {
   await openCatalog([{ ...bench, images: undefined }]);
-  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^View Bench press(?:\.|$)/ }));
   expect(screen.getByText('Image unavailable')).toBeVisible();
   expect(screen.getByText('Equipment: Barbell')).toBeVisible();
   expect(screen.getByText('1. Lie on the bench.')).toBeVisible();
@@ -106,13 +106,13 @@ test('direct detail entry offers Open catalog without fetching until the user ch
 
 test('detail survives tab changes and selecting another exercise starts its own gallery', async () => {
   const { request } = await openCatalog([bench, { ...bench, id: 'other', name_en: 'Incline press' }]);
-  await fireEvent.press(screen.getByRole('button', { name: 'View Bench press' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^View Bench press(?:\.|$)/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Next image' }));
   await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
   await fireEvent.press(screen.getByRole('button', { name: /^Templates, tab/ }));
   expect(screen.getByText('Peak · 2 of 2')).toBeVisible();
   await testRouter.back('/templates/catalog');
-  await fireEvent.press(screen.getByRole('button', { name: 'View Incline press' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^View Incline press(?:\.|$)/ }));
   expect(screen.getByText('Start · 1 of 2')).toBeVisible();
   expect(screen.getByRole('image', { name: 'Incline press — Start image' })).toBeVisible();
   expect(request).toHaveBeenCalledTimes(1);

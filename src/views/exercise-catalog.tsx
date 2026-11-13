@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useExerciseCatalogViewModel, type CatalogExerciseSummary } from '../viewmodels/exercise-catalog';
 import { useTheme } from '../viewmodels/theme';
 import { Button, Card, Copy } from './ui';
-import { CatalogExerciseFacts } from './catalog-exercise-facts';
+import { CatalogExerciseFacts, catalogExerciseFacts } from './catalog-exercise-facts';
 
 export function ExerciseCatalogScreen() {
   const { state, query, setQuery, groups, selectedGroup, setSelectedGroup, selectExercise } = useExerciseCatalogViewModel();
@@ -19,7 +19,7 @@ export function ExerciseCatalogScreen() {
         data={state.status === 'ready' ? state.exercises : []}
         keyExtractor={(item) => item.exercise.catalogId}
         renderItem={({ item }) => (
-          <Pressable accessibilityRole="button" accessibilityLabel={`View ${item.exercise.name}`} onPress={() => {
+          <Pressable accessibilityRole="button" accessibilityLabel={`View ${item.exercise.name}. ${catalogExerciseFacts(item).join('. ')}`} onPress={() => {
             selectExercise(item);
             router.push({ pathname: '/templates/catalog-exercise', params: { catalogId: item.exercise.catalogId } });
           }}>
