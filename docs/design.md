@@ -96,7 +96,7 @@ See [setup](./setup.md) for compatibility and device review instructions.
 RepDB JSON is validated at the service boundary into a shared catalog exercise
 model with a namespaced catalog identifier, English name, separate primary and
 secondary muscles, and explicit equipment requirements. Optional images,
-instructions, and German/Spanish content are retained for future features.
+instructions, and German/Spanish content are retained in the model.
 Usable records are returned with diagnostics for malformed data; an unusable
 response has a distinct failure result.
 
@@ -117,6 +117,15 @@ cause filter matches. No-match results offer Clear search and filter without
 another request. Search/filter state survives tab changes while the route stays
 open and resets on leaving and reopening. The catalog and README credit RepDB.
 See [the agreed catalog behavior](./issue-53-exercise-catalog.md).
+
+Tapping a catalog card opens an image-first detail screen using the selected
+record from that visit. Start/peak images are swipeable, labeled pages with
+Previous/Next controls; single illustrations use the same uncropped image area.
+Images have independent loading/failure states. Group summaries, equipment, and
+numbered English instructions follow the images. The mounted list retains its
+scroll position and controls beneath detail without another JSON request.
+The selected record is released when the catalog list unmounts. A detail route
+without it offers Open catalog. See [the confirmed detail behavior](./catalog-exercise-detail.md).
 
 Template exercises and session exercises each have their own placement identity
 and copy descriptive exercise details and sets, retaining the shared catalog

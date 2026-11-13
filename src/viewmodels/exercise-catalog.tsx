@@ -1,12 +1,36 @@
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type PropsWithChildren } from 'react';
 import type { CatalogExercise } from '../models/exercise';
 import type { CatalogLoadResult, ExerciseCatalogService } from '../services/exercise-catalog-service';
 import { groupMuscles } from './catalog-muscle-groups';
 
-const CatalogContext = createContext<ExerciseCatalogService | null>(null);
+interface CatalogContextValue {
+  readonly service: ExerciseCatalogService;
+  readonly selectedExercise: CatalogExerciseSummary | null;
+  selectExercise(exercise: CatalogExerciseSummary): void;
+  clearSelection(): void;
+}
+
+const CatalogContext = createContext<CatalogContextValue | null>(null);
 
 export function ExerciseCatalogProvider({ service, children }: PropsWithChildren<{ service: ExerciseCatalogService }>) {
-  return <CatalogContext.Provider value={service}>{children}</CatalogContext.Provider>;
+  const [selectedExercise, selectExercise] = useState<CatalogExerciseSummary | null>(null);
+  const clearSelection = useCallback(() => selectExercise(null), []);
+  return (
+    <CatalogContext.Provider value={{ service, selectedExercise, selectExercise, clearSelection }}>
+      {children}
+    </CatalogContext.Provider>
+  );
+}
+
+function useCatalogContext() {
+  const context = useContext(CatalogContext);
+  if (!context) throw new Error('ExerciseCatalogProvider is required.');
+  return context;
+}
+
+export function useCatalogExerciseDetailViewModel(catalogId: string | undefined) {
+  const { selectedExercise } = useCatalogContext();
+  return selectedExercise?.exercise.catalogId === catalogId ? selectedExercise : null;
 }
 
 export interface CatalogExerciseSummary {
@@ -22,8 +46,7 @@ type CatalogState =
   | { readonly status: 'ready'; readonly exercises: readonly CatalogExerciseSummary[]; readonly rejectedRecords: number };
 
 export function useExerciseCatalogViewModel() {
-  const service = useContext(CatalogContext);
-  if (!service) throw new Error('ExerciseCatalogProvider is required.');
+  const { service, selectExercise, clearSelection } = useCatalogContext();
   const [state, setState] = useState<CatalogState>({ status: 'loading' });
   const [query, setQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -46,8 +69,13 @@ export function useExerciseCatalogViewModel() {
         }));
       setState({ status: 'ready', exercises, rejectedRecords: result.rejectedRecords });
     });
-    return () => { active = false; };
-  }, [service]);
+    return () => {
+      active = false;
+      // Detail shares only this visit's selected record. Leaving the catalog
+      // releases it rather than keeping an app-wide catalog cache.
+      clearSelection();
+    };
+  }, [service, clearSelection]);
   const search = query.trim().toLowerCase();
   return {
     state: state.status === 'ready'
@@ -62,6 +90,7 @@ export function useExerciseCatalogViewModel() {
     setQuery,
     selectedGroup,
     setSelectedGroup,
+    selectExercise,
   };
 }
 

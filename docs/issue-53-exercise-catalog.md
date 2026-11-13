@@ -34,7 +34,8 @@ without global fetch patching, module mocks, or changes to consumers.
   muscles within groups is deferred. Preserve original muscle values in the
   model. Group matches continue to use primary muscles only.
 - Show exercise names, primary muscle groups, secondary muscle groups, and equipment.
-  Images and instructions remain deferred.
+  The first iteration deferred images and instructions. The subsequent confirmed
+  [detail screen](./catalog-exercise-detail.md) presents them when a card is tapped.
 - Display usable exercises when mapping produces partial success. When records
   were rejected, show a quiet “Some exercises couldn’t be loaded” notice.
   Diagnostics about optional content do not produce a notice on this screen.
@@ -108,7 +109,7 @@ record is needed for these reversible presentation choices.
 
 ## Implementation verification
 
-The implementation covers both #83 and #84. TypeScript checking and all 54 tests
+The initial implementation covers both #83 and #84. TypeScript checking and all 54 tests
 across 10 suites pass, including 17 catalog route tests with controlled HTTP
 responses. iOS and Android bundle exports pass. Independent Standards and Spec
 reviews reported no actionable findings.

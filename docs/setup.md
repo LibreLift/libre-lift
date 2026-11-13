@@ -107,6 +107,14 @@ This checks bundling; it does not replace launching on a physical device.
   catalog and its search/filter state; Back and reopening resets the controls
   and starts a fresh request. With networking unavailable,
   confirm the clear failure message and Back control; no Retry button is provided.
+- Tap a catalog exercise to open detail. Confirm its large images are uncropped;
+  swipe between Start/Peak images or use Previous/Next, and check the position
+  label. Main-only illustrations have no pair controls. Read muscle groups,
+  equipment, and numbered instructions below. Back should restore list position,
+  search, and filter without loading again. Verify both themes, increased text
+  size, image loading/failure placeholders, and that one failed pose leaves the
+  other pose and exercise information available. Reload on a detail route to
+  confirm Open catalog starts a fresh visit.
 
 Sample exercises and history are fixed fixtures. Template title/description edits
 reset to the bundled values in a fresh app session; a normal tab change or screen
@@ -137,6 +145,9 @@ supply controlled responses through the same API. The catalog ViewModel uses the
 existing mapper, presents familiar muscle groups, and retains results only for
 the open screen. The temporary route uses a virtualized list rather than loading
 the catalog into the sample workout service. Catalog caching and retry are deferred.
+The detail route shares only the selected record from the mounted catalog list;
+it does not independently fetch the catalog. Images use native loading/error
+events and do not change the catalog service's result.
 
 These instructions provide the runnable setup requested by [#38](https://github.com/LibreLift/libre-lift/issues/38)
 and the frontend portion of [#13](https://github.com/LibreLift/libre-lift/issues/13).
