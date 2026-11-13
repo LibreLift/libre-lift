@@ -39,5 +39,11 @@ const secondaryMuscleGroups: Readonly<Record<string, string>> = {
 
 export function groupMuscles(muscles: readonly string[], target: 'primary' | 'secondary'): readonly string[] {
   const mapping = target === 'primary' ? muscleGroups : secondaryMuscleGroups;
-  return [...new Set(muscles.flatMap((muscle) => Object.hasOwn(mapping, muscle) ? [mapping[muscle]] : []))];
+  const groups = new Set<string>();
+  for (const muscle of muscles) {
+    if (Object.hasOwn(mapping, muscle)) {
+      groups.add(mapping[muscle]);
+    }
+  }
+  return [...groups];
 }

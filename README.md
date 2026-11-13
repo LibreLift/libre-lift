@@ -11,7 +11,8 @@ by exercise. Feature integrations are under development.
 
 Templates also opens a temporary live exercise catalog, with alphabetical
 browsing, case-insensitive name search, one primary muscle-group filter, primary
-and secondary muscle-group summaries, and equipment. Catalog browsing
+and secondary muscle-group summaries, and equipment. Tap a card for large
+exercise illustrations and instructions. Catalog browsing
 does not add exercises to templates yet.
 
 ## Quickstart

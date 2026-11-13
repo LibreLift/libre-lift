@@ -5,9 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useExerciseCatalogViewModel, type CatalogExerciseSummary } from '../viewmodels/exercise-catalog';
 import { useTheme } from '../viewmodels/theme';
 import { Button, Card, Copy } from './ui';
+import { CatalogExerciseFacts, catalogExerciseFacts } from './catalog-exercise-facts';
 
 export function ExerciseCatalogScreen() {
-  const { state, query, setQuery, groups, selectedGroup, setSelectedGroup } = useExerciseCatalogViewModel();
+  const { state, query, setQuery, groups, selectedGroup, setSelectedGroup, selectExercise } = useExerciseCatalogViewModel();
   const [filterOpen, setFilterOpen] = useState(false);
   const { colors } = useTheme();
   const router = useRouter();
@@ -17,7 +18,14 @@ export function ExerciseCatalogScreen() {
         keyboardShouldPersistTaps="handled"
         data={state.status === 'ready' ? state.exercises : []}
         keyExtractor={(item) => item.exercise.catalogId}
-        renderItem={({ item }) => <CatalogExerciseCard item={item} />}
+        renderItem={({ item }) => (
+          <Pressable accessibilityRole="button" accessibilityLabel={`View ${item.exercise.name}. ${catalogExerciseFacts(item).join('. ')}`} onPress={() => {
+            selectExercise(item);
+            router.push({ pathname: '/templates/catalog-exercise', params: { catalogId: item.exercise.catalogId } });
+          }}>
+            <CatalogExerciseCard item={item} />
+          </Pressable>
+        )}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={ExerciseSeparator}
         ListEmptyComponent={state.status === 'ready' ? (
@@ -95,9 +103,7 @@ function CatalogExerciseCard({ item }: { item: CatalogExerciseSummary }) {
   return (
     <Card>
       <Copy kind="heading">{item.exercise.name}</Copy>
-      <Copy kind="muted">Primary muscles: {item.primaryGroups.length ? item.primaryGroups.join(' · ') : 'Not specified'}</Copy>
-      {item.secondaryGroups.length ? <Copy kind="muted">Secondary muscles: {item.secondaryGroups.join(' · ')}</Copy> : null}
-      <Copy kind="muted">Equipment: {item.equipment}</Copy>
+      <CatalogExerciseFacts item={item} />
     </Card>
   );
 }

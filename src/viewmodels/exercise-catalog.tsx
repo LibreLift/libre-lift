@@ -3,10 +3,32 @@ import type { CatalogExercise } from '../models/exercise';
 import type { CatalogLoadResult, ExerciseCatalogService } from '../services/exercise-catalog-service';
 import { groupMuscles } from './catalog-muscle-groups';
 
-const CatalogContext = createContext<ExerciseCatalogService | null>(null);
+interface CatalogContextValue {
+  readonly service: ExerciseCatalogService;
+  readonly selectedExercise: CatalogExerciseSummary | null;
+  selectExercise(exercise: CatalogExerciseSummary | null): void;
+}
+
+const CatalogContext = createContext<CatalogContextValue | null>(null);
 
 export function ExerciseCatalogProvider({ service, children }: PropsWithChildren<{ service: ExerciseCatalogService }>) {
-  return <CatalogContext.Provider value={service}>{children}</CatalogContext.Provider>;
+  const [selectedExercise, selectExercise] = useState<CatalogExerciseSummary | null>(null);
+  return (
+    <CatalogContext.Provider value={{ service, selectedExercise, selectExercise }}>
+      {children}
+    </CatalogContext.Provider>
+  );
+}
+
+function useCatalogContext() {
+  const context = useContext(CatalogContext);
+  if (!context) throw new Error('ExerciseCatalogProvider is required.');
+  return context;
+}
+
+export function useCatalogExerciseDetailViewModel(catalogId: string | undefined) {
+  const { selectedExercise } = useCatalogContext();
+  return selectedExercise?.exercise.catalogId === catalogId ? selectedExercise : null;
 }
 
 export interface CatalogExerciseSummary {
@@ -22,8 +44,7 @@ type CatalogState =
   | { readonly status: 'ready'; readonly exercises: readonly CatalogExerciseSummary[]; readonly rejectedRecords: number };
 
 export function useExerciseCatalogViewModel() {
-  const service = useContext(CatalogContext);
-  if (!service) throw new Error('ExerciseCatalogProvider is required.');
+  const { service, selectExercise } = useCatalogContext();
   const [state, setState] = useState<CatalogState>({ status: 'loading' });
   const [query, setQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -46,22 +67,29 @@ export function useExerciseCatalogViewModel() {
         }));
       setState({ status: 'ready', exercises, rejectedRecords: result.rejectedRecords });
     });
-    return () => { active = false; };
-  }, [service]);
+    return () => {
+      active = false;
+      // Detail shares only this visit's selected record. Leaving the catalog
+      // releases it rather than keeping an app-wide catalog cache.
+      selectExercise(null);
+    };
+  }, [service, selectExercise]);
   const search = query.trim().toLowerCase();
+  const exercises = state.status === 'ready' ? state.exercises : [];
+  const visibleExercises = exercises.filter((item) => {
+    const matchesName = item.exercise.name.toLowerCase().includes(search);
+    const matchesGroup = selectedGroup === null || item.primaryGroups.includes(selectedGroup);
+    return matchesName && matchesGroup;
+  });
+  const groups = [...new Set(exercises.flatMap((item) => item.primaryGroups))].sort();
   return {
-    state: state.status === 'ready'
-      ? { ...state, exercises: state.exercises.filter((item) =>
-          item.exercise.name.toLowerCase().includes(search)
-          && (selectedGroup === null || item.primaryGroups.includes(selectedGroup))) }
-      : state,
-    groups: state.status === 'ready'
-      ? [...new Set(state.exercises.flatMap((item) => item.primaryGroups))].sort()
-      : [],
+    state: state.status === 'ready' ? { ...state, exercises: visibleExercises } : state,
+    groups,
     query,
     setQuery,
     selectedGroup,
     setSelectedGroup,
+    selectExercise,
   };
 }
 
