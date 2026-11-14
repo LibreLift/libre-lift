@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { TextInput } from 'react-native';
 import type { useTemplateEditorViewModel } from '../viewmodels/template-editor';
 import { useTheme } from '../viewmodels/theme';
@@ -22,6 +23,7 @@ export function TemplateField({ label, value, onChange, disabled, numeric = fals
 }
 
 export function TemplateForm({ model }: { model: Editor }) {
+  const router = useRouter();
   const draft = model.draft;
   if (!draft) return null;
   return <>
@@ -45,6 +47,7 @@ export function TemplateForm({ model }: { model: Editor }) {
       <Button label={`Add set to exercise ${index + 1}`} disabled={model.saving} onPress={() => model.addSet(exercise.id)} />
       <Button label={`Remove exercise ${index + 1}`} disabled={model.saving} onPress={() => model.removeExercise(exercise.id)} />
     </Card>)}
+    <Button label="Add exercise" disabled={model.saving} onPress={() => router.push({ pathname: '/templates/catalog', params: { draftId: model.id } })} />
     {model.error ? <Copy>{model.error}</Copy> : null}
     <Button label={model.saving ? 'Saving…' : model.error ? 'Retry save' : 'Save'} disabled={model.saving} onPress={() => void model.save()} />
     <Button label="Cancel" disabled={model.saving} onPress={model.cancelEditing} />

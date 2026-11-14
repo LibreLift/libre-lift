@@ -239,3 +239,9 @@ cannot be saved. Weights are nonnegative finite pounds (decimals allowed), and
 repetitions are positive integers. Cancel, tab preservation, discard confirmation,
 and failed-save retry apply to the whole draft. Saved changes remain local to the
 running app session and do not affect workout history.
+
+From an open template draft, Add exercise opens the live catalog. Inspect a
+movement and choose Add to template to append one placement with blank targets.
+Back without adding preserves the draft; catalog failure also leaves it intact.
+Repeated movements are independent placements. Standalone Exercise catalog
+browsing remains read-only with respect to templates.

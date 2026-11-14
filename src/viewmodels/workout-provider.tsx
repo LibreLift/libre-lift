@@ -1,8 +1,11 @@
-import { createContext, useCallback, useContext, useRef, useState, type PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useRef, useState, type SetStateAction, type PropsWithChildren } from 'react';
 import type { TemplateContent, WorkoutTemplate } from '../models/workout';
+import type { TemplateDraft } from './template-editor';
 import type { WorkoutService } from '../services/workout-service';
 
 interface WorkoutContextValue {
+  drafts: Readonly<Record<string, TemplateDraft>>;
+  setDraft(id: string, update: SetStateAction<TemplateDraft | null>): void;
   service: WorkoutService;
   templatesVersion: number;
   savingTemplate: boolean;
@@ -12,6 +15,16 @@ interface WorkoutContextValue {
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
 
 export function WorkoutProvider({ service, children }: PropsWithChildren<{ service: WorkoutService }>) {
+  const [drafts, setDrafts] = useState<Record<string, TemplateDraft>>({});
+  const setDraft = useCallback((id: string, update: SetStateAction<TemplateDraft | null>) => {
+    setDrafts((current) => {
+      const draft = typeof update === 'function' ? update(current[id] ?? null) : update;
+      const next = { ...current };
+      if (draft) next[id] = draft;
+      else delete next[id];
+      return next;
+    });
+  }, []);
   const [templatesVersion, setTemplatesVersion] = useState(0);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const saving = useRef(false);
@@ -32,7 +45,7 @@ export function WorkoutProvider({ service, children }: PropsWithChildren<{ servi
     [service],
   );
   return (
-    <WorkoutContext.Provider value={{ service, templatesVersion, savingTemplate, saveTemplate }}>
+    <WorkoutContext.Provider value={{ drafts, setDraft, service, templatesVersion, savingTemplate, saveTemplate }}>
       {children}
     </WorkoutContext.Provider>
   );

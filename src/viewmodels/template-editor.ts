@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { validateTemplate, type TemplateContent } from '../models/workout';
+import { createTemplateExercise, validateTemplate, type TemplateContent } from '../models/workout';
+import type { CatalogExercise } from '../models/exercise';
 import { useWorkouts } from './workout-provider';
 import { useTemplateViewModel } from './workouts';
 
@@ -28,8 +29,9 @@ function toContent(draft: TemplateDraft): TemplateContent {
 
 export function useTemplateEditorViewModel(id: string) {
   const resource = useTemplateViewModel(id);
-  const { savingTemplate, saveTemplate } = useWorkouts();
-  const [draft, setDraft] = useState<TemplateDraft | null>(null);
+  const { savingTemplate, saveTemplate, drafts, setDraft: updateDraft } = useWorkouts();
+  const draft = drafts[id] ?? null;
+  const setDraft = (update: React.SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
   const [error, setError] = useState<string | null>(null);
   const saving = useRef(false);
   const template = resource.state.status === 'ready' ? resource.state.data : null;
@@ -86,6 +88,24 @@ export function useTemplateEditorViewModel(id: string) {
     } finally { saving.current = false; }
   }
   const dirty = !!draft && !!template && JSON.stringify(draft) !== JSON.stringify(toDraft(template));
-  return { ...resource, draft, error, dirty, saving: savingTemplate,
+  return { ...resource, id, draft, error, dirty, saving: savingTemplate,
     startEditing, change, changeSet, addSet, removeSet, removeExercise, cancelEditing, save };
+}
+
+// A catalog route can add only to a still-open draft identified by its owner route.
+export function useTemplateCatalogSelection(draftId: string | undefined) {
+  const { drafts, setDraft, savingTemplate } = useWorkouts();
+  const available = !!draftId && !!drafts[draftId] && !savingTemplate;
+  function add(exercise: CatalogExercise) {
+    if (!available || !draftId) return false;
+    setDraft(draftId, (draft) => {
+      if (!draft) return draft;
+      let number = 1;
+      while (draft.exercises.some((value) => value.id === `placement-${number}`)) number++;
+      const placement = createTemplateExercise(`placement-${number}`, exercise, []);
+      return { ...draft, exercises: [...draft.exercises, { ...placement, sets: [{ weight: '', reps: '' }] }] };
+    });
+    return true;
+  }
+  return { available, add };
 }
