@@ -54,20 +54,32 @@ export function useTemplateEditorViewModel(id: string) {
   function change(field: 'title' | 'description', value: string) {
     edit((current) => ({ ...current, [field]: value }));
   }
+  function editExercise(exerciseId: string, update: (exercise: TemplateDraft['exercises'][number]) => TemplateDraft['exercises'][number]) {
+    edit((current) => ({
+      ...current,
+      exercises: current.exercises.map((exercise) => {
+        if (exercise.id !== exerciseId) return exercise;
+        return update(exercise);
+      }),
+    }));
+  }
   function changeSet(exerciseId: string, index: number, field: 'weight' | 'reps', value: string) {
-    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
-      ...exercise, sets: exercise.sets.map((set, position) => position === index ? { ...set, [field]: value } : set),
-    }) }));
+    editExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.map((set, position) => position === index ? { ...set, [field]: value } : set),
+    }));
   }
   function addSet(exerciseId: string) {
-    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
-      ...exercise, sets: [...exercise.sets, { ...(exercise.sets.at(-1) ?? { weight: '', reps: '' }) }],
-    }) }));
+    editExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: [...exercise.sets, { ...(exercise.sets.at(-1) ?? { weight: '', reps: '' }) }],
+    }));
   }
   function removeSet(exerciseId: string, index: number) {
-    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
-      ...exercise, sets: exercise.sets.filter((_, position) => position !== index),
-    }) }));
+    editExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.filter((_, position) => position !== index),
+    }));
   }
   function removeExercise(exerciseId: string) {
     edit((current) => ({ ...current, exercises: current.exercises.filter((exercise) => exercise.id !== exerciseId) }));
