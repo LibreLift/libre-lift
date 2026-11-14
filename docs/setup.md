@@ -245,3 +245,9 @@ movement and choose Add to template to append one placement with blank targets.
 Back without adding preserves the draft; catalog failure also leaves it intact.
 Repeated movements are independent placements. Standalone Exercise catalog
 browsing remains read-only with respect to templates.
+
+Create template starts empty and reuses that builder. Save requires a name,
+one exercise, and one complete set per exercise. New templates append to the
+list (duplicate names are allowed); saving opens detail. Cancel returns to the
+list without creating a record. Restart/reload restores the two samples and
+clears unfinished drafts as well as saved changes.

@@ -3,6 +3,7 @@ import type { TemplateContent, TemplateDetails, WorkoutSession, WorkoutTemplate 
 export interface WorkoutService {
   listTemplates(): Promise<readonly WorkoutTemplate[]>;
   getTemplate(id: string): Promise<WorkoutTemplate | null>;
+  createTemplate(content: TemplateContent): Promise<WorkoutTemplate>;
   updateTemplate(id: string, content: TemplateContent): Promise<WorkoutTemplate>;
   updateTemplateDetails(id: string, details: TemplateDetails): Promise<WorkoutTemplate>;
   listSessions(): Promise<readonly WorkoutSession[]>;

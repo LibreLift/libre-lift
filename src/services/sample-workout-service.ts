@@ -114,7 +114,14 @@ const sessions: readonly WorkoutSession[] = [
 // A new service instance starts a fresh app session, without changing the fixtures.
 export function createSampleWorkoutService(): WorkoutService {
   let savedTemplates = templates.map(snapshotTemplate);
+  let nextId = 1;
   return {
+    async createTemplate(content) {
+      const validated = validateTemplate(content);
+      const template = { id: `template-${nextId++}`, ...validated };
+      savedTemplates = [...savedTemplates, template];
+      return snapshotTemplate(template);
+    },
     async listTemplates() {
       return savedTemplates.map(snapshotTemplate);
     },

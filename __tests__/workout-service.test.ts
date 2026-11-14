@@ -52,3 +52,17 @@ test('full updates validate atomically and isolate saved templates from callers 
   expect(await service.listSessions()).toEqual(history);
   await expect(service.updateTemplate('missing', content)).rejects.toThrow('couldn’t be found');
 });
+
+test('creation appends unique templates with duplicate names and resets in a fresh session', async () => {
+  const service = createSampleWorkoutService();
+  const sample = (await service.listTemplates())[0];
+  await expect(service.createTemplate({ ...sample, exercises: [] })).rejects.toThrow();
+  const first = await service.createTemplate(sample);
+  const second = await service.createTemplate(sample);
+  expect(first.id).not.toBe(sample.id);
+  expect(second.id).not.toBe(first.id);
+  Object.assign(first.exercises[0].sets[0], { targetWeight: 999 });
+  expect((await service.getTemplate(first.id))?.exercises[0].sets[0].targetWeight).toBe(95);
+  expect((await service.listTemplates()).map((template) => template.id)).toEqual(['upper-body', 'lower-body', first.id, second.id]);
+  expect(await createSampleWorkoutService().listTemplates()).toHaveLength(2);
+});

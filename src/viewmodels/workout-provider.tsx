@@ -9,7 +9,7 @@ interface WorkoutContextValue {
   service: WorkoutService;
   templatesVersion: number;
   savingTemplate: boolean;
-  saveTemplate(id: string, details: TemplateContent): Promise<WorkoutTemplate>;
+  saveTemplate(id: string | null, details: TemplateContent): Promise<WorkoutTemplate>;
 }
 
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
@@ -29,12 +29,12 @@ export function WorkoutProvider({ service, children }: PropsWithChildren<{ servi
   const [savingTemplate, setSavingTemplate] = useState(false);
   const saving = useRef(false);
   const saveTemplate = useCallback(
-    async (id: string, details: TemplateContent) => {
+    async (id: string | null, details: TemplateContent) => {
       if (saving.current) throw new Error('A template is already being saved.');
       saving.current = true;
       setSavingTemplate(true);
       try {
-        const template = await service.updateTemplate(id, details);
+        const template = await (id === null ? service.createTemplate(details) : service.updateTemplate(id, details));
         setTemplatesVersion((value) => value + 1);
         return template;
       } finally {

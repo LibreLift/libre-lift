@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
@@ -15,6 +16,7 @@ export function TemplatesScreen() {
       <Copy kind="title">Make a plan.{'\n'}Make it yours.</Copy>
       <Copy kind="muted">A few good exercises. A plan you can come back to.</Copy>
       <Copy kind="heading">Templates</Copy>
+      <Button label="Create template" onPress={() => router.push('/templates/new')} />
       <Button label="Exercise catalog" onPress={() => router.push('/templates/catalog')} />
       <Resource {...model}>
         {(templates) =>
@@ -43,20 +45,7 @@ export function TemplatesScreen() {
 export function TemplateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const model = useTemplateEditorViewModel(id);
-  usePreventRemove(model.dirty || model.saving, ({ repeat }) => {
-    if (model.saving) return;
-    Alert.alert('Discard changes?', 'Your template has unsaved changes.', [
-      { text: 'Keep editing', style: 'cancel' },
-      {
-        text: 'Discard changes',
-        style: 'destructive',
-        onPress: () => {
-          model.cancelEditing();
-          repeat();
-        },
-      },
-    ]);
-  });
+  useTemplateNavigationGuard(model);
   return (
     <>
       <Stack.Screen options={{ gestureEnabled: !model.saving, headerBackVisible: !model.saving }} />
@@ -98,4 +87,37 @@ export function TemplateDetailScreen() {
       </Screen>
     </>
   );
+}
+
+function useTemplateNavigationGuard(model: ReturnType<typeof useTemplateEditorViewModel>) {
+  usePreventRemove(model.dirty || model.saving, ({ repeat }) => {
+    if (model.saving) return;
+    Alert.alert('Discard changes?', 'Your template has unsaved changes.', [
+      { text: 'Keep editing', style: 'cancel' },
+      {
+        text: 'Discard changes',
+        style: 'destructive',
+        onPress: () => {
+          model.cancelEditing();
+          repeat();
+        },
+      },
+    ]);
+  });
+}
+
+export function NewTemplateScreen() {
+  const model = useTemplateEditorViewModel('new');
+  const router = useRouter();
+  useTemplateNavigationGuard(model);
+  useEffect(() => {
+    if (!model.draft && !model.createdId && model.state.status === 'ready') router.back();
+  }, [model.draft, model.createdId, model.state.status, router]);
+  useEffect(() => {
+    if (model.createdId) router.replace({ pathname: '/templates/[id]', params: { id: model.createdId } });
+  }, [model.createdId, router]);
+  return <>
+    <Stack.Screen options={{ title: 'Create template', gestureEnabled: !model.saving, headerBackVisible: !model.saving }} />
+    <Screen><Copy kind="title">Create template</Copy><TemplateForm model={model} /></Screen>
+  </>;
 }

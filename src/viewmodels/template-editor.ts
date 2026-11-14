@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type SetStateAction } from 'react';
 import { createTemplateExercise, validateTemplate, type TemplateContent } from '../models/workout';
 import type { CatalogExercise } from '../models/exercise';
 import { useWorkouts } from './workout-provider';
@@ -28,10 +28,16 @@ function toContent(draft: TemplateDraft): TemplateContent {
 }
 
 export function useTemplateEditorViewModel(id: string) {
-  const resource = useTemplateViewModel(id);
+  const isNew = id === 'new';
+  const resource = useTemplateViewModel(isNew ? null : id);
   const { savingTemplate, saveTemplate, drafts, setDraft: updateDraft } = useWorkouts();
   const draft = drafts[id] ?? null;
-  const setDraft = (update: React.SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
+  const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (isNew) updateDraft(id, (current) => current ?? { title: '', description: '', exercises: [] });
+    return () => updateDraft(id, null);
+  }, [id, isNew, updateDraft]);
   const [error, setError] = useState<string | null>(null);
   const saving = useRef(false);
   const template = resource.state.status === 'ready' ? resource.state.data : null;
@@ -81,14 +87,16 @@ export function useTemplateEditorViewModel(id: string) {
     saving.current = true;
     setError(null);
     try {
-      await saveTemplate(id, content);
+      const saved = await saveTemplate(isNew ? null : id, content);
       setDraft(null);
+      if (isNew) setCreatedId(saved.id);
     } catch {
       setError('Your changes couldn’t be saved. Please try again.');
     } finally { saving.current = false; }
   }
-  const dirty = !!draft && !!template && JSON.stringify(draft) !== JSON.stringify(toDraft(template));
-  return { ...resource, id, draft, error, dirty, saving: savingTemplate,
+  const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
+  const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
+  return { ...resource, id, createdId, draft, error, dirty, saving: savingTemplate,
     startEditing, change, changeSet, addSet, removeSet, removeExercise, cancelEditing, save };
 }
 

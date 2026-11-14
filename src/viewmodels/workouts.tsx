@@ -44,9 +44,9 @@ export function useTemplatesViewModel() {
   );
 }
 
-export function useTemplateViewModel(id: string) {
+export function useTemplateViewModel(id: string | null) {
   const { service, templatesVersion } = useWorkouts();
-  return useResource(useCallback(() => service.getTemplate(id), [service, id, templatesVersion]));
+  return useResource(useCallback(() => id === null ? Promise.resolve(null) : service.getTemplate(id), [service, id, templatesVersion]));
 }
 
 export function useSessionsViewModel() {
