@@ -251,3 +251,10 @@ one exercise, and one complete set per exercise. New templates append to the
 list (duplicate names are allowed); saving opens detail. Cancel returns to the
 list without creating a record. Restart/reload restores the two samples and
 clears unfinished drafts as well as saved changes.
+
+While creating/editing, long-press an exercise's three-line handle to drag it.
+Move near the top/bottom of the viewport to scroll while dragging, then release
+to choose its new position. Move up/down buttons provide an accessible alternative.
+Reordering preserves placement targets and is saved/cancelled with the draft.
+Handles are hidden in read-only detail. Native gesture review remains required:
+this workspace currently has no available iOS simulator runtime/device.

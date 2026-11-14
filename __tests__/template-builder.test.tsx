@@ -121,3 +121,24 @@ test('new draft validation, discard and Cancel do not create records', async () 
   await waitFor(() => expect(app.getPathname()).toBe('/templates'));
   expect(await service.listTemplates()).toHaveLength(2);
 });
+
+test('reordering uses edit-only handles and saves placement order with the original targets', async () => {
+  const { service } = await builder();
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  expect(screen.queryByRole('button', { name: 'Reorder exercise 1' })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  expect(screen.getByRole('button', { name: 'Reorder exercise 1' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Move exercise 1 up' })).toBeDisabled();
+  await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 2 up' }));
+  expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('35');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('button', { name: 'Edit template details' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Reorder exercise 1' })).toBeNull();
+  const saved = await service.getTemplate('upper-body');
+  expect(saved?.exercises.map((exercise) => exercise.id)).toEqual(['placement-dumbbell-row', 'placement-bench-press']);
+  expect(saved?.exercises[0].sets[0]).toEqual({ setNumber: 1, targetWeight: 35, targetReps: 10 });
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 1 down' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+  expect((await service.getTemplate('upper-body'))?.exercises[0].id).toBe('placement-dumbbell-row');
+});

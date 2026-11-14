@@ -71,6 +71,16 @@ export function useTemplateEditorViewModel(id: string) {
   function removeExercise(exerciseId: string) {
     edit((current) => ({ ...current, exercises: current.exercises.filter((exercise) => exercise.id !== exerciseId) }));
   }
+  function moveExercise(exerciseId: string, target: number) {
+    edit((current) => {
+      const exercises = [...current.exercises];
+      const source = exercises.findIndex((exercise) => exercise.id === exerciseId);
+      if (source < 0 || target < 0 || target >= exercises.length) return current;
+      const [exercise] = exercises.splice(source, 1);
+      exercises.splice(target, 0, exercise);
+      return { ...current, exercises };
+    });
+  }
   function cancelEditing() {
     if (saving.current) return;
     setDraft(null);
@@ -97,7 +107,7 @@ export function useTemplateEditorViewModel(id: string) {
   const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
   const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
   return { ...resource, id, createdId, draft, error, dirty, saving: savingTemplate,
-    startEditing, change, changeSet, addSet, removeSet, removeExercise, cancelEditing, save };
+    startEditing, change, changeSet, addSet, removeSet, removeExercise, moveExercise, cancelEditing, save };
 }
 
 // A catalog route can add only to a still-open draft identified by its owner route.

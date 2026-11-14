@@ -3,6 +3,7 @@ import { TextInput } from 'react-native';
 import type { useTemplateEditorViewModel } from '../viewmodels/template-editor';
 import { useTheme } from '../viewmodels/theme';
 import { Button, Card, Copy } from './ui';
+import { ReorderableExercises } from './reorderable-exercises';
 import { ExerciseSummary } from './exercise-summary';
 
 type Editor = ReturnType<typeof useTemplateEditorViewModel>;
@@ -32,7 +33,7 @@ export function TemplateForm({ model }: { model: Editor }) {
       <TemplateField label="Template title" value={draft.title} onChange={(value) => model.change('title', value)} disabled={model.saving} />
       <TemplateField label="Template description" value={draft.description} onChange={(value) => model.change('description', value)} disabled={model.saving} multiline />
     </Card>
-    {draft.exercises.map((exercise, index) => <Card key={exercise.id}>
+    <ReorderableExercises exercises={draft.exercises} disabled={model.saving} onMove={model.moveExercise}>{(exercise, index) => <Card key={exercise.id}>
       <Copy kind="label">EXERCISE {index + 1}</Copy>
       <Copy kind="heading">{exercise.name}</Copy>
       <ExerciseSummary exercise={exercise} />
@@ -46,7 +47,7 @@ export function TemplateForm({ model }: { model: Editor }) {
       </Card>)}
       <Button label={`Add set to exercise ${index + 1}`} disabled={model.saving} onPress={() => model.addSet(exercise.id)} />
       <Button label={`Remove exercise ${index + 1}`} disabled={model.saving} onPress={() => model.removeExercise(exercise.id)} />
-    </Card>)}
+    </Card>}</ReorderableExercises>
     <Button label="Add exercise" disabled={model.saving} onPress={() => router.push({ pathname: '/templates/catalog', params: { draftId: model.id } })} />
     {model.error ? <Copy>{model.error}</Copy> : null}
     <Button label={model.saving ? 'Saving…' : model.error ? 'Retry save' : 'Save'} disabled={model.saving} onPress={() => void model.save()} />
