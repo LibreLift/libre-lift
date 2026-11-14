@@ -1,64 +1,91 @@
 import { useRef, useState } from 'react';
-import { validateTemplateDetails, type TemplateDetails } from '../models/workout';
+import { validateTemplate, type TemplateContent } from '../models/workout';
 import { useWorkouts } from './workout-provider';
 import { useTemplateViewModel } from './workouts';
 
+export interface TemplateDraft {
+  title: string;
+  description: string;
+  exercises: readonly (Omit<TemplateContent['exercises'][number], 'sets'> & {
+    readonly sets: readonly { weight: string; reps: string }[];
+  })[];
+}
+
+function toDraft(template: TemplateContent): TemplateDraft {
+  return { ...template, exercises: template.exercises.map((exercise) => ({ ...exercise,
+    sets: exercise.sets.map((set) => ({ weight: String(set.targetWeight), reps: String(set.targetReps) })),
+  })) };
+}
+
+function toContent(draft: TemplateDraft): TemplateContent {
+  return validateTemplate({ ...draft, exercises: draft.exercises.map((exercise) => ({ ...exercise,
+    sets: exercise.sets.map((set, index) => ({ setNumber: index + 1,
+      targetWeight: set.weight.trim() === '' ? NaN : Number(set.weight),
+      targetReps: set.reps.trim() === '' ? NaN : Number(set.reps),
+    })),
+  })) });
+}
+
 export function useTemplateEditorViewModel(id: string) {
   const resource = useTemplateViewModel(id);
-  const { savingTemplate, saveTemplateDetails } = useWorkouts();
-  const [draft, setDraft] = useState<TemplateDetails | null>(null);
+  const { savingTemplate, saveTemplate } = useWorkouts();
+  const [draft, setDraft] = useState<TemplateDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const saving = useRef(false);
   const template = resource.state.status === 'ready' ? resource.state.data : null;
 
   function startEditing() {
     if (!template || saving.current) return;
-    setDraft({ title: template.title, description: template.description });
+    setDraft(toDraft(template));
     setError(null);
   }
-
-  function change(field: keyof TemplateDetails, value: string) {
-    if (!saving.current) setDraft((current) => (current ? { ...current, [field]: value } : current));
+  function edit(update: (value: TemplateDraft) => TemplateDraft) {
+    if (!saving.current && !savingTemplate) setDraft((current) => current ? update(current) : current);
   }
-
+  function change(field: 'title' | 'description', value: string) {
+    edit((current) => ({ ...current, [field]: value }));
+  }
+  function changeSet(exerciseId: string, index: number, field: 'weight' | 'reps', value: string) {
+    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
+      ...exercise, sets: exercise.sets.map((set, position) => position === index ? { ...set, [field]: value } : set),
+    }) }));
+  }
+  function addSet(exerciseId: string) {
+    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
+      ...exercise, sets: [...exercise.sets, { ...(exercise.sets.at(-1) ?? { weight: '', reps: '' }) }],
+    }) }));
+  }
+  function removeSet(exerciseId: string, index: number) {
+    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
+      ...exercise, sets: exercise.sets.filter((_, position) => position !== index),
+    }) }));
+  }
+  function removeExercise(exerciseId: string) {
+    edit((current) => ({ ...current, exercises: current.exercises.filter((exercise) => exercise.id !== exerciseId) }));
+  }
   function cancelEditing() {
     if (saving.current) return;
     setDraft(null);
     setError(null);
   }
-
   async function save() {
     if (!draft || saving.current || savingTemplate) return;
-    let details: TemplateDetails;
-    try {
-      details = validateTemplateDetails(draft);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Enter a title for this template.');
+    let content: TemplateContent;
+    try { content = toContent(draft); }
+    catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Check your template.');
       return;
     }
     saving.current = true;
     setError(null);
     try {
-      await saveTemplateDetails(id, details);
+      await saveTemplate(id, content);
       setDraft(null);
     } catch {
       setError('Your changes couldn’t be saved. Please try again.');
-    } finally {
-      saving.current = false;
-    }
+    } finally { saving.current = false; }
   }
-
-  const dirty =
-    !!draft && !!template && (draft.title !== template.title || draft.description !== template.description);
-  return {
-    ...resource,
-    draft,
-    error,
-    dirty,
-    saving: savingTemplate,
-    startEditing,
-    change,
-    cancelEditing,
-    save,
-  };
+  const dirty = !!draft && !!template && JSON.stringify(draft) !== JSON.stringify(toDraft(template));
+  return { ...resource, draft, error, dirty, saving: savingTemplate,
+    startEditing, change, changeSet, addSet, removeSet, removeExercise, cancelEditing, save };
 }

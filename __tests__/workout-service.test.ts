@@ -22,3 +22,33 @@ test('a blank title cannot replace saved template details', async () => {
   ).rejects.toThrow('Enter a title');
   expect((await service.getTemplate('upper-body'))?.title).toBe('Upper body');
 });
+
+test('full updates validate atomically and isolate saved templates from callers and history', async () => {
+  const service = createSampleWorkoutService();
+  const original = (await service.listTemplates())[0];
+  const history = await service.listSessions();
+  await expect(service.updateTemplate(original.id, { ...original, exercises: [] })).rejects.toThrow('Add at least one exercise');
+  await expect(service.updateTemplate(original.id, { ...original, exercises: [{ ...original.exercises[0], sets: [] }] })).rejects.toThrow('Add at least one set');
+  for (const targets of [
+    { targetWeight: NaN, targetReps: 8 }, { targetWeight: Infinity, targetReps: 8 },
+    { targetWeight: -1, targetReps: 8 }, { targetWeight: 0, targetReps: 0 },
+    { targetWeight: 0, targetReps: 1.5 },
+  ]) {
+    await expect(service.updateTemplate(original.id, { ...original, exercises: [{ ...original.exercises[0],
+      sets: [{ setNumber: 1, ...targets }],
+    }] })).rejects.toThrow();
+  }
+  expect(await service.getTemplate(original.id)).toEqual(original);
+  const content = { ...original, title: '  New name  ', exercises: [{ ...original.exercises[0],
+    sets: [{ setNumber: 9, targetWeight: 0.5, targetReps: 12 }],
+  }] };
+  const saved = await service.updateTemplate(original.id, content);
+  expect(saved.title).toBe('New name');
+  expect(saved.exercises[0].sets).toEqual([{ setNumber: 1, targetWeight: 0.5, targetReps: 12 }]);
+  content.exercises[0].sets[0].targetWeight = 900;
+  Object.assign(saved.exercises[0], { name: 'Mutated' });
+  Object.assign((await service.listTemplates())[0].exercises[0].sets[0], { targetReps: 999 });
+  expect((await service.getTemplate(original.id))?.exercises[0]).toMatchObject({ name: 'Bench press', sets: [{ targetWeight: 0.5, targetReps: 12 }] });
+  expect(await service.listSessions()).toEqual(history);
+  await expect(service.updateTemplate('missing', content)).rejects.toThrow('couldn’t be found');
+});

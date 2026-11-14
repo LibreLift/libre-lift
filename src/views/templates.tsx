@@ -1,8 +1,8 @@
 import { Stack, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, TextInput } from 'react-native';
+import { Alert } from 'react-native';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
-import { useTheme } from '../viewmodels/theme';
+import { TemplateForm } from './template-form';
 import { ExerciseSummary } from './exercise-summary';
 import { Button, Card, Copy, LinkCard, Resource, Screen } from './ui';
 
@@ -57,17 +57,6 @@ export function TemplateDetailScreen() {
       },
     ]);
   });
-  const { colors } = useTheme();
-  const fieldStyle = {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    backgroundColor: colors.background,
-    color: colors.text,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 48,
-  };
   return (
     <>
       <Stack.Screen options={{ gestureEnabled: !model.saving, headerBackVisible: !model.saving }} />
@@ -78,35 +67,7 @@ export function TemplateDetailScreen() {
               <>
                 <Copy kind="label">WORKOUT TEMPLATE</Copy>
                 {model.draft ? (
-                  <Card>
-                    <Copy kind="heading">Edit template details</Copy>
-                    <Copy>Title</Copy>
-                    <TextInput
-                      accessibilityLabel="Template title"
-                      value={model.draft.title}
-                      onChangeText={(value) => model.change('title', value)}
-                      editable={!model.saving}
-                      accessibilityState={{ disabled: model.saving }}
-                      style={fieldStyle}
-                    />
-                    <Copy>Description</Copy>
-                    <TextInput
-                      accessibilityLabel="Template description"
-                      value={model.draft.description}
-                      onChangeText={(value) => model.change('description', value)}
-                      editable={!model.saving}
-                      accessibilityState={{ disabled: model.saving }}
-                      multiline
-                      style={[fieldStyle, { minHeight: 96, textAlignVertical: 'top' }]}
-                    />
-                    {model.error ? <Copy>{model.error}</Copy> : null}
-                    <Button
-                      label={model.saving ? 'Saving…' : model.error ? 'Retry save' : 'Save'}
-                      disabled={model.saving}
-                      onPress={() => void model.save()}
-                    />
-                    <Button label="Cancel" disabled={model.saving} onPress={model.cancelEditing} />
-                  </Card>
+                  <TemplateForm model={model} />
                 ) : (
                   <>
                     <Copy kind="title">{template.title}</Copy>
@@ -114,7 +75,7 @@ export function TemplateDetailScreen() {
                     <Button label="Edit template details" onPress={model.startEditing} />
                   </>
                 )}
-                {template.exercises.map((exercise, index) => (
+                {!model.draft && template.exercises.map((exercise, index) => (
                   <Card key={exercise.id}>
                     <Copy kind="label">EXERCISE {index + 1}</Copy>
                     <Copy kind="heading">{exercise.name}</Copy>

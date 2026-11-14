@@ -229,3 +229,13 @@ local Supabase stack first. Keep local services on a trusted network.
 
 For backend contributions, see the [local migration workflow](../supabase/migrations/README.md).
 Hosted administration and deployments are covered in the [maintainer guide](maintainers.md).
+
+### In-memory template builder (#91)
+
+Template editing now supports independent per-set target weights/repetitions,
+adding/removing sets, and removing exercises, through the injected asynchronous
+service. Save commits the whole draft; incomplete drafts remain editable but
+cannot be saved. Weights are nonnegative finite pounds (decimals allowed), and
+repetitions are positive integers. Cancel, tab preservation, discard confirmation,
+and failed-save retry apply to the whole draft. Saved changes remain local to the
+running app session and do not affect workout history.
