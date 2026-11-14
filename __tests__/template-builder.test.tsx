@@ -142,3 +142,55 @@ test('reordering uses edit-only handles and saves placement order with the origi
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
   expect((await service.getTemplate('upper-body'))?.exercises[0].id).toBe('placement-dumbbell-row');
 });
+
+test('delete confirms by name, retains detail on failure, and can remove the last template', async () => {
+  const storage = createSampleWorkoutService();
+  let first = true;
+  const service: WorkoutService = { ...storage, async deleteTemplate(id) {
+    if (first) { first = false; throw new Error('Unavailable'); }
+    await storage.deleteTemplate(id);
+  } };
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const { app } = await builder(service);
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  expect(alert.mock.calls.at(-1)?.[1]).toContain('Upper body');
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Cancel')?.onPress?.());
+  expect(await storage.listTemplates()).toHaveLength(2);
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  expect(await screen.findByText('This template couldn’t be deleted. Please try again.')).toBeVisible();
+  expect(app.getPathname()).toBe('/templates/upper-body');
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry delete' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  await waitFor(() => expect(app.getPathname()).toBe('/templates'));
+  expect(screen.queryByRole('button', { name: /Upper body/ })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: /Lower body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  expect(await screen.findByText('No templates yet.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Create template' }));
+  expect(screen.getByLabelText('Template title')).toHaveDisplayValue('');
+});
+
+test('pending deletion disables duplicate changes and navigation until it settles', async () => {
+  const storage = createSampleWorkoutService();
+  let finish: () => void = () => {};
+  const pending = new Promise<void>((resolve) => { finish = resolve; });
+  const service: WorkoutService = { ...storage, async deleteTemplate(id) {
+    await pending;
+    await storage.deleteTemplate(id);
+  } };
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const { app } = await builder(service);
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Edit template details' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: /^Workouts, tab/ })).toBeDisabled();
+  await testRouter.back();
+  expect(app.getPathname()).toBe('/templates/upper-body');
+  await act(async () => finish());
+  await waitFor(() => expect(app.getPathname()).toBe('/templates'));
+});

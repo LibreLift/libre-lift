@@ -30,9 +30,10 @@ function toContent(draft: TemplateDraft): TemplateContent {
 export function useTemplateEditorViewModel(id: string) {
   const isNew = id === 'new';
   const resource = useTemplateViewModel(isNew ? null : id);
-  const { savingTemplate, saveTemplate, drafts, setDraft: updateDraft } = useWorkouts();
+  const { savingTemplate, saveTemplate, deleteTemplate, drafts, setDraft: updateDraft } = useWorkouts();
   const draft = drafts[id] ?? null;
   const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
+  const [deleted, setDeleted] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   useEffect(() => {
     if (isNew) updateDraft(id, (current) => current ?? { title: '', description: '', exercises: [] });
@@ -104,9 +105,19 @@ export function useTemplateEditorViewModel(id: string) {
       setError('Your changes couldn’t be saved. Please try again.');
     } finally { saving.current = false; }
   }
+  async function removeTemplate() {
+    if (saving.current || savingTemplate || draft || isNew) return;
+    saving.current = true;
+    setError(null);
+    try {
+      await deleteTemplate(id);
+      setDeleted(true);
+    } catch { setError('This template couldn’t be deleted. Please try again.'); }
+    finally { saving.current = false; }
+  }
   const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
   const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
-  return { ...resource, id, createdId, draft, error, dirty, saving: savingTemplate,
+  return { ...resource, id, deleted, removeTemplate, createdId, draft, error, dirty, saving: savingTemplate,
     startEditing, change, changeSet, addSet, removeSet, removeExercise, moveExercise, cancelEditing, save };
 }
 

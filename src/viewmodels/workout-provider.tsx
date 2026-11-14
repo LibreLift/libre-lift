@@ -9,6 +9,7 @@ interface WorkoutContextValue {
   service: WorkoutService;
   templatesVersion: number;
   savingTemplate: boolean;
+  deleteTemplate(id: string): Promise<void>;
   saveTemplate(id: string | null, details: TemplateContent): Promise<WorkoutTemplate>;
 }
 
@@ -28,24 +29,24 @@ export function WorkoutProvider({ service, children }: PropsWithChildren<{ servi
   const [templatesVersion, setTemplatesVersion] = useState(0);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const saving = useRef(false);
-  const saveTemplate = useCallback(
-    async (id: string | null, details: TemplateContent) => {
-      if (saving.current) throw new Error('A template is already being saved.');
-      saving.current = true;
-      setSavingTemplate(true);
-      try {
-        const template = await (id === null ? service.createTemplate(details) : service.updateTemplate(id, details));
-        setTemplatesVersion((value) => value + 1);
-        return template;
-      } finally {
-        saving.current = false;
-        setSavingTemplate(false);
-      }
-    },
-    [service],
-  );
+  const mutate = useCallback(async <T,>(operation: () => Promise<T>) => {
+    if (saving.current) throw new Error('A template change is already pending.');
+    saving.current = true;
+    setSavingTemplate(true);
+    try {
+      const result = await operation();
+      setTemplatesVersion((value) => value + 1);
+      return result;
+    } finally {
+      saving.current = false;
+      setSavingTemplate(false);
+    }
+  }, []);
+  const saveTemplate = useCallback((id: string | null, content: TemplateContent) =>
+    mutate(() => id === null ? service.createTemplate(content) : service.updateTemplate(id, content)), [mutate, service]);
+  const deleteTemplate = useCallback((id: string) => mutate(() => service.deleteTemplate(id)), [mutate, service]);
   return (
-    <WorkoutContext.Provider value={{ drafts, setDraft, service, templatesVersion, savingTemplate, saveTemplate }}>
+    <WorkoutContext.Provider value={{ drafts, setDraft, service, templatesVersion, savingTemplate, saveTemplate, deleteTemplate }}>
       {children}
     </WorkoutContext.Provider>
   );

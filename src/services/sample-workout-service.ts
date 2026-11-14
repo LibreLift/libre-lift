@@ -116,6 +116,10 @@ export function createSampleWorkoutService(): WorkoutService {
   let savedTemplates = templates.map(snapshotTemplate);
   let nextId = 1;
   return {
+    async deleteTemplate(id) {
+      if (!savedTemplates.some((template) => template.id === id)) throw new Error('This template couldn’t be found.');
+      savedTemplates = savedTemplates.filter((template) => template.id !== id);
+    },
     async createTemplate(content) {
       const validated = validateTemplate(content);
       const template = { id: `template-${nextId++}`, ...validated };

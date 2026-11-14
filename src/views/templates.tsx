@@ -45,6 +45,8 @@ export function TemplatesScreen() {
 export function TemplateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const model = useTemplateEditorViewModel(id);
+  const router = useRouter();
+  useEffect(() => { if (model.deleted) router.dismissTo('/templates'); }, [model.deleted, router]);
   useTemplateNavigationGuard(model);
   return (
     <>
@@ -61,7 +63,14 @@ export function TemplateDetailScreen() {
                   <>
                     <Copy kind="title">{template.title}</Copy>
                     <Copy kind="muted">{template.description}</Copy>
-                    <Button label="Edit template details" onPress={model.startEditing} />
+                    <Button label="Edit template details" disabled={model.saving} onPress={model.startEditing} />
+                    {model.error ? <Copy>{model.error}</Copy> : null}
+                    <Button label={model.saving ? 'Deleting…' : model.error ? 'Retry delete' : 'Delete template'} disabled={model.saving} onPress={() => {
+                      Alert.alert('Delete template?', `Delete “${template.title}”?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => void model.removeTemplate() },
+                      ]);
+                    }} />
                   </>
                 )}
                 {!model.draft && template.exercises.map((exercise, index) => (
@@ -111,7 +120,7 @@ export function NewTemplateScreen() {
   const router = useRouter();
   useTemplateNavigationGuard(model);
   useEffect(() => {
-    if (!model.draft && !model.createdId && model.state.status === 'ready') router.back();
+    if (!model.draft && !model.createdId && model.state.status === 'ready') router.dismissTo('/templates');
   }, [model.draft, model.createdId, model.state.status, router]);
   useEffect(() => {
     if (model.createdId) router.replace({ pathname: '/templates/[id]', params: { id: model.createdId } });
