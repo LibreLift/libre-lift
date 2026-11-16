@@ -47,6 +47,11 @@ distinct from its primary muscles. Missing targets remain unspecified rather tha
 being inferred.
 _Avoid_: Primary muscles
 
+**Muscle group**:
+A broader category of muscles described by a familiar training label, such as
+Chest, Upper back, Lower back, or Calves.
+_Avoid_: Primary muscle when referring to the broader category
+
 **No equipment**:
 An exercise's explicit lack of required equipment, identified from the catalog's
 bodyweight designation when equipment is absent. Missing equipment without that

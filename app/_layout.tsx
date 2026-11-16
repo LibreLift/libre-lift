@@ -16,18 +16,27 @@ import type { AuthClock } from '../src/services/auth-clock';
 import type { AuthService, AuthSession } from '../src/services/auth-service';
 import { createAppAuthService } from '../src/services/supabase-client';
 import { WorkoutProvider } from '../src/viewmodels/workout-provider';
+import { createExerciseCatalogService, type ExerciseCatalogService } from '../src/services/exercise-catalog-service';
+import { ExerciseCatalogProvider } from '../src/viewmodels/exercise-catalog';
 
-export default function RootLayout({ service: providedService, authService, initialSession, authClock }: {
-  service?: WorkoutService; authService?: AuthService; initialSession?: AuthSession; authClock?: AuthClock;
+export default function RootLayout({ service: providedService, authService, initialSession, authClock, catalogService: providedCatalogService }: {
+  service?: WorkoutService;
+  authService?: AuthService;
+  initialSession?: AuthSession;
+  authClock?: AuthClock;
+  catalogService?: ExerciseCatalogService;
 } = {}) {
   const [service] = useState(() => providedService ?? createSampleWorkoutService());
   const [authentication] = useState(() => authService ?? createAppAuthService());
+  const [catalogService] = useState(() => providedCatalogService ?? createExerciseCatalogService((url) => fetch(url)));
   return (
     <AuthProvider service={authentication} initialSession={initialSession} clock={authClock}>
       <WorkoutProvider service={service}>
-        <ThemeProvider store={themePreferenceStore}>
-          <Navigation />
-        </ThemeProvider>
+        <ExerciseCatalogProvider service={catalogService}>
+          <ThemeProvider store={themePreferenceStore}>
+            <Navigation />
+          </ThemeProvider>
+        </ExerciseCatalogProvider>
       </WorkoutProvider>
     </AuthProvider>
   );
