@@ -202,6 +202,10 @@ Open <http://127.0.0.1:54321/functions/v1/health> in your browser. Expect
 `{"status":"ok"}`. Local database browsing is at <http://127.0.0.1:54323>;
 local test emails appear at <http://127.0.0.1:54324>.
 
+After changing local Auth settings or email templates, run `supabase stop` and
+`supabase start` using the pinned CLI above from this checkout. Existing data is
+preserved; already-running containers do not pick up the changed settings.
+
 When finished, press Ctrl-C in the function terminal, then stop the backend:
 
 ```sh
@@ -228,7 +232,16 @@ OTP length, expiry, and send frequency in Auth settings. Keep email signup
 available. Configure SMTP/delivery restrictions for the intended testers; the
 built-in mail service has recipient and project-wide rate limits. Committing
 local config does not apply hosted settings. Never put a secret/service-role key
-in the Expo environment. Account names are saved in authenticated user metadata;
+in the Expo environment. Hosted delivery to ordinary users requires custom SMTP;
+Supabase's default provider restricts recipients to project team addresses. New
+free-tier projects using the default provider cannot customize email templates.
+See [SMTP requirements](https://supabase.com/docs/guides/auth/auth-smtp) and
+[template restrictions](https://supabase.com/changelog/46599-changes-to-email-template-customisation-on-free-tier).
+Keep SMTP credentials in Supabase, never in the app. Build the deployed app with
+the hosted project URL and its matching publishable key; changing Expo public
+settings requires restarting the development bundler or rebuilding the deployed
+app bundle. Merging this PR does not apply hosted Auth settings automatically.
+Account names are saved in authenticated user metadata;
 no public profile table is introduced.
 
 The app injects an asynchronous auth service, uses the SDK's native session

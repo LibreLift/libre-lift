@@ -1,6 +1,6 @@
 # Generated with Supabase CLI 3.1.0. Run commands from the repository root.
 # This config defines the local stack; it is not automatically applied to hosted.
-project_id = "librelift"
+project_id = "libre-lift"
 
 [api]
 enabled = true

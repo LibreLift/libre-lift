@@ -20,7 +20,7 @@ export function createAppAuthService() {
       });
       return client;
     } catch {
-      throw new AuthFailure('Account access is not configured. Check the app settings and try again.');
+      throw new AuthFailure(`Account access is not configured. Check the app settings and try again.`);
     }
   });
 }

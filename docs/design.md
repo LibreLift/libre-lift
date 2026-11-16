@@ -201,7 +201,7 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 **Chosen**: Email OTP only.
 **Alternatives considered**: Email + password, email magic link, Google OAuth, Apple OAuth.
 **Why the chosen option wins, given our goals**: Users are expected to sign in infrequently and remain signed in on their device. Email OTP avoids managing a rarely used password and the configuration overhead of OAuth providers.
-**Evidence**: Supabase supports email OTP for new and returning users and renewable sessions without a default maximum lifetime. During the #42 design discussion, the maintainer selected this approach based on the expected infrequency of sign-ins for a gym app.
+**Evidence**: Supabase supports email OTP for new and returning users and renewable sessions without a default maximum lifetime. During the Issue #42 design discussion, this approach was selected based on the expected infrequency of sign-ins for a gym app. The expectation is that users will sign in once and then use the app as desired.
 **What would change our mind**: Evidence that users need another sign-in method.
 
 See [ADR 0004: Use email OTP for account access](./adr/0004-email-otp-account-access.md)
