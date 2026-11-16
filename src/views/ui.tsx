@@ -98,10 +98,12 @@ export function Card({ children }: PropsWithChildren) {
 
 export function Button({
   label,
+  accessibilityLabel,
   onPress,
   disabled = false,
 }: {
   label: string;
+  accessibilityLabel?: string;
   onPress: () => void;
   disabled?: boolean;
 }) {
@@ -109,6 +111,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}

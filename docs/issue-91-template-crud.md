@@ -75,6 +75,8 @@ Provide complete template CRUD through Templates. Users select catalog exercises
 
 ## Implementation Decisions
 
+- Further November 16 refinement: saved templates also use two screen types. The saved overview lists exercise names and short set-count summaries; opening a placement shows its saved image and compact read-only target rows using the same layout as the set editor. Resolve placements by their own identity, not by catalog identity, and use saved snapshots without a catalog request. Missing imagery has an unavailable placeholder. The editing overview's button text is Sets, inline with the exercise title and trash control, with a contextual accessibility label.
+
 - November 16 UI refinement: split editing into two screen types. The template overview edits metadata, exercise membership/count, and order using compact placement summaries. A separate exercise editor manages only that placement's sets and targets, with each set in a single row: Set N: [reps] × [weight] lb. Back/Done returns to the overview preserving the shared draft; Save/Cancel on the overview applies to the entire template. This refines presentation without adding per-exercise persistence.
 
 - Extend existing MVVM: Views render ViewModels, which use the injected asynchronous WorkoutService. The root owns the in-memory instance. Saved state must not live in route-local fixtures or be accessed directly by Views.

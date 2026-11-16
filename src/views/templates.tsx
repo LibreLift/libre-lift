@@ -4,7 +4,6 @@ import { Alert } from 'react-native';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
 import { TemplateForm } from './template-form';
-import { ExerciseSummary } from './exercise-summary';
 import { Button, Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function TemplatesScreen() {
@@ -73,18 +72,16 @@ export function TemplateDetailScreen() {
                     }} />
                   </>
                 )}
-                {!model.draft && template.exercises.map((exercise, index) => (
-                  <Card key={exercise.id}>
-                    <Copy kind="label">EXERCISE {index + 1}</Copy>
-                    <Copy kind="heading">{exercise.name}</Copy>
-                    <ExerciseSummary exercise={exercise} />
-                    {exercise.sets.map((set) => (
-                      <Copy key={set.setNumber}>
-                        Set {set.setNumber} · {set.targetReps} reps × {set.targetWeight} lb
-                      </Copy>
-                    ))}
-                  </Card>
-                ))}
+                {!model.draft && <>
+                  <Copy kind="heading">{template.exercises.length} {template.exercises.length === 1 ? 'exercise' : 'exercises'}</Copy>
+                  {template.exercises.map((exercise) => (
+                    <LinkCard key={exercise.id} title={exercise.name}
+                      subtitle={`${exercise.sets.length} ${exercise.sets.length === 1 ? 'set' : 'sets'}`}
+                      icon="barbell-outline" onPress={() => router.push({
+                        pathname: '/templates/exercise', params: { templateId: template.id, exerciseId: exercise.id },
+                      })} />
+                  ))}
+                </>}
               </>
             ) : (
               <Card>

@@ -33,13 +33,13 @@ test('catalog browsing and explicit addition preserve drafts and add independent
   await testRouter.back();
   expect(screen.getByDisplayValue('My changed draft')).toBeVisible();
   await addCatalogExercise();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 3 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 3' }));
   expect(screen.getByLabelText('Exercise 3 set 1 weight (lb)')).toHaveDisplayValue('');
   await fireEvent.changeText(screen.getByLabelText('Exercise 3 set 1 weight (lb)'), '10');
   await fireEvent.changeText(screen.getByLabelText('Exercise 3 set 1 reps'), '8');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await addCatalogExercise();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 4 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 4' }));
   await fireEvent.changeText(screen.getByLabelText('Exercise 4 set 1 weight (lb)'), '20');
   await fireEvent.changeText(screen.getByLabelText('Exercise 4 set 1 reps'), '6');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
@@ -85,7 +85,7 @@ test('create from an empty draft, retry an atomic save and reopen the new templa
   expect(screen.getByLabelText('Template title')).toHaveDisplayValue('');
   await fireEvent.changeText(screen.getByLabelText('Template title'), 'Upper body');
   await addCatalogExercise();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0');
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '12');
   await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
@@ -98,16 +98,19 @@ test('create from an empty draft, retry an atomic save and reopen the new templa
   expect(await storage.listTemplates()).toHaveLength(2);
   await act(async () => rejectSave(new Error('Failed')));
   expect(await screen.findByRole('button', { name: 'Retry save' })).toBeEnabled();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('0');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
   expect(app.getPathname()).not.toBe('/templates/new');
+  await testRouter.back();
   await testRouter.back('/templates');
   expect(await screen.findByRole('button', { name: /Upper body.*1 exercise · 1 set/ })).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: /Upper body.*1 exercise · 1 set/ }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
 });
 
 test('new draft validation, discard and Cancel do not create records', async () => {
@@ -138,7 +141,7 @@ test('reordering uses edit-only handles and saves placement order with the origi
   expect(screen.getByRole('button', { name: 'Reorder exercise 1' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Move exercise 1 up' })).toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 2 up' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('35');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));

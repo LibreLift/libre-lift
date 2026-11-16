@@ -269,8 +269,9 @@ remains unchanged.
 ### Template editor screens (November 16 refinement)
 
 The template overview edits the name/description and shows compact exercise
-summaries with set counts. Add/remove and reorder exercises there. Choose Edit
-exercise N sets to open that placement's exercise editor. Each set is a single
+summaries with set counts. Add/remove and reorder exercises there. Choose Sets beside an
+exercise title to open that placement's exercise editor. The Sets and trash
+controls share the title row. Each set is a single
 row: Set N: [reps] × [weight] lb, with a Remove control. Numeric fields keep a
 minimum width; the set rows scroll horizontally on narrow screens or with larger
 text instead of squeezing the inputs. Add set copies the previous
@@ -282,3 +283,12 @@ For device review, verify the overview contains no set target inputs, each
 exercise opens the correct independent placement, rows fit comfortably on the
 phone, and Back/Done preserves values until the overview's Save/Cancel. Check
 keyboard use, increased text size, and both appearance themes.
+
+
+Saved templates use the same two-level navigation: the saved overview lists
+exercise names with a short set-count line, and tapping one opens its saved
+exercise image and read-only Set N: [reps] × [weight] lb rows. No catalog reload
+is needed; the image comes from the saved exercise snapshot. Missing imagery
+shows Image unavailable while set targets remain readable. Back returns to the
+saved overview. In the editor, Sets opens the set editor and sits inline with
+the exercise title and trash icon.

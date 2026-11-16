@@ -115,7 +115,7 @@ test('edit set targets, append a copied set, remove an exercise and reopen the s
   await renderRouter('./app');
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0.5');
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '12');
   await fireEvent.press(screen.getByRole('button', { name: 'Add set to exercise 1' }));
@@ -123,11 +123,14 @@ test('edit set targets, append a copied set, remove an exercise and reopen the s
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0.5 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: /^Bench press\. 4 sets$/ }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0.5 lb')).toBeVisible();
+  await testRouter.back();
   await testRouter.back('/templates');
   expect(await screen.findByRole('button', { name: /Upper body.*1 exercise · 4 sets/ })).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: /Upper body/ }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0.5 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: /^Bench press\. 4 sets$/ }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0.5 lb')).toBeVisible();
   expect(screen.queryByText('Dumbbell row')).toBeNull();
 });
 
@@ -135,12 +138,12 @@ test('incomplete targets and empty exercises remain drafts until corrected', asy
   await renderRouter('./app');
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
   expect(screen.getByText(/enter a weight of zero or more/)).toBeVisible();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('');
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0');
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '1.5');
@@ -152,5 +155,6 @@ test('incomplete targets and empty exercises remain drafts until corrected', asy
   await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
   expect(screen.getByText('Add at least one exercise.')).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
-  expect(screen.getByText('Set 1 · 8 reps × 95 lb')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Bench press. 3 sets' }));
+  expect(await screen.findByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
 });

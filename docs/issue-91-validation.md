@@ -72,7 +72,22 @@ unsaved draft; only the overview's Save/Cancel commits/discards it.
 - Standards review found no new actionable findings. Narrow-screen, increased
   text-size, and native gesture/device visual checks remain pending.
 
-+- Spec review found a narrow-screen/large-text risk of collapsing numeric inputs.
-+  Inputs now have a font-scaled minimum width and horizontal overflow scrolling,
-+  preserving the single-row format. No navigation or draft-lifecycle defects were
-+  found. Physical-device visual verification remains pending.
+- Spec review found a narrow-screen/large-text risk of collapsing numeric inputs.
+  Inputs now have a font-scaled minimum width and horizontal overflow scrolling,
+  preserving the single-row format. No navigation or draft-lifecycle defects were
+  found. Physical-device visual verification remains pending.
+
+
+## November 16 saved-detail refinement
+
+Saved templates now open exercise details from a compact overview of names and
+set counts. Saved exercise details show snapshot images and read-only set rows
+using the same layout as the editor. The overview's editing action now reads
+Sets and appears inline with the exercise title and trash icon.
+
+- TypeScript passed; the full Jest suite passed: 14 suites, 81 tests.
+- iOS and Android exports both passed.
+- Router coverage includes saved image/target snapshots, independent repeated
+  placements, read-only controls, tab/Back navigation, and missing imagery/records.
+- Standards and spec reviews found no new actionable findings. Native device
+  visual verification remains pending as above.

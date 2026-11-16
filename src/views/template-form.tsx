@@ -34,15 +34,13 @@ export function TemplateForm({ model }: { model: Editor }) {
     <Copy kind="heading">{draft.exercises.length} {draft.exercises.length === 1 ? 'exercise' : 'exercises'}</Copy>
     <ReorderableExercises exercises={draft.exercises} disabled={model.saving} onMove={model.moveExercise}>{(exercise, index) => <Card key={exercise.id}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View style={{ flex: 1 }}>
-          <Copy kind="heading">{exercise.name}</Copy>
-          <Copy kind="muted">{exercise.sets.length} {exercise.sets.length === 1 ? 'set' : 'sets'}</Copy>
-        </View>
+        <View style={{ flex: 1 }}><Copy kind="heading">{exercise.name}</Copy></View>
+        <Button label="Sets" accessibilityLabel={`Sets for exercise ${index + 1}`} disabled={model.saving} onPress={() => router.push({
+          pathname: '/templates/edit-exercise', params: { draftId: model.id, exerciseId: exercise.id },
+        })} />
         <IconButton label={`Remove exercise ${index + 1}`} icon="trash-outline" disabled={model.saving} onPress={() => model.removeExercise(exercise.id)} />
       </View>
-      <Button label={`Edit exercise ${index + 1} sets`} disabled={model.saving} onPress={() => router.push({
-        pathname: '/templates/edit-exercise', params: { draftId: model.id, exerciseId: exercise.id },
-      })} />
+      <Copy kind="muted">{exercise.sets.length} {exercise.sets.length === 1 ? 'set' : 'sets'}</Copy>
     </Card>}</ReorderableExercises>
     <Button label="Add exercise" disabled={model.saving} onPress={() => router.push({ pathname: '/templates/catalog', params: { draftId: model.id } })} />
     {model.error ? <Copy>{model.error}</Copy> : null}

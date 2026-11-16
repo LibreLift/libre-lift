@@ -9,7 +9,8 @@ test('template overview opens a separate set editor and keeps edits in the share
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
   expect(screen.getByText('3 sets')).toBeVisible();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  expect(screen.getAllByText('Sets')).toHaveLength(2);
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(app.getPathname()).toBe('/templates/edit-exercise');
   expect(screen.queryByLabelText('Template title')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Reorder exercise 1' })).toBeNull();
@@ -23,11 +24,12 @@ test('template overview opens a separate set editor and keeps edits in the share
   await testRouter.back();
   expect(screen.getByText('4 sets')).toBeVisible();
   expect((await service.getTemplate('upper-body'))?.exercises[0].sets[0].targetReps).toBe(8);
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(screen.getByLabelText('Exercise 1 set 1 reps')).toHaveDisplayValue('12');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0.5 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: 'Bench press. 4 sets' }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0.5 lb')).toBeVisible();
 });
 
 test('removing every set and returning keeps an incomplete draft, while Cancel restores the saved template', async () => {
@@ -35,7 +37,7 @@ test('removing every set and returning keeps an incomplete draft, while Cancel r
   await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 2 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 2' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2 set 2' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2 set 1' }));
   expect(screen.getByText('0 sets')).toBeVisible();
@@ -43,15 +45,17 @@ test('removing every set and returning keeps an incomplete draft, while Cancel r
   expect(screen.getByText('0 sets')).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
   expect(screen.getByText('Add at least one set to exercise 2.')).toBeVisible();
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 2 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 2' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Add set to exercise 2' }));
   expect(screen.getByLabelText('Exercise 2 set 1 weight (lb)')).toHaveDisplayValue('');
   expect(screen.getByLabelText('Exercise 2 set 1 reps')).toHaveDisplayValue('');
   await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
-  expect(await screen.findByText('Set 1 · 10 reps × 35 lb')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Dumbbell row. 2 sets' }));
+  expect(await screen.findByLabelText('Set 1: 10 reps × 35 lb')).toBeVisible();
+  await testRouter.back();
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
-  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 2 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 2' }));
   expect(screen.getByLabelText('Exercise 2 set 1 reps')).toHaveDisplayValue('10');
   expect((await service.getTemplate('upper-body'))?.exercises[1].sets).toHaveLength(2);
 });
