@@ -264,3 +264,21 @@ name; success returns to the refreshed list, and failure leaves a retry action.
 Pending deletion disables conflicting edits/navigation. Deleting the last record
 leaves an empty list with Create template available. Existing workout history
 remains unchanged.
+
+
+### Template editor screens (November 16 refinement)
+
+The template overview edits the name/description and shows compact exercise
+summaries with set counts. Add/remove and reorder exercises there. Choose Edit
+exercise N sets to open that placement's exercise editor. Each set is a single
+row: Set N: [reps] × [weight] lb, with a Remove control. Numeric fields keep a
+minimum width; the set rows scroll horizontally on narrow screens or with larger
+text instead of squeezing the inputs. Add set copies the previous
+set as before. Back or Done returns to the overview and keeps changes in the
+shared draft. Save/Cancel on the overview commits/discards the complete template.
+Tab changes preserve the open exercise editor and its draft inputs.
+
+For device review, verify the overview contains no set target inputs, each
+exercise opens the correct independent placement, rows fit comfortably on the
+phone, and Back/Done preserves values until the overview's Save/Cancel. Check
+keyboard use, increased text size, and both appearance themes.

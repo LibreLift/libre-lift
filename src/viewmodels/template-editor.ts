@@ -30,8 +30,9 @@ function toContent(draft: TemplateDraft): TemplateContent {
 export function useTemplateEditorViewModel(id: string) {
   const isNew = id === 'new';
   const resource = useTemplateViewModel(isNew ? null : id);
-  const { savingTemplate, saveTemplate, deleteTemplate, drafts, setDraft: updateDraft } = useWorkouts();
-  const draft = drafts[id] ?? null;
+  const { savingTemplate, saveTemplate, deleteTemplate, setDraft: updateDraft } = useWorkouts();
+  const draftEditor = useTemplateDraftViewModel(id);
+  const { draft } = draftEditor;
   const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
   const [deleted, setDeleted] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -48,8 +49,71 @@ export function useTemplateEditorViewModel(id: string) {
     setDraft(toDraft(template));
     setError(null);
   }
+  function cancelEditing() {
+    if (saving.current) return;
+    setDraft(null);
+    setError(null);
+  }
+  async function save() {
+    if (!draft || saving.current || savingTemplate) return;
+    let content: TemplateContent;
+    try { content = toContent(draft); }
+    catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Check your template.');
+      return;
+    }
+    saving.current = true;
+    setError(null);
+    try {
+      const saved = await saveTemplate(isNew ? null : id, content);
+      setDraft(null);
+      if (isNew) setCreatedId(saved.id);
+    } catch {
+      setError('Your changes couldn’t be saved. Please try again.');
+    } finally { saving.current = false; }
+  }
+  async function removeTemplate() {
+    if (saving.current || savingTemplate || draft || isNew) return;
+    saving.current = true;
+    setError(null);
+    try {
+      await deleteTemplate(id);
+      setDeleted(true);
+    } catch { setError('This template couldn’t be deleted. Please try again.'); }
+    finally { saving.current = false; }
+  }
+  const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
+  const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
+  return { ...resource, id, deleted, removeTemplate, createdId, error, dirty,
+    ...draftEditor, startEditing, cancelEditing, save };
+}
+
+// A catalog route can add only to a still-open draft identified by its owner route.
+export function useTemplateCatalogSelection(draftId: string | undefined) {
+  const { drafts, setDraft, savingTemplate } = useWorkouts();
+  const available = !!draftId && !!drafts[draftId] && !savingTemplate;
+  function add(exercise: CatalogExercise) {
+    if (!available || !draftId) return false;
+    setDraft(draftId, (draft) => {
+      if (!draft) return draft;
+      let number = 1;
+      while (draft.exercises.some((value) => value.id === `placement-${number}`)) number++;
+      const placement = createTemplateExercise(`placement-${number}`, exercise, []);
+      return { ...draft, exercises: [...draft.exercises, { ...placement, sets: [{ weight: '', reps: '' }] }] };
+    });
+    return true;
+  }
+  return { available, add };
+}
+
+// These operations edit the shared draft without owning its lifetime or saving it.
+// The template overview remains mounted while an exercise screen is open.
+export function useTemplateDraftViewModel(id: string) {
+  const { drafts, setDraft: updateDraft, savingTemplate } = useWorkouts();
+  const draft = drafts[id] ?? null;
+  const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
   function edit(update: (value: TemplateDraft) => TemplateDraft) {
-    if (!saving.current && !savingTemplate) setDraft((current) => current ? update(current) : current);
+    if (!savingTemplate) setDraft((current) => current ? update(current) : current);
   }
   function change(field: 'title' | 'description', value: string) {
     edit((current) => ({ ...current, [field]: value }));
@@ -94,59 +158,19 @@ export function useTemplateEditorViewModel(id: string) {
       return { ...current, exercises };
     });
   }
-  function cancelEditing() {
-    if (saving.current) return;
-    setDraft(null);
-    setError(null);
-  }
-  async function save() {
-    if (!draft || saving.current || savingTemplate) return;
-    let content: TemplateContent;
-    try { content = toContent(draft); }
-    catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Check your template.');
-      return;
-    }
-    saving.current = true;
-    setError(null);
-    try {
-      const saved = await saveTemplate(isNew ? null : id, content);
-      setDraft(null);
-      if (isNew) setCreatedId(saved.id);
-    } catch {
-      setError('Your changes couldn’t be saved. Please try again.');
-    } finally { saving.current = false; }
-  }
-  async function removeTemplate() {
-    if (saving.current || savingTemplate || draft || isNew) return;
-    saving.current = true;
-    setError(null);
-    try {
-      await deleteTemplate(id);
-      setDeleted(true);
-    } catch { setError('This template couldn’t be deleted. Please try again.'); }
-    finally { saving.current = false; }
-  }
-  const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
-  const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
-  return { ...resource, id, deleted, removeTemplate, createdId, draft, error, dirty, saving: savingTemplate,
-    startEditing, change, changeSet, addSet, removeSet, removeExercise, moveExercise, cancelEditing, save };
+  return { draft, saving: savingTemplate, change, changeSet, addSet, removeSet, removeExercise, moveExercise };
 }
 
-// A catalog route can add only to a still-open draft identified by its owner route.
-export function useTemplateCatalogSelection(draftId: string | undefined) {
-  const { drafts, setDraft, savingTemplate } = useWorkouts();
-  const available = !!draftId && !!drafts[draftId] && !savingTemplate;
-  function add(exercise: CatalogExercise) {
-    if (!available || !draftId) return false;
-    setDraft(draftId, (draft) => {
-      if (!draft) return draft;
-      let number = 1;
-      while (draft.exercises.some((value) => value.id === `placement-${number}`)) number++;
-      const placement = createTemplateExercise(`placement-${number}`, exercise, []);
-      return { ...draft, exercises: [...draft.exercises, { ...placement, sets: [{ weight: '', reps: '' }] }] };
-    });
-    return true;
-  }
-  return { available, add };
+export function useTemplateExerciseEditorViewModel(draftId: string, exerciseId: string) {
+  const editor = useTemplateDraftViewModel(draftId);
+  const index = editor.draft?.exercises.findIndex((exercise) => exercise.id === exerciseId) ?? -1;
+  const exercise = index >= 0 ? editor.draft?.exercises[index] : undefined;
+  return {
+    exercise,
+    exerciseNumber: index + 1,
+    saving: editor.saving,
+    changeSet: (set: number, field: 'weight' | 'reps', value: string) => editor.changeSet(exerciseId, set, field, value),
+    addSet: () => editor.addSet(exerciseId),
+    removeSet: (set: number) => editor.removeSet(exerciseId, set),
+  };
 }

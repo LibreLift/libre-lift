@@ -1,0 +1,65 @@
+import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
+import RootLayout from '../app/_layout';
+import { createSampleWorkoutService } from '../src/services/sample-workout-service';
+
+test('template overview opens a separate set editor and keeps edits in the shared draft until Save', async () => {
+  const service = createSampleWorkoutService();
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} /> } });
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
+  expect(screen.getByText('3 sets')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  expect(app.getPathname()).toBe('/templates/edit-exercise');
+  expect(screen.queryByLabelText('Template title')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Reorder exercise 1' })).toBeNull();
+  expect(screen.getByText('Set 1:')).toBeVisible();
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '12');
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0.5');
+  await fireEvent.press(screen.getByRole('button', { name: 'Add set to exercise 1' }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Templates, tab/ }));
+  expect(screen.getByLabelText('Exercise 1 set 1 reps')).toHaveDisplayValue('12');
+  await testRouter.back();
+  expect(screen.getByText('4 sets')).toBeVisible();
+  expect((await service.getTemplate('upper-body'))?.exercises[0].sets[0].targetReps).toBe(8);
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 1 sets' }));
+  expect(screen.getByLabelText('Exercise 1 set 1 reps')).toHaveDisplayValue('12');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByText('Set 1 · 12 reps × 0.5 lb')).toBeVisible();
+});
+
+test('removing every set and returning keeps an incomplete draft, while Cancel restores the saved template', async () => {
+  const service = createSampleWorkoutService();
+  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} /> } });
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 2 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2 set 2' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2 set 1' }));
+  expect(screen.getByText('0 sets')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  expect(screen.getByText('0 sets')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByText('Add at least one set to exercise 2.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 2 sets' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Add set to exercise 2' }));
+  expect(screen.getByLabelText('Exercise 2 set 1 weight (lb)')).toHaveDisplayValue('');
+  expect(screen.getByLabelText('Exercise 2 set 1 reps')).toHaveDisplayValue('');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+  expect(await screen.findByText('Set 1 · 10 reps × 35 lb')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit exercise 2 sets' }));
+  expect(screen.getByLabelText('Exercise 2 set 1 reps')).toHaveDisplayValue('10');
+  expect((await service.getTemplate('upper-body'))?.exercises[1].sets).toHaveLength(2);
+});
+
+test('direct exercise-editor entry without an active draft offers a safe return to Templates', async () => {
+  const app = await renderRouter('./app', { initialUrl: '/templates/edit-exercise?draftId=upper-body&exerciseId=placement-bench-press' });
+  expect(await screen.findByText('This exercise draft is no longer available.')).toBeVisible();
+  expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Open templates' }));
+  expect(app.getPathname()).toBe('/templates');
+});

@@ -73,6 +73,11 @@ available. Template targets and historical session values are separate snapshots
 Expo Router provides three bottom tabs: Templates (initial), Workouts, and Account.
 Templates have read-only detail and a complete draft editor for name, optional
 description, catalog exercise placements, and independent fixed-weight sets.
+Editing uses a template overview for name/description, exercise count, membership,
+and order, plus a separate screen for one placement’s sets and targets. Each set
+is one row: Set number, reps input, ×, weight input, and pounds. Back/Done from
+exercise editing returns to the overview without committing; both screens share
+one draft, and Save/Cancel on the overview applies to all changes.
 Creation, whole-template updates, and deletion use the injected asynchronous
 WorkoutService backed by memory. New templates append to the list. Successful
 mutations invalidate list/detail reads and refresh counts. A fresh app session

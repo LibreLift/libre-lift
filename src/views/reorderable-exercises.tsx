@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from '
 import { AccessibilityInfo, Keyboard, PanResponder, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../viewmodels/theme';
-import { Button, Copy, useScreenScroll } from './ui';
+import { IconButton, Copy, useScreenScroll } from './ui';
 
 interface Placement { readonly id: string; readonly name: string }
 interface Drag { id: string; startY: number; pageY: number; listTop: number; offset: number; target: number }
@@ -86,13 +86,11 @@ export function ReorderableExercises<T extends Placement>({ exercises, disabled,
         borderColor: preview?.target === index ? colors.accent : 'transparent', borderWidth: 2, borderRadius: 18 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <DragHandle label={`Reorder exercise ${index + 1}`} disabled={disabled} onStart={(y) => start(exercise.id, y)} onMove={move} onFinish={finish} />
-        <Copy>{preview?.id === exercise.id ? `Move to position ${preview.target + 1}` : `Exercise ${index + 1}`}</Copy>
+        <View style={{ flex: 1 }}><Copy>{preview?.id === exercise.id ? `Move to position ${preview.target + 1}` : `Exercise ${index + 1}`}</Copy></View>
+        <IconButton label={`Move exercise ${index + 1} up`} icon="arrow-up-outline" disabled={disabled || index === 0 || !!preview} onPress={() => onMove(exercise.id, index - 1)} />
+        <IconButton label={`Move exercise ${index + 1} down`} icon="arrow-down-outline" disabled={disabled || index === exercises.length - 1 || !!preview} onPress={() => onMove(exercise.id, index + 1)} />
       </View>
       {children(exercise, index)}
-      <View style={{ gap: 8 }}>
-        <Button label={`Move exercise ${index + 1} up`} disabled={disabled || index === 0 || !!preview} onPress={() => onMove(exercise.id, index - 1)} />
-        <Button label={`Move exercise ${index + 1} down`} disabled={disabled || index === exercises.length - 1 || !!preview} onPress={() => onMove(exercise.id, index + 1)} />
-      </View>
     </View>)}
   </View>;
 }

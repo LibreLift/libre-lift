@@ -75,6 +75,8 @@ Provide complete template CRUD through Templates. Users select catalog exercises
 
 ## Implementation Decisions
 
+- November 16 UI refinement: split editing into two screen types. The template overview edits metadata, exercise membership/count, and order using compact placement summaries. A separate exercise editor manages only that placement's sets and targets, with each set in a single row: Set N: [reps] × [weight] lb. Back/Done returns to the overview preserving the shared draft; Save/Cancel on the overview applies to the entire template. This refines presentation without adding per-exercise persistence.
+
 - Extend existing MVVM: Views render ViewModels, which use the injected asynchronous WorkoutService. The root owns the in-memory instance. Saved state must not live in route-local fixtures or be accessed directly by Views.
 - Extend the template contract with create, whole-template update, and delete alongside list/read; preserve session reads. Existing metadata editing must remain coherent with the full editor and share saved state and validation rules.
 - Save the complete draft atomically. Invalid or failed writes leave saved state unchanged. The service assigns template IDs; existing template IDs and surviving placement IDs stay stable through edits/reordering. Repeated catalog exercises receive independent placement identities.

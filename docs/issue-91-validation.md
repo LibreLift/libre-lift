@@ -56,3 +56,23 @@ the feature fully verified, review on a supported device or simulator:
 The tickets remain open. Local implementation and automated validation do not
 meet the repository's merged-and-production-audited definition of done, and no
 production deployment or independent contributor approval is claimed.
+
+## November 16 editor refinement
+
+The template overview now handles metadata, exercise membership/count, and order;
+each placement opens a separate exercise editor for sets and targets. Set inputs
+appear in compact rows with repetitions before weight. Back/Done keeps the same
+unsaved draft; only the overview's Save/Cancel commits/discards it.
+
+- TypeScript passed and the full Jest suite passed: 13 suites, 77 tests.
+- New router coverage verifies the two screen types, preservation across
+  Back/Done and tab changes, save/cancel across both screens, zero-set drafts,
+  and direct entry without an active draft.
+- Both iOS and Android bundle exports passed after the screen split.
+- Standards review found no new actionable findings. Narrow-screen, increased
+  text-size, and native gesture/device visual checks remain pending.
+
++- Spec review found a narrow-screen/large-text risk of collapsing numeric inputs.
++  Inputs now have a font-scaled minimum width and horizontal overflow scrolling,
++  preserving the single-row format. No navigation or draft-lifecycle defects were
++  found. Physical-device visual verification remains pending.

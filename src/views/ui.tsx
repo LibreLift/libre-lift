@@ -122,6 +122,20 @@ export function Button({
   );
 }
 
+export function IconButton({ label, icon, onPress, disabled = false }: {
+  label: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  onPress(): void;
+  disabled?: boolean;
+}) {
+  const { colors } = useTheme();
+  return <Pressable accessibilityRole="button" accessibilityLabel={label}
+    accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+    style={({ pressed }) => ({ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', opacity: disabled || pressed ? 0.5 : 1 })}>
+    <Ionicons name={icon} size={24} color={colors.text} accessible={false} />
+  </Pressable>;
+}
+
 export function LinkCard({
   title,
   subtitle,
