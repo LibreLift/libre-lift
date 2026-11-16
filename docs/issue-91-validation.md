@@ -53,9 +53,11 @@ the feature fully verified, review on a supported device or simulator:
 - Walk through create, reopen, full edit, catalog selection, and delete, including
   failure/retry with controlled services where appropriate.
 
-The tickets remain open. Local implementation and automated validation do not
-meet the repository's merged-and-production-audited definition of done, and no
-production deployment or independent contributor approval is claimed.
+The maintainer requested closing implementation tickets #94–#98 when preparing
+the PRs. Their closure records implemented scope; it does not establish the
+repository's merged-and-production-audited definition of done. The work remains
+In review on the board. No production deployment or independent contributor
+approval is claimed. Native device verification remains pending as above.
 
 ## November 16 editor refinement
 
