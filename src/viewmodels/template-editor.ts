@@ -30,9 +30,11 @@ function toContent(draft: TemplateDraft): TemplateContent {
 export function useTemplateEditorViewModel(id: string) {
   const isNew = id === 'new';
   const resource = useTemplateViewModel(isNew ? null : id);
-  const { savingTemplate, saveTemplate, drafts, setDraft: updateDraft } = useWorkouts();
-  const draft = drafts[id] ?? null;
+  const { savingTemplate, saveTemplate, deleteTemplate, setDraft: updateDraft } = useWorkouts();
+  const draftEditor = useTemplateDraftViewModel(id);
+  const { draft } = draftEditor;
   const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
+  const [deleted, setDeleted] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   useEffect(() => {
     if (isNew) updateDraft(id, (current) => current ?? { title: '', description: '', exercises: [] });
@@ -46,40 +48,6 @@ export function useTemplateEditorViewModel(id: string) {
     if (!template || saving.current) return;
     setDraft(toDraft(template));
     setError(null);
-  }
-  function edit(update: (value: TemplateDraft) => TemplateDraft) {
-    if (!saving.current && !savingTemplate) setDraft((current) => current ? update(current) : current);
-  }
-  function change(field: 'title' | 'description', value: string) {
-    edit((current) => ({ ...current, [field]: value }));
-  }
-  function changeSet(exerciseId: string, index: number, field: 'weight' | 'reps', value: string) {
-    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
-      ...exercise, sets: exercise.sets.map((set, position) => position === index ? { ...set, [field]: value } : set),
-    }) }));
-  }
-  function addSet(exerciseId: string) {
-    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
-      ...exercise, sets: [...exercise.sets, { ...(exercise.sets.at(-1) ?? { weight: '', reps: '' }) }],
-    }) }));
-  }
-  function removeSet(exerciseId: string, index: number) {
-    edit((current) => ({ ...current, exercises: current.exercises.map((exercise) => exercise.id !== exerciseId ? exercise : {
-      ...exercise, sets: exercise.sets.filter((_, position) => position !== index),
-    }) }));
-  }
-  function removeExercise(exerciseId: string) {
-    edit((current) => ({ ...current, exercises: current.exercises.filter((exercise) => exercise.id !== exerciseId) }));
-  }
-  function moveExercise(exerciseId: string, target: number) {
-    edit((current) => {
-      const exercises = [...current.exercises];
-      const source = exercises.findIndex((exercise) => exercise.id === exerciseId);
-      if (source < 0 || target < 0 || target >= exercises.length) return current;
-      const [exercise] = exercises.splice(source, 1);
-      exercises.splice(target, 0, exercise);
-      return { ...current, exercises };
-    });
   }
   function cancelEditing() {
     if (saving.current) return;
@@ -104,10 +72,20 @@ export function useTemplateEditorViewModel(id: string) {
       setError('Your changes couldn’t be saved. Please try again.');
     } finally { saving.current = false; }
   }
+  async function removeTemplate() {
+    if (saving.current || savingTemplate || draft || isNew) return;
+    saving.current = true;
+    setError(null);
+    try {
+      await deleteTemplate(id);
+      setDeleted(true);
+    } catch { setError('This template couldn’t be deleted. Please try again.'); }
+    finally { saving.current = false; }
+  }
   const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
   const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
-  return { ...resource, id, createdId, draft, error, dirty, saving: savingTemplate,
-    startEditing, change, changeSet, addSet, removeSet, removeExercise, moveExercise, cancelEditing, save };
+  return { ...resource, id, deleted, removeTemplate, createdId, error, dirty,
+    ...draftEditor, startEditing, cancelEditing, save };
 }
 
 // A catalog route can add only to a still-open draft identified by its owner route.
@@ -126,4 +104,73 @@ export function useTemplateCatalogSelection(draftId: string | undefined) {
     return true;
   }
   return { available, add };
+}
+
+// These operations edit the shared draft without owning its lifetime or saving it.
+// The template overview remains mounted while an exercise screen is open.
+export function useTemplateDraftViewModel(id: string) {
+  const { drafts, setDraft: updateDraft, savingTemplate } = useWorkouts();
+  const draft = drafts[id] ?? null;
+  const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
+  function edit(update: (value: TemplateDraft) => TemplateDraft) {
+    if (!savingTemplate) setDraft((current) => current ? update(current) : current);
+  }
+  function change(field: 'title' | 'description', value: string) {
+    edit((current) => ({ ...current, [field]: value }));
+  }
+  function editExercise(exerciseId: string, update: (exercise: TemplateDraft['exercises'][number]) => TemplateDraft['exercises'][number]) {
+    edit((current) => ({
+      ...current,
+      exercises: current.exercises.map((exercise) => {
+        if (exercise.id !== exerciseId) return exercise;
+        return update(exercise);
+      }),
+    }));
+  }
+  function changeSet(exerciseId: string, index: number, field: 'weight' | 'reps', value: string) {
+    editExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.map((set, position) => position === index ? { ...set, [field]: value } : set),
+    }));
+  }
+  function addSet(exerciseId: string) {
+    editExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: [...exercise.sets, { ...(exercise.sets.at(-1) ?? { weight: '', reps: '' }) }],
+    }));
+  }
+  function removeSet(exerciseId: string, index: number) {
+    editExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.filter((_, position) => position !== index),
+    }));
+  }
+  function removeExercise(exerciseId: string) {
+    edit((current) => ({ ...current, exercises: current.exercises.filter((exercise) => exercise.id !== exerciseId) }));
+  }
+  function moveExercise(exerciseId: string, target: number) {
+    edit((current) => {
+      const exercises = [...current.exercises];
+      const source = exercises.findIndex((exercise) => exercise.id === exerciseId);
+      if (source < 0 || target < 0 || target >= exercises.length) return current;
+      const [exercise] = exercises.splice(source, 1);
+      exercises.splice(target, 0, exercise);
+      return { ...current, exercises };
+    });
+  }
+  return { draft, saving: savingTemplate, change, changeSet, addSet, removeSet, removeExercise, moveExercise };
+}
+
+export function useTemplateExerciseEditorViewModel(draftId: string, exerciseId: string) {
+  const editor = useTemplateDraftViewModel(draftId);
+  const index = editor.draft?.exercises.findIndex((exercise) => exercise.id === exerciseId) ?? -1;
+  const exercise = index >= 0 ? editor.draft?.exercises[index] : undefined;
+  return {
+    exercise,
+    exerciseNumber: index + 1,
+    saving: editor.saving,
+    changeSet: (set: number, field: 'weight' | 'reps', value: string) => editor.changeSet(exerciseId, set, field, value),
+    addSet: () => editor.addSet(exerciseId),
+    removeSet: (set: number) => editor.removeSet(exerciseId, set),
+  };
 }

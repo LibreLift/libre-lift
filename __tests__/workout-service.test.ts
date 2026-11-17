@@ -66,3 +66,14 @@ test('creation appends unique templates with duplicate names and resets in a fre
   expect((await service.listTemplates()).map((template) => template.id)).toEqual(['upper-body', 'lower-body', first.id, second.id]);
   expect(await createSampleWorkoutService().listTemplates()).toHaveLength(2);
 });
+
+test('deletion removes only the requested template, rejects missing IDs, and preserves history', async () => {
+  const service = createSampleWorkoutService();
+  const history = await service.listSessions();
+  await service.deleteTemplate('upper-body');
+  expect(await service.getTemplate('upper-body')).toBeNull();
+  expect((await service.listTemplates()).map((template) => template.id)).toEqual(['lower-body']);
+  await expect(service.deleteTemplate('upper-body')).rejects.toThrow('couldn’t be found');
+  expect(await service.listSessions()).toEqual(history);
+  expect(await createSampleWorkoutService().listTemplates()).toHaveLength(2);
+});

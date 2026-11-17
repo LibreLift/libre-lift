@@ -33,12 +33,16 @@ test('catalog browsing and explicit addition preserve drafts and add independent
   await testRouter.back();
   expect(screen.getByDisplayValue('My changed draft')).toBeVisible();
   await addCatalogExercise();
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 3' }));
   expect(screen.getByLabelText('Exercise 3 set 1 weight (lb)')).toHaveDisplayValue('');
   await fireEvent.changeText(screen.getByLabelText('Exercise 3 set 1 weight (lb)'), '10');
   await fireEvent.changeText(screen.getByLabelText('Exercise 3 set 1 reps'), '8');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await addCatalogExercise();
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 4' }));
   await fireEvent.changeText(screen.getByLabelText('Exercise 4 set 1 weight (lb)'), '20');
   await fireEvent.changeText(screen.getByLabelText('Exercise 4 set 1 reps'), '6');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByText('My changed draft')).toBeVisible();
   const saved = await service.getTemplate('upper-body');
@@ -81,25 +85,32 @@ test('create from an empty draft, retry an atomic save and reopen the new templa
   expect(screen.getByLabelText('Template title')).toHaveDisplayValue('');
   await fireEvent.changeText(screen.getByLabelText('Template title'), 'Upper body');
   await addCatalogExercise();
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0');
   await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '12');
   await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
   await fireEvent.press(screen.getByRole('button', { name: /^Templates, tab/ }));
   expect(screen.getByLabelText('Exercise 1 set 1 reps')).toHaveDisplayValue('12');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled();
   expect(screen.getByRole('button', { name: /^Workouts, tab/ })).toBeDisabled();
   expect(await storage.listTemplates()).toHaveLength(2);
   await act(async () => rejectSave(new Error('Failed')));
   expect(await screen.findByRole('button', { name: 'Retry save' })).toBeEnabled();
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('0');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
   expect(app.getPathname()).not.toBe('/templates/new');
+  await testRouter.back();
   await testRouter.back('/templates');
   expect(await screen.findByRole('button', { name: /Upper body.*1 exercise · 1 set/ })).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: /Upper body.*1 exercise · 1 set/ }));
-  expect(await screen.findByText('Set 1 · 12 reps × 0 lb')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
 });
 
 test('new draft validation, discard and Cancel do not create records', async () => {
@@ -130,7 +141,9 @@ test('reordering uses edit-only handles and saves placement order with the origi
   expect(screen.getByRole('button', { name: 'Reorder exercise 1' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Move exercise 1 up' })).toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 2 up' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
   expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('35');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('button', { name: 'Edit template details' })).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Reorder exercise 1' })).toBeNull();
@@ -141,4 +154,56 @@ test('reordering uses edit-only handles and saves placement order with the origi
   await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 1 down' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
   expect((await service.getTemplate('upper-body'))?.exercises[0].id).toBe('placement-dumbbell-row');
+});
+
+test('delete confirms by name, retains detail on failure, and can remove the last template', async () => {
+  const storage = createSampleWorkoutService();
+  let first = true;
+  const service: WorkoutService = { ...storage, async deleteTemplate(id) {
+    if (first) { first = false; throw new Error('Unavailable'); }
+    await storage.deleteTemplate(id);
+  } };
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const { app } = await builder(service);
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  expect(alert.mock.calls.at(-1)?.[1]).toContain('Upper body');
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Cancel')?.onPress?.());
+  expect(await storage.listTemplates()).toHaveLength(2);
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  expect(await screen.findByText('This template couldn’t be deleted. Please try again.')).toBeVisible();
+  expect(app.getPathname()).toBe('/templates/upper-body');
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry delete' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  await waitFor(() => expect(app.getPathname()).toBe('/templates'));
+  expect(screen.queryByRole('button', { name: /Upper body/ })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: /Lower body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  expect(await screen.findByText('No templates yet.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Create template' }));
+  expect(screen.getByLabelText('Template title')).toHaveDisplayValue('');
+});
+
+test('pending deletion disables duplicate changes and navigation until it settles', async () => {
+  const storage = createSampleWorkoutService();
+  let finish: () => void = () => {};
+  const pending = new Promise<void>((resolve) => { finish = resolve; });
+  const service: WorkoutService = { ...storage, async deleteTemplate(id) {
+    await pending;
+    await storage.deleteTemplate(id);
+  } };
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  const { app } = await builder(service);
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.calls.at(-1)?.[2]?.find((button) => button.text === 'Delete')?.onPress?.());
+  expect(screen.getByRole('button', { name: 'Deleting…' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Edit template details' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: /^Workouts, tab/ })).toBeDisabled();
+  await testRouter.back();
+  expect(app.getPathname()).toBe('/templates/upper-body');
+  await act(async () => finish());
+  await waitFor(() => expect(app.getPathname()).toBe('/templates'));
 });

@@ -4,7 +4,6 @@ import { Alert } from 'react-native';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
 import { TemplateForm } from './template-form';
-import { ExerciseSummary } from './exercise-summary';
 import { Button, Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function TemplatesScreen() {
@@ -45,6 +44,8 @@ export function TemplatesScreen() {
 export function TemplateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const model = useTemplateEditorViewModel(id);
+  const router = useRouter();
+  useEffect(() => { if (model.deleted) router.dismissTo('/templates'); }, [model.deleted, router]);
   useTemplateNavigationGuard(model);
   return (
     <>
@@ -61,21 +62,26 @@ export function TemplateDetailScreen() {
                   <>
                     <Copy kind="title">{template.title}</Copy>
                     <Copy kind="muted">{template.description}</Copy>
-                    <Button label="Edit template details" onPress={model.startEditing} />
+                    <Button label="Edit template details" disabled={model.saving} onPress={model.startEditing} />
+                    {model.error ? <Copy>{model.error}</Copy> : null}
+                    <Button label={model.saving ? 'Deleting…' : model.error ? 'Retry delete' : 'Delete template'} disabled={model.saving} onPress={() => {
+                      Alert.alert('Delete template?', `Delete “${template.title}”?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => void model.removeTemplate() },
+                      ]);
+                    }} />
                   </>
                 )}
-                {!model.draft && template.exercises.map((exercise, index) => (
-                  <Card key={exercise.id}>
-                    <Copy kind="label">EXERCISE {index + 1}</Copy>
-                    <Copy kind="heading">{exercise.name}</Copy>
-                    <ExerciseSummary exercise={exercise} />
-                    {exercise.sets.map((set) => (
-                      <Copy key={set.setNumber}>
-                        Set {set.setNumber} · {set.targetReps} reps × {set.targetWeight} lb
-                      </Copy>
-                    ))}
-                  </Card>
-                ))}
+                {!model.draft && <>
+                  <Copy kind="heading">{template.exercises.length} {template.exercises.length === 1 ? 'exercise' : 'exercises'}</Copy>
+                  {template.exercises.map((exercise) => (
+                    <LinkCard key={exercise.id} title={exercise.name}
+                      subtitle={`${exercise.sets.length} ${exercise.sets.length === 1 ? 'set' : 'sets'}`}
+                      icon="barbell-outline" onPress={() => router.push({
+                        pathname: '/templates/exercise', params: { templateId: template.id, exerciseId: exercise.id },
+                      })} />
+                  ))}
+                </>}
               </>
             ) : (
               <Card>
@@ -111,7 +117,7 @@ export function NewTemplateScreen() {
   const router = useRouter();
   useTemplateNavigationGuard(model);
   useEffect(() => {
-    if (!model.draft && !model.createdId && model.state.status === 'ready') router.back();
+    if (!model.draft && !model.createdId && model.state.status === 'ready') router.dismissTo('/templates');
   }, [model.draft, model.createdId, model.state.status, router]);
   useEffect(() => {
     if (model.createdId) router.replace({ pathname: '/templates/[id]', params: { id: model.createdId } });

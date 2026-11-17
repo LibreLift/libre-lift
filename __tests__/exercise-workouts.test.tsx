@@ -1,9 +1,10 @@
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import { createTemplateExercise, createSessionExercise, type WorkoutTemplate, type WorkoutSession } from '../src/models/workout';
 import { mapRepDbResponse } from '../src/services/repdb-exercise-mapper';
 import type { WorkoutService } from '../src/services/workout-service';
 import RootLayout from '../app/_layout';
 import { TemplateDetailScreen } from '../src/views/templates';
+import { TemplateExerciseDetailScreen } from '../src/views/template-exercise';
 import { WorkoutDetailScreen } from '../src/views/workouts';
 
 test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable and distinct at %s after source changes', async (initialUrl) => {
@@ -44,6 +45,7 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
   editable.primaryMuscles[0] = 'Changed template muscle';
   const service: WorkoutService = {
     async listTemplates() { return [template]; }, async getTemplate() { return template; },
+    async deleteTemplate() {},
     async createTemplate(content) { return { id: 'new', ...content }; },
     async updateTemplate(_id, content) { return { ...template, ...content }; },
     async updateTemplateDetails(_id, details) { return { ...template, ...details }; },
@@ -59,15 +61,21 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
   await renderRouter({
     _layout: () => <RootLayout service={service} />,
     'templates/[id]': TemplateDetailScreen,
+    'templates/exercise': TemplateExerciseDetailScreen,
     'workouts/[id]': WorkoutDetailScreen,
   }, { initialUrl });
   expect(await screen.findAllByText('Bench press')).toHaveLength(2);
   expect(screen.queryByText('Renamed upstream')).toBeNull();
   expect(screen.queryByText(/99 reps/)).toBeNull();
-  expect(screen.getAllByText(/Chest/)).toHaveLength(2);
   if (initialUrl.startsWith('/templates')) {
-    expect(screen.getByText('Set 1 · 8 reps × 95 lb')).toBeVisible();
-    expect(screen.getByText('Set 1 · 12 reps × 95 lb')).toBeVisible();
+    const placements = screen.getAllByRole('button', { name: 'Bench press. 1 set' });
+    await fireEvent.press(placements[0]);
+    expect(await screen.findByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
+    expect(screen.getByRole('image', { name: 'Bench press — Start image' })).toHaveProp('source', { uri: 'https://example.org/start.webp' });
+    expect(screen.getByText(/Chest/)).toBeVisible();
+    await testRouter.back();
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Bench press. 1 set' })[1]);
+    expect(await screen.findByLabelText('Set 1: 12 reps × 95 lb')).toBeVisible();
   } else {
     for (const placement of screen.getAllByRole('button', { name: /^Bench press,/ })) {
       await fireEvent.press(placement);

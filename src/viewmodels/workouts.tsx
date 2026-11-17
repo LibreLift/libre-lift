@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { TemplateExercise } from '../models/workout';
 import { useWorkouts } from './workout-provider';
 
 export type LoadState<T> =
@@ -67,4 +68,12 @@ export function sessionSummary(startedAt: string, endedAt: string) {
   });
   const minutes = Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60000);
   return `${date} · ${minutes} min`;
+}
+
+export function useTemplateExerciseViewModel(templateId: string, exerciseId: string) {
+  const resource = useTemplateViewModel(templateId);
+  const state: LoadState<TemplateExercise | null> = resource.state.status === 'ready'
+    ? { status: 'ready', data: resource.state.data?.exercises.find((exercise) => exercise.id === exerciseId) ?? null }
+    : resource.state;
+  return { ...resource, state };
 }

@@ -19,9 +19,9 @@ The installed Expo Go build must support the project's SDK version. Android
 users can get matching builds from [Expo Go downloads](https://expo.dev/go).
 
 Docker, Supabase CLI, backend credentials, and a paid Apple developer membership
-are not required for the UI stub. The app uses bundled sample data and persists
-only the appearance preference across app restarts. Template metadata edits live
-in memory for the running app session.
+are not required for the UI stub. The app starts with bundled sample data and persists only the appearance
+preference across app restarts. Complete template CRUD lives in memory for the
+running app session.
 
 ## Install and launch
 
@@ -116,12 +116,11 @@ This checks bundling; it does not replace launching on a physical device.
   other pose and exercise information available. Reload on a detail route to
   confirm Open catalog starts a fresh visit.
 
-Sample exercises and history are fixed fixtures. Template title/description edits
-reset to the bundled values in a fresh app session; a normal tab change or screen
-reopening does not reset them. Authentication, full template editing, workout
-logging, template exercise selection, and backend persistence remain in their
-feature tasks. The standalone exercise catalog loads real RepDB data; it does not
-change the sample templates or history.
+Template saves and deletions reset to the bundled values in a fresh app session;
+a normal tab change or screen reopening does not reset them. Workout history
+remains independent. Authentication, workout logging, and backend persistence
+remain in their feature tasks. The live RepDB catalog supports both standalone
+browsing and exercise selection from an open template draft.
 
 ## Frontend structure
 
@@ -134,7 +133,7 @@ change the sample templates or history.
 
 The root layout creates the session-local workout service and injects it with the
 preference store. The workout provider refreshes template reads after successful
-metadata updates and exposes the save-in-progress state used by navigation. To integrate
+template mutations and exposes the pending-mutation state used by navigation. To integrate
 real data, implement `WorkoutService` and replace the injected implementation;
 views never import fixtures. Loading, errors, retry, empty lists, and missing
 detail records are supported. Sample weights use pounds (`lb`).
@@ -143,8 +142,9 @@ The root also injects a separate exercise catalog service. Its construction API
 accepts an HTTP request function: production supplies real HTTP, while route tests
 supply controlled responses through the same API. The catalog ViewModel uses the
 existing mapper, presents familiar muscle groups, and retains results only for
-the open screen. The temporary route uses a virtualized list rather than loading
-the catalog into the sample workout service. Catalog caching and retry are deferred.
+the open screen. The catalog route uses a virtualized list rather than loading
+the catalog into the sample workout service. Builder selection explicitly appends
+a snapshot to the open template draft; standalone browsing does not change drafts. Catalog caching and retry are deferred.
 The detail route shares only the selected record from the mounted catalog list;
 it does not independently fetch the catalog. Images use native loading/error
 events and do not change the catalog service's result.
@@ -258,3 +258,37 @@ to choose its new position. Move up/down buttons provide an accessible alternati
 Reordering preserves placement targets and is saved/cancelled with the draft.
 Handles are hidden in read-only detail. Native gesture review remains required:
 this workspace currently has no available iOS simulator runtime/device.
+
+Delete template is available on saved read-only detail. Confirm the template's
+name; success returns to the refreshed list, and failure leaves a retry action.
+Pending deletion disables conflicting edits/navigation. Deleting the last record
+leaves an empty list with Create template available. Existing workout history
+remains unchanged.
+
+
+### Template editor screens (November 16 refinement)
+
+The template overview edits the name/description and shows compact exercise
+summaries with set counts. Add/remove and reorder exercises there. Choose Sets beside an
+exercise title to open that placement's exercise editor. The Sets and trash
+controls share the title row. Each set is a single
+row: Set N: [reps] × [weight] lb, with a Remove control. Numeric fields keep a
+minimum width; the set rows scroll horizontally on narrow screens or with larger
+text instead of squeezing the inputs. Add set copies the previous
+set as before. Back or Done returns to the overview and keeps changes in the
+shared draft. Save/Cancel on the overview commits/discards the complete template.
+Tab changes preserve the open exercise editor and its draft inputs.
+
+For device review, verify the overview contains no set target inputs, each
+exercise opens the correct independent placement, rows fit comfortably on the
+phone, and Back/Done preserves values until the overview's Save/Cancel. Check
+keyboard use, increased text size, and both appearance themes.
+
+
+Saved templates use the same two-level navigation: the saved overview lists
+exercise names with a short set-count line, and tapping one opens its saved
+exercise image and read-only Set N: [reps] × [weight] lb rows. No catalog reload
+is needed; the image comes from the saved exercise snapshot. Missing imagery
+shows Image unavailable while set targets remain readable. Back returns to the
+saved overview. In the editor, Sets opens the set editor and sits inline with
+the exercise title and trash icon.
