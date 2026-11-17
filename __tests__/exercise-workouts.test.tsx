@@ -44,6 +44,8 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
   editable.primaryMuscles[0] = 'Changed template muscle';
   const service: WorkoutService = {
     async listTemplates() { return [template]; }, async getTemplate() { return template; },
+    async createTemplate(content) { return { id: 'new', ...content }; },
+    async updateTemplate(_id, content) { return { ...template, ...content }; },
     async updateTemplateDetails(_id, details) { return { ...template, ...details }; },
     async listSessions() { return [session]; }, async getSession() { return session; },
   };

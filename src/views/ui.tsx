@@ -1,4 +1,4 @@
-import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
+import { createContext, useContext, useRef, useState, type ComponentRef, type ComponentProps, type PropsWithChildren, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,9 +15,43 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../viewmodels/theme';
 import type { LoadState } from '../viewmodels/workouts';
 
+interface ScreenScroll {
+  beginDrag(): void;
+  endDrag(): void;
+  offset(): number;
+  scrollAtEdge(pageY: number): void;
+}
+const ScreenScrollContext = createContext<ScreenScroll | null>(null);
+export function useScreenScroll() {
+  const scroll = useContext(ScreenScrollContext);
+  if (!scroll) throw new Error('Screen is required for reordering.');
+  return scroll;
+}
+
 export function Screen({ children }: PropsWithChildren) {
   const { colors } = useTheme();
   const headerHeight = useHeaderHeight();
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const metrics = useRef({ offset: 0, height: 0, contentHeight: 0, top: 0 });
+  const [dragging, setDragging] = useState(false);
+  const scroll: ScreenScroll = {
+    beginDrag() {
+      scrollRef.current?.measureInWindow((_x, y, _width, height) => {
+        metrics.current.top = y;
+        metrics.current.height = height;
+      });
+      setDragging(true);
+    },
+    endDrag() { setDragging(false); },
+    offset() { return metrics.current.offset; },
+    scrollAtEdge(pageY) {
+      const m = metrics.current;
+      const delta = pageY < m.top + 80 ? -8 : pageY > m.top + m.height - 80 ? 8 : 0;
+      const offset = Math.max(0, Math.min(Math.max(0, m.contentHeight - m.height), m.offset + delta));
+      m.offset = offset;
+      scrollRef.current?.scrollTo({ y: offset, animated: false });
+    },
+  };
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -28,9 +62,14 @@ export function Screen({ children }: PropsWithChildren) {
         edges={['left', 'right', 'bottom']}
         style={{ flex: 1, backgroundColor: colors.background }}
       >
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.screen}>
-          {children}
-        </ScrollView>
+        <ScreenScrollContext.Provider value={scroll}>
+          <ScrollView ref={scrollRef} scrollEnabled={!dragging} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.screen}
+            scrollEventThrottle={16} onScroll={(event) => { metrics.current.offset = event.nativeEvent.contentOffset.y; }}
+            onLayout={(event) => { metrics.current.height = event.nativeEvent.layout.height; }}
+            onContentSizeChange={(_width, height) => { metrics.current.contentHeight = height; }}>
+            {children}
+          </ScrollView>
+        </ScreenScrollContext.Provider>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

@@ -229,3 +229,32 @@ local Supabase stack first. Keep local services on a trusted network.
 
 For backend contributions, see the [local migration workflow](../supabase/migrations/README.md).
 Hosted administration and deployments are covered in the [maintainer guide](maintainers.md).
+
+### In-memory template builder (#91)
+
+Template editing now supports independent per-set target weights/repetitions,
+adding/removing sets, and removing exercises, through the injected asynchronous
+service. Save commits the whole draft; incomplete drafts remain editable but
+cannot be saved. Weights are nonnegative finite pounds (decimals allowed), and
+repetitions are positive integers. Cancel, tab preservation, discard confirmation,
+and failed-save retry apply to the whole draft. Saved changes remain local to the
+running app session and do not affect workout history.
+
+From an open template draft, Add exercise opens the live catalog. Inspect a
+movement and choose Add to template to append one placement with blank targets.
+Back without adding preserves the draft; catalog failure also leaves it intact.
+Repeated movements are independent placements. Standalone Exercise catalog
+browsing remains read-only with respect to templates.
+
+Create template starts empty and reuses that builder. Save requires a name,
+one exercise, and one complete set per exercise. New templates append to the
+list (duplicate names are allowed); saving opens detail. Cancel returns to the
+list without creating a record. Restart/reload restores the two samples and
+clears unfinished drafts as well as saved changes.
+
+While creating/editing, long-press an exercise's three-line handle to drag it.
+Move near the top/bottom of the viewport to scroll while dragging, then release
+to choose its new position. Move up/down buttons provide an accessible alternative.
+Reordering preserves placement targets and is saved/cancelled with the draft.
+Handles are hidden in read-only detail. Native gesture review remains required:
+this workspace currently has no available iOS simulator runtime/device.

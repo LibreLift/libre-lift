@@ -71,12 +71,12 @@ test('saving locks fields and all navigation, then a failed save restores the dr
   let first = true;
   const service: WorkoutService = {
     ...storage,
-    async updateTemplateDetails(id, details) {
+    async updateTemplate(id, details) {
       if (first) {
         first = false;
         await pending;
       }
-      return storage.updateTemplateDetails(id, details);
+      return storage.updateTemplate(id, details);
     },
   };
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -109,4 +109,42 @@ test('saving locks fields and all navigation, then a failed save restores the dr
   expect(await screen.findByText('Retry this title')).toBeVisible();
   await testRouter.back('/templates');
   expect(await screen.findByRole('button', { name: /Retry this title/ })).toBeVisible();
+});
+
+test('edit set targets, append a copied set, remove an exercise and reopen the saved template', async () => {
+  await renderRouter('./app');
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0.5');
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '12');
+  await fireEvent.press(screen.getByRole('button', { name: 'Add set to exercise 1' }));
+  expect(screen.getByLabelText('Exercise 1 set 4 weight (lb)')).toHaveDisplayValue('115');
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByText('Set 1 · 12 reps × 0.5 lb')).toBeVisible();
+  await testRouter.back('/templates');
+  expect(await screen.findByRole('button', { name: /Upper body.*1 exercise · 4 sets/ })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: /Upper body/ }));
+  expect(await screen.findByText('Set 1 · 12 reps × 0.5 lb')).toBeVisible();
+  expect(screen.queryByText('Dumbbell row')).toBeNull();
+});
+
+test('incomplete targets and empty exercises remain drafts until corrected', async () => {
+  await renderRouter('./app');
+  await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByText(/enter a weight of zero or more/)).toBeVisible();
+  expect(screen.getByLabelText('Exercise 1 set 1 weight (lb)')).toHaveDisplayValue('');
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '0');
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '1.5');
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
+  expect(screen.getByText(/positive whole number of reps/)).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 2' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 1' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
+  expect(screen.getByText('Add at least one exercise.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByText('Set 1 · 8 reps × 95 lb')).toBeVisible();
 });
