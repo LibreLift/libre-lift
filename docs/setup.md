@@ -80,6 +80,8 @@ Workout logging and training persistence are not implemented.
 - `src/theme/`: Shared light/dark colors.
 
 The root layout injects workout, auth, catalog, and preference dependencies.
+Its lazy Supabase runtime exposes the same client to authentication and feature
+services, so later requests use the current authenticated session after refresh.
 Replace `WorkoutService` to integrate training persistence; views do not import
 fixtures. Template mutations refresh reads. Catalog requests accept injected HTTP;
 results belong to the open visit, and detail shares its selected record. Adding
