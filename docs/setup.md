@@ -14,7 +14,9 @@ then run `npx expo install --fix` and `npx expo-doctor`.
 
 Supabase settings are required to sign in and reach training screens; without
 settings, the app opens account access and appearance Settings only. Templates
-and workout history use sample data, while account names persist in Supabase.
+and account names persist in Supabase. Workout history remains clearly labeled
+sample data until session persistence is available. The template endpoint and
+committed migrations must be deployed before using the new app.
 Docker and Supabase CLI are optional for hosted development.
 
 ## Install and launch
@@ -64,10 +66,11 @@ No CI workflow, lint, or format script is checked in. Backend checks are below.
   a draft. Check Back preserves browsing state and offline errors are clear.
 - Open saved template exercises and expand workout history to review set details.
 - Check keyboard access, increased text size, and Light/Dark/System appearance.
-  Reload to confirm appearance and account names persist (sign-in is required again).
+  Reload to confirm appearance, account names, templates, and valid account access persist.
 
-Templates/drafts reset to samples on reload; workout history stays independent.
-Workout logging and training persistence are not implemented.
+Saved templates survive app restarts and updates. After reinstall, email OTP access
+to the same account/backend restores them. Unsaved drafts remain temporary.
+Workout logging and real workout-history persistence are not implemented.
 
 ## Frontend structure
 
@@ -82,8 +85,11 @@ Workout logging and training persistence are not implemented.
 The root layout injects workout, auth, catalog, and preference dependencies.
 Its lazy Supabase runtime exposes the same client to authentication and feature
 services, so later requests use the current authenticated session after refresh.
-Replace `WorkoutService` to integrate training persistence; views do not import
-fixtures. Template mutations refresh reads. Catalog requests accept injected HTTP;
+The injected persistence service's whole-template update and retry contract is
+documented in [template updates](issue-123-template-updates.md), including its
+disposable local service/HTTP/database check.
+Production template operations use the authenticated persistence service; views do
+not import fixtures. Controlled service factories remain available for tests. Template mutations refresh reads. Catalog requests accept injected HTTP;
 results belong to the open visit, and detail shares its selected record. Adding
 an exercise copies a snapshot into the draft. Catalog caching/retry are deferred.
 
@@ -103,7 +109,8 @@ Open <https://jibzcwwursyzvvthazby.supabase.co/functions/v1/health>; expect
 `{"status":"ok"}`. This checks function reachability only, not app credentials,
 email delivery, or database access. Ask a maintainer about deployment failures.
 Account access needs the application User migration and hosted Auth configuration
-below. Training still uses the in-memory service even with migrations applied.
+below. Template persistence additionally requires all committed migrations and the
+`workout-templates` Edge Function; health alone does not establish that they work.
 
 ### Optional: run your own local backend
 
@@ -124,7 +131,7 @@ Set BOTH `.env` values to the local URL and publishable key from `status`.
 Use `http://127.0.0.1:54321` on the computer, `http://10.0.2.2:54321` for Android
 emulators, or the computer's LAN IP for a physical phone. Restart Expo.
 Studio is at <http://127.0.0.1:54323>; test emails at <http://127.0.0.1:54324>.
-In another terminal, run `npx --yes supabase@3.1.0 functions serve health`;
+In another terminal, run `npx --yes supabase@3.1.0 functions serve`;
 <http://127.0.0.1:54321/functions/v1/health> should return `{"status":"ok"}`.
 Stop that process with Ctrl+C, then run `npx --yes supabase@3.1.0 stop` when done.
 Stopping preserves data. After Auth config/template changes, stop and start the
@@ -158,8 +165,10 @@ for testers; credentials stay in Supabase.
 After verification, the app loads `public.users`; an absent record requires name
 onboarding, and editing updates `account_name`. Auth metadata names are ignored.
 Lookup failures offer Retry loading account without opening onboarding. SDK tokens
-use native storage/process locking, but restoring sessions into app state and
-managing their lifecycle remain pending; reopening starts account access afresh.
+use native storage/process locking. Valid stored access restores on reopening;
+explicit sign-out, reinstall, or ended authentication requires email OTP again.
+Refreshing valid credentials preserves drafts. Account changes or definitive access
+loss clear protected state; ordinary template connection/permission errors retain it.
 
 For the real-service check, start a **disposable local** stack with committed
 migrations, Auth settings, and templates (separate project ID/ports), then run:
@@ -177,6 +186,31 @@ Device review and hosted delivery verification remain separate from these checks
 
 The optional [persisted template read check](./issue-121-template-reads.md) exercises
 the production service through a disposable local Edge Function and database.
-Production template composition remains in-memory until the #45 cutover.
+Production template composition uses that service by default.
 The same check now covers [atomic creation and retry safety](./issue-122-template-creation.md),
 including an injected late-write failure in the disposable database.
+It also verifies [retry-safe deletion](./issue-124-template-deletion.md), including
+lost responses, owner isolation, cascade failure recovery, and creation replay.
+
+## Verify template persistence in isolation
+
+With Docker running, use `npm run test:templates`. The checked-in runner creates a
+fresh local project on unused ports, copies only committed configuration,
+migrations, functions, and email templates, starts its own backend/function server,
+and runs the production service through real HTTP. It verifies CRUD, snapshots,
+ordering beyond backend row limits, retries, rollback, two-user isolation, restored
+credentials, renewed access, and old-account request rejection. It removes only its
+own containers/volumes and scratch files. No hosted credentials or email delivery
+are needed; fixtures provision local accounts and are cleaned up.
+
+The separate `npm run test:db` verifies clean/populated migrations and database
+policies. TypeScript/Jest and Expo checks remain as listed above. Backend startup
+logs can contain local credentials, so the runner keeps them private; a startup
+failure prints their scratch location for diagnosis. If cleanup fails, use the
+printed project path with the pinned CLI's local `stop --no-backup --workdir PATH`.
+Do not redirect checks to a shared project or add a remote target.
+
+Native device review remains separate: verify restart/update/reinstall + OTP on
+the same backend/account, drag ordering, keyboard, large text, and both themes.
+The [#125 validation record](issue-125-template-production.md) distinguishes checks
+completed here from device and hosted audit work still requiring review.

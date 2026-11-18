@@ -122,6 +122,58 @@ async function main() {
       { id: 'draft-press-again', catalogId: 'repdb:bench-press', ...snapshot,
         sets: [{ setNumber: 1, targetWeight: 0, targetReps: 12 }] },
     ] };
+    for (const invalidSnapshot of [
+      { images: { preferred: 'main', main: ' \t\n' } },
+      { images: { preferred: 'main', main: '\u00a0\ufeff' } },
+      { images: { preferred: 'pair', pair: { start: ' \t', peak: snapshot.images.pair.peak } } },
+      { images: { preferred: 'pair', pair: { start: snapshot.images.pair.start, peak: '\n\r' } } },
+      { images: { preferred: 'pair', pair: snapshot.images.pair, main: ' \u00a0' } },
+      { name: '\u00a0' },
+      { equipment: { kind: 'required', name: '\ufeff' } },
+      { translations: { de: { name: '\u00a0' } } },
+      { catalogId: 'repdb:bench-press\u00a0' },
+    ]) {
+      const imageId = randomUUID();
+      const imageOperation = randomUUID();
+      const imageContent = { ...draft, exercises: draft.exercises.map(exercise => ({ ...exercise, id: randomUUID() })) };
+      Object.assign(imageContent.exercises[0], invalidSnapshot);
+      const invalidImage = await actor.rpc('save_workout_template', {
+        p_id: imageId, p_operation: imageOperation, p_content: imageContent, p_mode: 'create',
+      });
+      assert.equal(invalidImage.error?.code, '22023', 'Direct saves must reject descriptions the canonical model cannot read.');
+      assert.equal(await creating.getTemplate(imageId), null);
+      imageContent.exercises[0] = { ...draft.exercises[0], id: imageContent.exercises[0].id };
+      const correctedImage = await actor.rpc('save_workout_template', {
+        p_id: imageId, p_operation: imageOperation, p_content: imageContent, p_mode: 'create',
+      });
+      assert.ifError(correctedImage.error);
+      assert.deepEqual((await creating.getTemplate(imageId)).exercises[0].images, snapshot.images);
+      await creating.deleteTemplate(imageId);
+    }
+    console.log('Invalid direct snapshot saves leave neither an aggregate nor a successful-save identity.');
+    const rangeId = randomUUID();
+    const rangeOperation = randomUUID();
+    const rangeContent = { ...draft, exercises: draft.exercises.map(exercise => ({ ...exercise, id: randomUUID() })) };
+    rangeContent.exercises[0].sets = [{ setNumber: 1, targetWeight: 12.5, targetReps: 2147483648 }];
+    const invalidRange = await actor.functions.invoke('workout-templates', {
+      body: { action: 'create', id: rangeId, operationId: rangeOperation, content: rangeContent },
+    });
+    assert.equal(invalidRange.error?.context.status, 400, 'Storage-range input errors must be validation failures.');
+    assert.equal((await invalidRange.error.context.json()).kind, 'validation');
+    assert.equal(await creating.getTemplate(rangeId), null);
+    const invalidRangeRpc = await actor.rpc('save_workout_template', {
+      p_id: rangeId, p_operation: rangeOperation, p_content: rangeContent, p_mode: 'create',
+    });
+    assert.equal(invalidRangeRpc.error?.code, '22023', 'RPC validation must reject out-of-range targets before integer casts.');
+    assert.equal(await creating.getTemplate(rangeId), null);
+    rangeContent.exercises[0].sets[0].targetReps = 2147483647;
+    const correctedRange = await actor.functions.invoke('workout-templates', {
+      body: { action: 'create', id: rangeId, operationId: rangeOperation, content: rangeContent },
+    });
+    assert.ifError(correctedRange.error);
+    assert.equal((await creating.getTemplate(rangeId)).exercises[0].sets[0].targetReps, 2147483647);
+    await creating.deleteTemplate(rangeId);
+    console.log('Out-of-range repetition input is validation, with no partial save or committed retry identity.');
     const context = {};
     const saved = await creating.createTemplate(draft, context);
     assert.equal(saved.title, 'New plan');
@@ -209,13 +261,72 @@ async function main() {
     const recovered = await creating.createTemplate(rollbackDraft, rollbackContext);
     assert.equal(recovered.title, rollbackDraft.title);
     assert.deepEqual(await creating.getTemplate(recovered.id), recovered);
-    assert.ifError((await actor.from('workout_templates').delete().eq('id', wire.id)).error);
+    await creating.deleteTemplate(wire.id);
     const deletedReplay = await actor.functions.invoke('workout-templates', { body: wire });
     assert.equal(deletedReplay.error.context.status, 404);
     const deletedContinuation = await actor.functions.invoke('workout-templates', { body: { ...wire, operationId: randomUUID() } });
     assert.equal(deletedContinuation.error.context.status, 404);
     assert.equal(await creating.getTemplate(wire.id), null);
     console.log('A failure after earlier aggregate writes rolls back completely and retries; deleted creations cannot be resurrected.');
+
+    const deleted = await creating.createTemplate({ ...draft, title: 'Delete this plan' }, {});
+    const history = await creating.listSessions();
+    await otherService.deleteTemplate(deleted.id);
+    assert.deepEqual(await creating.getTemplate(deleted.id), deleted);
+    await otherService.deleteTemplate(randomUUID());
+    await assert.rejects(anonymous.deleteTemplate(deleted.id));
+    await assert.rejects(creating.deleteTemplate('not-a-uuid'));
+    const invalidDelete = await actor.functions.invoke('workout-templates', { body: { action: 'delete', id: 'not-a-uuid' } });
+    assert.equal(invalidDelete.error.context.status, 400);
+    const deniedDelete = await createClient(settings.API_URL, settings.PUBLISHABLE_KEY, options).rpc('delete_workout_template', { p_id: deleted.id });
+    assert.equal(deniedDelete.error.code, '42501');
+    await creating.deleteTemplate(deleted.id);
+    assert.equal(await creating.getTemplate(deleted.id), null);
+    await creating.deleteTemplate(deleted.id);
+    assert.deepEqual(await creating.listSessions(), history);
+    console.log('Owner deletion, missing/foreign no-op outcomes, anonymous rejection and invalid IDs preserve account isolation and sample history.');
+
+    const cascade = await creating.createTemplate({ ...draft, title: 'Atomic cascade deletion' }, {});
+    sql(`create function public.template_check_fail_delete() returns trigger language plpgsql as $$ begin
+      if auth.uid() = '${created.data.user.id}'::uuid and old.template_exercise_id = '${cascade.exercises[0].id}'::uuid
+        then raise exception 'Injected child deletion failure'; end if;
+      return old; end $$;
+      create trigger template_check_fail_delete before delete on public.template_sets for each row execute function public.template_check_fail_delete();`);
+    try {
+      await assert.rejects(creating.deleteTemplate(cascade.id));
+      assert.deepEqual(await creating.getTemplate(cascade.id), cascade);
+    } finally { sql('drop trigger if exists template_check_fail_delete on public.template_sets; drop function if exists public.template_check_fail_delete();'); }
+    await creating.deleteTemplate(cascade.id);
+    assert.equal(await creating.getTemplate(cascade.id), null);
+    console.log('A child cascade failure preserves the complete template; retry removes it atomically.');
+
+    const lostDelete = await creating.createTemplate({ ...draft, title: 'Lost delete response' }, {});
+    let dropDelete = true;
+    const deletingClient = createClient(settings.API_URL, settings.PUBLISHABLE_KEY, { ...options, global: { fetch: async (url, init) => {
+      const response = await fetch(url, init);
+      if (String(url).includes('/functions/v1/workout-templates') && JSON.parse(init.body).action === 'delete' && dropDelete) {
+        dropDelete = false;
+        assert.equal(response.status, 200);
+        throw new Error('Delete response lost after commit');
+      }
+      return response;
+    } } });
+    assert.ifError((await deletingClient.auth.setSession(session)).error);
+    const deleting = createSupabaseWorkoutService(() => deletingClient);
+    await assert.rejects(deleting.deleteTemplate(lostDelete.id));
+    assert.equal(await creating.getTemplate(lostDelete.id), null);
+    await deleting.deleteTemplate(lostDelete.id);
+
+    const raceContext = {};
+    const raceDraft = { ...draft, title: 'Concurrent retry and delete' };
+    const raceTemplate = await creating.createTemplate(raceDraft, raceContext);
+    const race = await Promise.allSettled([creating.createTemplate(raceDraft, raceContext), creating.deleteTemplate(raceTemplate.id)]);
+    assert.equal(race[1].status, 'fulfilled');
+    if (race[0].status === 'fulfilled') assert.deepEqual(race[0].value, raceTemplate);
+    else assert.equal(race[0].reason.kind, 'missing');
+    assert.equal(await creating.getTemplate(raceTemplate.id), null);
+    await assert.rejects(creating.createTemplate(raceDraft, raceContext), error => error.kind === 'missing');
+    console.log('Lost delete responses retry safely; concurrent creation replay and deletion never resurrect a committed template.');
 
   } finally {
     for (const id of accountIds) assert.ifError((await admin.auth.admin.deleteUser(id)).error);
