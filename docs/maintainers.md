@@ -31,7 +31,9 @@ it does not deploy the checkout. Use password prompts rather than committing
 credentials or putting them in shell history. Organization owners manage access
 through Supabase; this repo does not provision dashboard memberships.
 
-After review and local verification, check migration history and the pending SQL:
+After review, run `npm run test:db` to verify clean installation, populated
+migration application, and database permissions in an isolated local project.
+Then check hosted migration history and the pending SQL:
 
 ```sh
 npx --yes supabase@3.1.0 migration list --remote=jibzcwwursyzvvthazby
@@ -43,8 +45,13 @@ npx --yes supabase@3.1.0 functions deploy health --remote=jibzcwwursyzvvthazby -
 Confirm the project reference in each hosted prompt. Omit `--yes` for interactive
 review. The function deployment can bundle server-side without Docker. Deploy
 other functions explicitly by name; do not prune unrelated deployed functions.
-Run the hosted health request again after deployment. With no SQL migrations yet,
-there is nothing to push to the hosted database.
+Run the hosted health request again after deployment. The M1 migrations create
+application Users and template storage with explicit grants and RLS. No trigger
+creates application Users and no sample data is seeded. Existing Auth accounts must supply
+an account name through #42 before their application User exists. Applying the
+schema alone does not implement #42's account-data calls or #45's template API and
+app integration. Hosted schema application and the required post-merge audit remain
+manual maintainer steps; `npm run test:db` never targets hosted data.
 
 ### Capture dashboard schema edits
 

@@ -50,7 +50,24 @@ integration; this schema does not implement an API or change the current UI.
 
 ## Database tests
 
-After applying migrations to your local backend, run:
+For the complete isolated migration and behavior check, run:
+
+```sh
+npm run test:db
+```
+
+The runner stages committed migrations in a temporary postgres-only Supabase
+project. It verifies an existing Auth account survives initial application schema
+creation without an invented User, then verifies a named User survives the template
+migration. A subsequent no-op migration application preserves a complete saved
+template. Finally it resets only that generated project and runs the database
+suite against the clean rebuild. It copies no linked/hosted state, uses unused
+ports, and removes only its own containers/volumes on completion. Fixtures exist
+only in that temporary database, never as automatic seed data. Future migrations
+are applied in order; once real migrations extending template storage exist, add
+appropriate pre-migration template sentinels rather than artificial migrations.
+
+For a faster behavior-only check after applying migrations to your own local backend, run:
 
 ```sh
 npx --yes supabase@3.1.0 test db
