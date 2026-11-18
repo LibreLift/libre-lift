@@ -87,7 +87,8 @@ try {
   const updateIndex = featureFiles.indexOf('20261118000300_update_workout_template.sql');
   const deleteIndex = featureFiles.indexOf('20261118000400_delete_workout_template.sql');
   if (updateIndex >= 0 && deleteIndex >= 0) {
-    [featureFiles[updateIndex], featureFiles[deleteIndex]] = [featureFiles[deleteIndex], featureFiles[updateIndex]];
+    const [updateMigration] = featureFiles.splice(updateIndex, 1);
+    featureFiles.push(updateMigration);
   }
   for (const filename of featureFiles) apply(filename);
   cli('migration', 'up', '--include-all');
