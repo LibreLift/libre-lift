@@ -1,5 +1,5 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.119.0';
-import { savedTemplate, savedTemplates, TemplateFailure, type TemplateReadRequest, type TemplateCreateRequest, type TemplateDeleteRequest } from '../_shared/template-contract.ts';
+import { savedTemplate, savedTemplates, TemplateFailure, type TemplateReadRequest, type TemplateSaveRequest, type TemplateDeleteRequest } from '../_shared/template-contract.ts';
 
 export async function deleteTemplate(client: SupabaseClient, request: TemplateDeleteRequest) {
   const { error } = await client.rpc('delete_workout_template', { p_id: request.id });
@@ -10,9 +10,9 @@ export async function deleteTemplate(client: SupabaseClient, request: TemplateDe
   return null;
 }
 
-export async function createTemplate(client: SupabaseClient, request: TemplateCreateRequest) {
+export async function saveTemplate(client: SupabaseClient, request: TemplateSaveRequest) {
   const { data, error } = await client.rpc('save_workout_template', {
-    p_id: request.id, p_operation: request.operationId, p_content: request.content, p_mode: 'create',
+    p_id: request.id, p_operation: request.operationId, p_content: request.content, p_mode: request.action,
   });
   if (error) {
     if (error.code === 'P0002') throw new TemplateFailure('This template couldn’t be found.', 'missing');

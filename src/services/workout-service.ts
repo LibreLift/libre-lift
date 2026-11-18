@@ -9,7 +9,7 @@ export interface WorkoutService {
   deleteTemplate(id: string): Promise<void>;
   createTemplate(content: TemplateContent, context?: TemplateSaveContext): Promise<WorkoutTemplate>;
   updateTemplate(id: string, content: TemplateContent, context?: TemplateSaveContext): Promise<WorkoutTemplate>;
-  updateTemplateDetails(id: string, details: TemplateDetails): Promise<WorkoutTemplate>;
+  updateTemplateDetails(id: string, details: TemplateDetails, context?: TemplateSaveContext): Promise<WorkoutTemplate>;
   listSessions(): Promise<readonly WorkoutSession[]>;
   getSession(id: string): Promise<WorkoutSession | null>;
 }

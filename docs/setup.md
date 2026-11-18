@@ -82,6 +82,9 @@ Workout logging and training persistence are not implemented.
 The root layout injects workout, auth, catalog, and preference dependencies.
 Its lazy Supabase runtime exposes the same client to authentication and feature
 services, so later requests use the current authenticated session after refresh.
+The injected persistence service's whole-template update and retry contract is
+documented in [template updates](issue-123-template-updates.md), including its
+disposable local service/HTTP/database check.
 Replace `WorkoutService` to integrate training persistence; views do not import
 fixtures. Template mutations refresh reads. Catalog requests accept injected HTTP;
 results belong to the open visit, and detail shares its selected record. Adding
