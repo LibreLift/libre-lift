@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { useAuth } from '../viewmodels/auth';
 import { useTheme } from '../viewmodels/theme';
@@ -34,13 +34,15 @@ export function AccountInput({ label, value, onChangeText, disabled, kind = 'ema
   </>;
 }
 
-export function AccountNameForm({ initialName, onSaved, onCancel }: {
+export function AccountNameForm({ initialName, onSaved, onCancel, onDirtyChange }: {
   initialName: string;
   onSaved?: () => void;
   onCancel?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const model = useAuth();
   const [name, setName] = useState(initialName);
+  useEffect(() => { onDirtyChange?.(name.trim() !== initialName.trim()); }, [name, initialName, onDirtyChange]);
 
   async function save() {
     if (await model.saveName(name)) onSaved?.();

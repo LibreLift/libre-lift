@@ -416,3 +416,17 @@ AUTH_TEST_WORKDIR=/absolute/path/to/disposable-supabase-project node scripts/che
 It verifies persisted authentication across client recreation and application
 User loading through the real authentication service. The full agreed lifecycle
 and testing boundaries are recorded in [the #43 spec](issue-43-auth-sessions.md).
+
+Sign out is available from Account, name onboarding, and account recovery. It ends
+only this device's access. Unsaved changes require confirmation; deliberate
+sign-out is disabled during saves. Forced authentication loss immediately removes
+protected content even if a save is pending. Local cleanup resets account-owned
+services, cached reads, drafts, edits, and navigation; late old responses cannot
+restore them. Appearance preferences and saved backend records remain.
+
+Server revocation failure does not prevent local sign-out. A failure to remove
+credentials from device storage instead shows Device sign-out incomplete and
+Retry sign-out; access remains gated until cleanup succeeds. The disposable
+session check also covers server failure, separate-session survival, and local
+credential-removal failure/retry. During device review, verify unsaved-change
+confirmation, sign-out/re-entry, and that Back never reveals the prior account.

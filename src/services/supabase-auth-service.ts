@@ -36,6 +36,33 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
   }
 
   return {
+    subscribe(listener) {
+      const { data: { subscription } } = getClient().auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') listener({ type: 'signed-out' });
+        else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          listener({ type: event === 'SIGNED_IN' ? 'signed-in' : 'refreshed', session: sessionFrom(session) });
+        }
+      });
+      return () => subscription.unsubscribe();
+    },
+    signOut() {
+      const auth = getClient().auth;
+      // SIGNED_OUT is emitted after durable local removal, before server revocation.
+      // Resolve then so an offline server cannot delay local sign-out.
+      return new Promise<void>((resolve, reject) => {
+        const { data: { subscription } } = auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_OUT') { subscription.unsubscribe(); resolve(); }
+        });
+        void auth.signOut({ scope: 'local' }).then(({ error }) => {
+          subscription.unsubscribe();
+          if (error) reject(new AuthFailure('Device sign-out could not be completed. Please retry.'));
+          else resolve();
+        }, () => {
+          subscription.unsubscribe();
+          reject(new AuthFailure('Device sign-out could not be completed. Please retry.'));
+        });
+      });
+    },
     async restoreSession() {
       const { data, error } = await getClient().auth.getSession();
       if (error) throw failure(error);

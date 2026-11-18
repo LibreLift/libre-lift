@@ -1,15 +1,24 @@
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../viewmodels/auth';
 import { AccountInput, AccountNameForm } from './account-forms';
 import { Button, Card, Copy, FormError, Screen } from './ui';
+import { SignOutButton } from './sign-out';
 
 export function AccountAccessScreen() {
   const model = useAuth();
   const router = useRouter();
+  if (model.cleanupPending || model.cleanupError) return <Screen>
+    <Copy kind="title">{model.cleanupPending ? 'Signing out' : 'Device sign-out incomplete'}</Copy>
+    <FormError message={model.cleanupError} />
+    {model.cleanupError ? <Button label="Retry sign-out" onPress={() => void model.signOut()} /> : null}
+    <Button label="Settings" onPress={() => router.push('/settings')} />
+  </Screen>;
   if (model.restoreError) return <Screen>
     <Copy kind="title">Account access interrupted</Copy>
     <FormError message={model.restoreError} />
     <Button label="Retry account access" onPress={() => void model.restore()} />
+    <SignOutButton />
     <Button label="Settings" onPress={() => router.push('/settings')} />
   </Screen>;
   if (model.resolvingAccount) return <Screen>
@@ -22,6 +31,7 @@ export function AccountAccessScreen() {
         onPress={() => void model.loadAccount()} disabled={model.pending || model.accountWait > 0} />
     </Card>
     <Button label="Settings" onPress={() => router.push('/settings')} />
+    <SignOutButton />
   </Screen>;
   const verifying = model.step === 'code';
   const action = verifying ? 'Verify code' : 'Continue with email';
@@ -57,12 +67,14 @@ export function AccountAccessScreen() {
 export function AccountNameScreen() {
   const model = useAuth();
   const router = useRouter();
+  const [nameDirty, setNameDirty] = useState(false);
   return <Screen>
     <Copy kind="title">What should we call you?</Copy>
     <Card>
       <Copy>Choose a name for your account. You can change it later.</Copy>
-      <AccountNameForm initialName="" />
+      <AccountNameForm initialName="" onDirtyChange={setNameDirty} />
     </Card>
     <Button label="Settings" onPress={() => router.push('/settings')} disabled={model.pending} />
+    <SignOutButton unsaved={nameDirty} />
   </Screen>;
 }

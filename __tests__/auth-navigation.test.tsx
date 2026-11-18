@@ -10,6 +10,8 @@ const session = {
 
 const service = {
   async restoreSession() { return null; },
+  async signOut() {},
+  subscribe() { return () => {}; },
   async requestCode() {},
   async verifyCode() { return session; },
   async loadAccount() { return session.account; },

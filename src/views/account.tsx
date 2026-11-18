@@ -7,11 +7,13 @@ import { Pressable, Text, View } from 'react-native';
 import type { ThemePreference } from '../services/theme-preference-store';
 import { useTheme } from '../viewmodels/theme';
 import { Button, Card, Copy, FormError, Screen } from './ui';
+import { SignOutButton } from './sign-out';
 
 export function AccountScreen() {
   const router = useRouter();
   const model = useAuth();
   const [editing, setEditing] = useState(false);
+  const [nameDirty, setNameDirty] = useState(false);
   usePreventRemove(model.pending, () => {});
   return (
     <Screen>
@@ -21,8 +23,9 @@ export function AccountScreen() {
         {editing ? (
           <AccountNameForm
             initialName={model.session?.account.name ?? ''}
-            onSaved={() => setEditing(false)}
-            onCancel={() => setEditing(false)}
+            onSaved={() => { setEditing(false); setNameDirty(false); }}
+            onCancel={() => { setEditing(false); setNameDirty(false); }}
+            onDirtyChange={setNameDirty}
           />
         ) : <>
           <Copy kind="heading">{model.session?.account.name}</Copy>
@@ -31,6 +34,7 @@ export function AccountScreen() {
         <Copy>{model.session?.account.email}</Copy>
       </Card>
       <Button label="Settings" disabled={model.pending} onPress={() => router.push('/account/settings')} />
+      <SignOutButton unsaved={nameDirty} />
     </Screen>
   );
 }

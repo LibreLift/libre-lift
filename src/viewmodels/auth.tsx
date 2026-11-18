@@ -1,12 +1,18 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
-import { AuthFailure, type AuthService, type AuthSession } from '../services/auth-service';
+import { AuthFailure, type AuthEvent, type AuthService, type AuthSession } from '../services/auth-service';
 import { systemAuthClock, type AuthClock } from '../services/auth-clock';
 
 function useAccountAccess(service: AuthService, clock: AuthClock, initialSession?: AuthSession) {
   const [session, setSession] = useState(initialSession ?? null);
+  const currentSession = useRef(initialSession ?? null);
   const [restoring, setRestoring] = useState(!initialSession);
   const [restoreError, setRestoreError] = useState('');
   const [loadingRestoredAccount, setLoadingRestoredAccount] = useState(false);
+  const [accountGeneration, setAccountGeneration] = useState(0);
+  const [cleanupPending, setCleanupPending] = useState(false);
+  const [cleanupError, setCleanupError] = useState('');
+  const cleaning = useRef(false);
+  const operation = useRef('');
   const [verifiedSession, setVerifiedSession] = useState<AuthSession | null>(null);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -29,20 +35,44 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
 
   useEffect(() => () => { attempt.current++; }, []);
   useEffect(() => { if (!initialSession) void restore(); }, [service]);
+  const events = useRef(handleAuthEvent);
+  events.current = handleAuthEvent;
+  useEffect(() => {
+    try { return service.subscribe((event) => events.current(event)); }
+    catch { /* Restoration reports configuration/storage errors through its recovery UI. */ }
+  }, [service]);
 
-  async function restore() {
+  function acceptSession(value: AuthSession | null) {
+    currentSession.current = value;
+    setSession(value);
+  }
+
+  function handleAuthEvent(event: AuthEvent) {
+    if (cleaning.current) return;
+    if (event.type === 'signed-out') {
+      clearAccount();
+      setError('Your account access ended. Please sign in again.');
+    } else if (currentSession.current?.account.id === event.session.account.id) {
+      acceptSession({ ...event.session, account: currentSession.current.account });
+    } else if (operation.current !== 'verifyCode' && !restoring) {
+      clearAccount();
+      void restore(event.session);
+    }
+  }
+
+  async function restore(supplied?: AuthSession) {
     const current = ++attempt.current;
     setRestoring(true);
     setRestoreError('');
     try {
-      const restored = await service.restoreSession();
+      const restored = supplied ?? await service.restoreSession();
       if (current !== attempt.current) return;
       if (restored) {
         setLoadingRestoredAccount(true);
         const account = await service.loadAccount(restored.account);
         if (current !== attempt.current) return;
         if (account.id !== restored.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
-        setSession({ ...restored, account });
+        acceptSession({ ...restored, account });
       }
     } catch (cause) {
       if (current === attempt.current) setRestoreError(cause instanceof Error ? cause.message : 'Account access is unavailable. Please try again.');
@@ -51,6 +81,38 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
         setRestoring(false);
         setLoadingRestoredAccount(false);
       }
+    }
+  }
+
+  function clearAccount() {
+    attempt.current++;
+    busy.current = false;
+    operation.current = '';
+    setPending(false);
+    acceptSession(null);
+    setVerifiedSession(null);
+    setRestoring(false);
+    setRestoreError('');
+    setError('');
+    setEmail('');
+    setCode('');
+    setStep('email');
+    setAccountGeneration((value) => value + 1);
+  }
+
+  async function signOut() {
+    if (cleaning.current) return;
+    cleaning.current = true;
+    clearAccount();
+    const current = attempt.current;
+    setCleanupPending(true);
+    setCleanupError('');
+    try {
+      await service.signOut();
+    } catch {
+      if (current === attempt.current) setCleanupError('Device sign-out could not be completed. Please retry.');
+    } finally {
+      if (current === attempt.current) { cleaning.current = false; setCleanupPending(false); }
     }
   }
   useEffect(() => {
@@ -65,7 +127,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     if (!verified) return;
     await perform('loadAccount', () => service.loadAccount(verified.account), (account) => {
       if (account.id !== verified.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
-      setSession({ ...verified, account });
+      acceptSession({ ...verified, account });
       setVerifiedSession(null);
     });
   }
@@ -78,6 +140,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     if (busy.current || retryAt[kind] > clock.now()) return false;
     const current = attempt.current;
     busy.current = true;
+    operation.current = kind;
     setPending(true);
     setError('');
     try {
@@ -97,6 +160,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     } finally {
       if (current === attempt.current) {
         busy.current = false;
+        operation.current = '';
         setPending(false);
       }
     }
@@ -145,11 +209,11 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     if (!session) return false;
     return perform('saveName', () => service.updateName(name, session.account), (account) => {
       if (account.id !== session.account.id) throw new AuthFailure('Your name could not be saved. Please try again.');
-      setSession({ ...session, account });
+      acceptSession({ ...session, account });
     });
   }
 
-  return { restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
+  return { accountGeneration, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
     email, setEmail, code, setCode, step, pending, error, submit,
     verificationWait, nameWait, remaining, resend: sendCode, changeEmail };
 }
