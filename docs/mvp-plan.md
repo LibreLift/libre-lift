@@ -10,9 +10,9 @@ The slice is encapsulated in the following flow: a user logs in using an email a
 
 ## 2. What is deferred:
 
-- **The cut that was made:** improving app performance([#54]) and ([#55]). I wanted to focus on ensure that there was any app performance at all before improving it.
+- **The cut that was made:** improving app performance ([#54](https://github.com/open-source-fitness/open-fit/issues/54)) and ([#55](https://github.com/open-source-fitness/open-fit/issues/55)). I wanted to focus on ensure that there was any app performance at all before improving it.
 - **Throwaway corners:** Expo Go app environment for testing. v2 will include real app builds that behave the way users would expect on their smart phones, in terms of app lifecycle.
-- **Emergency cut: persistent database**([#102]). Replace with seeded in-memory data if necessary.
+- **Emergency cut: persistent database** ([#102](https://github.com/open-source-fitness/open-fit/issues/102)). Replace with seeded in-memory data if necessary.
 
 ## 3. The risks it addresses:
 
@@ -38,7 +38,7 @@ The three claims, ordered by most doubtful to least:
 
 1. Login with a new, unused email, not touched during testing. Showcase email OTP for auth
 2. Create a template or two, demonstrating exercise catalog search, filtering, and template building.
-3. Close the app, reopen it, login if necessary, and show account info and template data persisting.
+3. Close the app and reopen it without signing in again. Show account info and template data persisting. If a fresh login is required, record that as failure of the technical claim.
 
 #### Fallback
 
