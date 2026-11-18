@@ -48,6 +48,18 @@ The database schema/functions did not change in this slice. Earlier slices passe
 the 100 database assertions and clean/populated migration checks; the fresh
 full-stack run applied all committed migrations again.
 
+## Final review corrections
+
+An additive validation migration aligns direct save RPC nonblank text with the
+shared wire model, including Unicode whitespace. Authenticated RPC checks reject
+blank main, start, peak, and optional image references, along with unusable names,
+equipment, translations, and catalog identities. Rejected writes leave no saved
+aggregate, and corrected content can reuse the same operation identity, proving
+that no successful-save receipt was committed. The real HTTP regression for an
+out-of-range repetition count now returns validation/400 rather than unavailable/503.
+Both issues were reproduced before correction; the complete fresh-backend check,
+TypeScript/Jest, and clean/populated database checks were rerun for these changes.
+
 ## Review still required
 
 No iOS simulator runtimes/devices were installed, and no supported physical target

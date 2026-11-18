@@ -122,6 +122,53 @@ async function main() {
       { id: 'draft-press-again', catalogId: 'repdb:bench-press', ...snapshot,
         sets: [{ setNumber: 1, targetWeight: 0, targetReps: 12 }] },
     ] };
+    for (const invalidSnapshot of [
+      { images: { preferred: 'main', main: ' \t\n' } },
+      { images: { preferred: 'main', main: '\u00a0\ufeff' } },
+      { images: { preferred: 'pair', pair: { start: ' \t', peak: snapshot.images.pair.peak } } },
+      { images: { preferred: 'pair', pair: { start: snapshot.images.pair.start, peak: '\n\r' } } },
+      { images: { preferred: 'pair', pair: snapshot.images.pair, main: ' \u00a0' } },
+      { name: '\u00a0' },
+      { equipment: { kind: 'required', name: '\ufeff' } },
+      { translations: { de: { name: '\u00a0' } } },
+      { catalogId: 'repdb:bench-press\u00a0' },
+    ]) {
+      const imageId = randomUUID();
+      const imageOperation = randomUUID();
+      const imageContent = { ...draft, exercises: draft.exercises.map(exercise => ({ ...exercise, id: randomUUID() })) };
+      Object.assign(imageContent.exercises[0], invalidSnapshot);
+      const invalidImage = await actor.rpc('save_workout_template', {
+        p_id: imageId, p_operation: imageOperation, p_content: imageContent, p_mode: 'create',
+      });
+      assert.equal(invalidImage.error?.code, '22023', 'Direct saves must reject descriptions the canonical model cannot read.');
+      assert.equal(await creating.getTemplate(imageId), null);
+      imageContent.exercises[0] = { ...draft.exercises[0], id: imageContent.exercises[0].id };
+      const correctedImage = await actor.rpc('save_workout_template', {
+        p_id: imageId, p_operation: imageOperation, p_content: imageContent, p_mode: 'create',
+      });
+      assert.ifError(correctedImage.error);
+      assert.deepEqual((await creating.getTemplate(imageId)).exercises[0].images, snapshot.images);
+      await creating.deleteTemplate(imageId);
+    }
+    console.log('Invalid direct snapshot saves leave neither an aggregate nor a successful-save identity.');
+    const rangeId = randomUUID();
+    const rangeOperation = randomUUID();
+    const rangeContent = { ...draft, exercises: draft.exercises.map(exercise => ({ ...exercise, id: randomUUID() })) };
+    rangeContent.exercises[0].sets = [{ setNumber: 1, targetWeight: 12.5, targetReps: 2147483648 }];
+    const invalidRange = await actor.functions.invoke('workout-templates', {
+      body: { action: 'create', id: rangeId, operationId: rangeOperation, content: rangeContent },
+    });
+    assert.equal(invalidRange.error?.context.status, 400, 'Storage-range input errors must be validation failures.');
+    assert.equal((await invalidRange.error.context.json()).kind, 'validation');
+    assert.equal(await creating.getTemplate(rangeId), null);
+    rangeContent.exercises[0].sets[0].targetReps = 8;
+    const correctedRange = await actor.functions.invoke('workout-templates', {
+      body: { action: 'create', id: rangeId, operationId: rangeOperation, content: rangeContent },
+    });
+    assert.ifError(correctedRange.error);
+    assert.equal((await creating.getTemplate(rangeId)).exercises[0].sets[0].targetReps, 8);
+    await creating.deleteTemplate(rangeId);
+    console.log('Out-of-range repetition input is validation, with no partial save or committed retry identity.');
     const context = {};
     const saved = await creating.createTemplate(draft, context);
     assert.equal(saved.title, 'New plan');
