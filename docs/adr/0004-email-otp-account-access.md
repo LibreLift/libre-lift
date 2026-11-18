@@ -33,6 +33,9 @@ Email OTP serves both new and returning users without these additional flows.
   when an account has no name. Allow editing the account name from Account.
   The signed-in Account screen shows account name, email, and Settings.
 - Appearance Settings is also accessible before signing in.
+- The [application User contract](../design.md#m1-database-scope-and-account-data-102)
+  governs account-name storage and recovery if loading that User fails after
+  successful verification. Auth metadata is not the authoritative name source.
 - Password registration, password recovery, magic links, and OAuth are outside
   this account-access scope. In-app code verification needs no email callback.
 

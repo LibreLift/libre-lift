@@ -11,6 +11,7 @@ const session = {
 const service = {
   async requestCode() {},
   async verifyCode() { return session; },
+  async loadAccount() { return session.account; },
   async updateName(name: string) { return { ...session.account, name }; },
 };
 
@@ -98,7 +99,7 @@ test('a code can be resent after sixty seconds, and Change email starts a fresh 
 
 test('a verified account without a name supplies one before Templates, then can edit it', async () => {
   await renderAccess({ authService: { ...service,
-      async verifyCode() { return { ...session, account: { ...session.account, name: null } }; },
+      async loadAccount() { return { ...session.account, name: null }; },
     } });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
@@ -228,4 +229,122 @@ test('name-save rate limits preserve the draft and disable saving until retry is
   await act(() => clock.advance(60000));
   await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
   expect(await screen.findByText('Alex Rivera')).toBeVisible();
+});
+
+
+test('a verified user retries account loading without using the consumed code again', async () => {
+  let verified = false;
+  let lookups = 0;
+  const app = await renderAccess({ authService: { ...service,
+    async verifyCode() {
+      if (verified) throw new Error('The code was already consumed.');
+      verified = true;
+      return session;
+    },
+    async loadAccount() {
+      if (++lookups <= 2) throw new Error('Your account could not be loaded. Please try again.');
+      return { ...session.account, name: 'Stored name' };
+    },
+  } }, '/templates/upper-body');
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your account could not be loaded. Please try again.');
+  expect(screen.queryByLabelText('Account name')).toBeNull();
+  expect(screen.queryByLabelText('Email code')).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  expect(await screen.findByRole('radio', { name: 'Dark' })).toBeVisible();
+  await act(() => testRouter.back());
+  await fireEvent.press(await screen.findByRole('button', { name: 'Retry loading account' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your account could not be loaded. Please try again.');
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry loading account' }));
+  expect(await screen.findByRole('button', { name: /^Templates, tab/ })).toBeVisible();
+  await waitFor(() => expect(app.getPathname()).toBe('/templates'));
+  expect(testRouter.canGoBack()).toBe(false);
+  await fireEvent.press(screen.getByRole('button', { name: /^Account, tab/ }));
+  expect(await screen.findByText('Stored name')).toBeVisible();
+});
+
+test('pending account lookup gates training and duplicate retries while Settings stays available', async () => {
+  let finish = (_account: typeof session.account) => {};
+  const delayed = new Promise<typeof session.account>((resolve) => { finish = resolve; });
+  await renderAccess({ authService: { ...service, loadAccount: () => delayed } });
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  expect(await screen.findByRole('button', { name: 'Loading account…' })).toBeDisabled();
+  expect(screen.queryByLabelText('Account name')).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  expect(await screen.findByRole('radio', { name: 'Dark' })).toBeVisible();
+  await act(() => testRouter.back());
+  expect(await screen.findByRole('button', { name: 'Loading account…' })).toBeDisabled();
+  await act(() => finish(session.account));
+  expect(await screen.findByRole('button', { name: /^Templates, tab/ })).toBeVisible();
+});
+
+test('missing User onboarding preserves the name through a failed pending save and retry', async () => {
+  let rejectSave = (_error: Error) => {};
+  const delayed = new Promise<typeof session.account>((_resolve, reject) => { rejectSave = reject; });
+  let failed = false;
+  await renderAccess({ authService: { ...service,
+    async loadAccount() { return { ...session.account, name: null }; },
+    async updateName(name) {
+      if (!failed) { failed = true; return delayed; }
+      return { ...session.account, name };
+    },
+  } });
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  await fireEvent.changeText(await screen.findByLabelText('Account name'), '  Alex Rivera  ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
+  expect(screen.getByLabelText('Account name')).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+  await act(() => rejectSave(new Error('Your name could not be saved. Please try again.')));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your name could not be saved. Please try again.');
+  expect(screen.getByLabelText('Account name')).toHaveDisplayValue('  Alex Rivera  ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
+  await fireEvent.press(await screen.findByRole('button', { name: /^Account, tab/ }));
+  expect(await screen.findByText('Alex Rivera')).toBeVisible();
+});
+
+test('account-loading rate limits preserve verified access until lookup retry is allowed', async () => {
+  const clock = createManualClock();
+  let limited = true;
+  await renderAccess({ authClock: clock, authService: { ...service, async loadAccount() {
+    if (limited) { limited = false; throw new AuthFailure('Please wait before loading again.', 60); }
+    return session.account;
+  } } });
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Please wait before loading again.');
+  expect(screen.getByRole('button', { name: 'Retry loading account' })).toBeDisabled();
+  await act(() => clock.advance(60000));
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry loading account' }));
+  expect(await screen.findByRole('button', { name: /^Templates, tab/ })).toBeVisible();
+});
+
+test('restarting during User loading ignores its late result and returns to email entry', async () => {
+  let finish = (_account: typeof session.account) => {};
+  const delayed = new Promise<typeof session.account>((resolve) => { finish = resolve; });
+  const props = { authService: { ...service, loadAccount: () => delayed } };
+  const app = await renderAccess(props);
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  expect(await screen.findByRole('button', { name: 'Loading account…' })).toBeDisabled();
+  await app.unmount();
+  await renderAccess(props, '/templates');
+  await act(() => finish(session.account));
+  expect(await screen.findByLabelText('Email')).toHaveDisplayValue('');
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
 });

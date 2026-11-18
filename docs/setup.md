@@ -261,8 +261,8 @@ hosted credentials or separately installed PostgreSQL client. The first run may
 download Supabase images. A nonzero exit means a migration, assertion, or cleanup
 failed; cleanup failures print the temporary configuration location for recovery.
 
-The M1 schema now stores application Users and template aggregates. Account-name
-onboarding integration remains #42; template API/service integration and replacing
+The M1 schema stores application Users and template aggregates. Account access
+reads and saves names on application Users; template API/service integration and replacing
 the app's in-memory template service remain #45. Merely applying these migrations
 does not make the current UI persist training data.
 
@@ -291,8 +291,19 @@ Keep SMTP credentials in Supabase, never in the app. Build the deployed app with
 the hosted project URL and its matching publishable key; changing Expo public
 settings requires restarting the development bundler or rebuilding the deployed
 app bundle. Merging this PR does not apply hosted Auth settings automatically.
-Account names are saved in authenticated user metadata;
-no public profile table is introduced.
+Apply the application User migration before testing account access. After email
+verification, the app reads the authenticated account's `public.users` record.
+An absent User requires name onboarding; submitting the name creates the User.
+Account name editing updates `account_name` on that same record. Auth metadata
+names are ignored, including for accounts that used the earlier implementation;
+those accounts choose a name if they have no application User.
+
+If verification succeeds but User loading fails, the app retains verified
+authentication in memory and keeps training gated. **Retry loading account**
+retries only the User lookup, with Settings still available. A lookup failure
+does not imply that the User is absent and never opens name onboarding. Closing
+the app during this recovery still starts account access afresh; restoration is
+part of #43.
 
 The app injects an asynchronous auth service, uses the SDK's native session
 storage and process lock, and keeps SDK tokens out of View components. #43 must
@@ -306,10 +317,12 @@ and its Mailpit inbox, without sending external email:
 AUTH_TEST_WORKDIR=/absolute/path/to/disposable-supabase-project node scripts/check-auth.cjs
 ```
 
-Start that stack with the committed auth settings and templates first. Use a
+Start that stack with the committed migrations, auth settings, and templates first. Use a
 separate project ID and free ports if another stack is running. The script checks
-new and returning access, code-only email, invalid and reused codes, account-name
-persistence, and resend behavior, including waiting for the real sixty-second
+new and returning access, code-only email, invalid and reused codes, application
+User creation/editing, direct stored-name assertions, metadata disagreement,
+ambiguous-creation retry, anonymous/cross-user rejection, and resend behavior,
+including waiting for the real sixty-second
 interval. To check time-based expiry quickly, set only the disposable stack’s
 OTP expiry to two seconds, restart it, and run the same script with
 `AUTH_TEST_EXPIRY_SECONDS=2`. The committed application setting remains 600
@@ -318,7 +331,8 @@ The script creates a test account and emails in that disposable stack. Ordinary
 `npm test` uses injected services and clocks and needs no backend or credentials.
 
 The existing router tests exercise forms, protected routes, appearance Settings,
-resend timing, abandoned attempts, name editing, and recoverable failures. Native
+resend timing, abandoned attempts, account-loading retry/pending controls,
+name onboarding/editing, and recoverable failures. Native
 bundle checks do not replace device review or hosted email-delivery verification.
 ### In-memory template builder (#91)
 

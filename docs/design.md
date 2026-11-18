@@ -105,9 +105,10 @@ actions and navigation. Delete requires confirmation naming the template and
 returns to the list on success. See the [confirmed #91 specification](./issue-91-template-crud.md)
 for target validation, lifecycle, and testing decisions.
 
-Workout history has independently collapsible exercise sections. Account links
-to a sign-in placeholder and Settings; authentication and workout logging remain
-feature integrations.
+Workout history has independently collapsible exercise sections. Account displays
+the application User's name and Auth account's email, offers name editing, and
+links to Settings. Email-code account access gates training; workout logging
+remains a feature integration.
 
 Settings offers Light, Dark, and System appearance, defaulting to System. The
 preference is stored locally through an injected storage interface. Both themes
@@ -250,6 +251,14 @@ User if one exists. An absent User requires name onboarding without creating a
 row. Submitting a valid account name creates the User with the Auth account's ID;
 a failed save preserves the entered name for retry. Existing Users load their
 stored account name. Account access integration in #42 must follow this flow.
+
+If email-code verification succeeds but the application User lookup fails, retain
+the verified authentication session in memory and keep training screens gated.
+Show an actionable error with **Retry loading account**, which retries only the
+User lookup, without requesting or verifying another code. Appearance Settings
+remains available. Only a successful lookup with no User opens name onboarding;
+a lookup failure remains in the retry state. This recovery is part of #42;
+restoring authentication after an app restart remains #43.
 
 Template exercises store their placement identity, namespaced catalog identity,
 parent template, and position relationally. Each placement also stores a complete
