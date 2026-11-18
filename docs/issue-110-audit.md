@@ -2,9 +2,9 @@
 
 ## Preflight: November 17, 2026
 
-Implementation: `1d3ff78`, plus the working tree's Expo 58.0.26, Expo Router
-58.0.32, and Jest Expo 58.0.15 package updates. Those dependency edits were
-already present when this audit began and have not been modified by the audit.
+Implementation: `1d3ff78`, plus Expo 58.0.26, Expo Router 58.0.32, and Jest Expo
+58.0.15 patch updates included in this PR. The code-only email body uses the
+maintainer's OpenFit wording.
 
 Local checks on this reviewed working tree:
 
@@ -26,8 +26,10 @@ Read-only configuration comparison found differences that need reconciliation:
 | New-account email subject | Your LibreLift code | Confirm your email address |
 | Returning-account email subject | Your LibreLift code | Your One-Time Password |
 
-Hosted custom SMTP is enabled. This comparison does not prove that delivered
-email bodies contain codes instead of links, or that email delivery succeeds.
+Hosted custom SMTP is enabled. The author subsequently confirmed manual
+verification of the hosted email template. The subject differences above are
+recorded cosmetic differences; the audit relies on the verified code-based body
+and successful hosted access rather than exact subject matching.
 No hosted settings have been changed during this audit. The author selected
 disabled email confirmation, and the committed local configuration now matches
 the hosted value. The app still requires successful email-code verification
@@ -37,8 +39,10 @@ alone do not establish a functional email failure.
 ## User-reported hands-on evidence
 
 Device: **iPhone 13**, **iOS 27**, **Expo Go 58.0.5**, as reported by the author.
-Android was **not tested**. Successful Android bundling is build evidence only,
-not a substitute for its device/emulator acceptance check.
+Android was **not tested**. The maintainer explicitly deferred its device/emulator
+audit to [#112](https://github.com/open-source-fitness/open-fit/issues/112), removing
+it from #110's immediate acceptance scope. Successful Android bundling remains
+build evidence only.
 
 The author reported the name-edit recovery check passed: an initial online edit
 worked, an edit while disconnected showed an error as expected, and retrying
@@ -63,19 +67,16 @@ hands-on report substitutes for a non-author contributor's audit.
 
 Issue #110 already had hosted setup, new/returning access, and native-device
 criteria checked when this audit began. The author has since identified the
-iPhone environment and confirmed Android was not included. Keep the combined
-native-device criterion incomplete until its Android coverage is resolved.
+iPhone environment and confirmed Android was not included. The immediate device
+audit is now iPhone-only, with the approved Android deferral tracked in #112.
 Do not infer additional device observations from the initial checkmarks.
 
 Next steps:
 
-1. Confirm the existing hosted/device evidence and reconcile the hosted settings.
-2. Complete Android device/emulator review, and confirm any appearance/text/
-   keyboard cases not covered by the existing iPhone evidence.
-3. Obtain the required non-author contributor audit and record results on the
-   relevant merged implementation PR. The #108/#109 implementation is currently
-   a local commit with no implementation PR found at audit start, so this is
-   pre-merge evidence until that delivery/review step is complete.
+1. Obtain the required non-author contributor review and audit, and record results
+   on the merged #108/#109 implementation PR. This document carries pre-merge
+   evidence; the post-merge audit requirement remains outstanding.
+2. Complete the deferred Android audit separately under #112.
 
 Keep #110 open while required evidence is missing. Authentication-session
 restoration/sign-out remain #43, and training persistence remains #45.

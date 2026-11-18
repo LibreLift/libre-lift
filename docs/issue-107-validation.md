@@ -21,12 +21,14 @@ It does not complete the human-led hosted/device audit in #110 or close #42.
   It also checks invalid/reused OTPs, returning access, and the real resend interval.
   Test-only administrative credentials provision the second local account without
   external email; application requests use authenticated publishable-key clients.
-- iOS and Android bundle exports passed. No simulator or attached mobile device
-  was available for native UI review.
-- Expo Doctor passed 19/20 checks. Its only failure reports existing patch
+- Initial iOS and Android bundle exports passed. The subsequent iPhone review
+  and maintainer-approved Android deferral are recorded in the
+  [#110 audit](issue-110-audit.md).
+- Initial Expo Doctor passed 19/20 checks. Its only failure reported existing patch
   versions: expo 58.0.25 versus expected 58.0.26, expo-router 58.0.31 versus
-  58.0.32, and jest-expo 58.0.14 versus 58.0.15. These dependencies are unchanged
-  by this account-access work.
+  58.0.32, and jest-expo 58.0.14 versus 58.0.15. Those dependencies were unchanged
+  in the initial implementation. The PR includes the audited Expo patch updates,
+  and the subsequent audit passed all 20 Doctor checks.
 
 Use the TypeScript/Jest commands and the opt-in disposable Supabase service check
 documented in [setup](setup.md#email-otp-configuration-and-verification) to reproduce
@@ -38,7 +40,8 @@ Supabase check independently establishes correct backend storage.
 #110 requires maintainer verification of hosted migration availability, matching
 public app settings, OTP templates/timing, and actual email delivery. Run the
 complete new/returning account and failure/retry journey on the physical iPhone
-with Expo Go first, then check Android. Review keyboard use, increased text,
+with Expo Go first. Android runtime review was deferred by the maintainer to #112.
+Review keyboard use, increased text,
 appearance, direct protected routes, and Back navigation. The author and a
 non-author contributor must record the hosted/device audit on the relevant merged
 implementation PRs. Local checks and agent review do not fulfill that requirement.
