@@ -1,5 +1,9 @@
 # Persistent template updates (#123)
 
+> Historical delivery notes for this slice. The final production composition and
+> current verification commands are documented in [setup](setup.md) and the
+> [#125 validation record](issue-125-template-production.md).
+
 The persistence service now applies complete saved-template edits through the same
 authenticated Edge Function and invoker-rights save transaction as creation.
 The existing editor supplies its draft-owned `TemplateSaveContext` to updates,
@@ -56,6 +60,13 @@ and a successful retry followed by a failed detail reload offers read recovery
 without claiming the save failed. Existing editor tests retain pending, discard,
 tab, validation, and native reorder coverage. Physical-device/native lifecycle
 review and production default cutover remain #125.
+
+Use `db push --include-all` (and its dry run for hosted review) when upgrading:
+the parallel deletion slice may already have installed migration `00400` before
+this slice introduces `00300`. Both versions are already deployed and remain
+immutable. The populated migration check reproduces that order, applies the
+missing older migration, and verifies existing templates survive before a clean
+rebuild. Do not renumber or repair already-applied history to match review order.
 
 Deploy the additive update migration before the updated Edge Function. Preserve
 existing data and migration history; do not reset or seed hosted accounts. The
