@@ -6,7 +6,13 @@ export type AuthSession = Readonly<{
   expiresAt: number;
 }>;
 
+export type AuthEvent = { type: 'signed-out' } | { type: 'signed-in' | 'refreshed'; session: AuthSession };
+
 export interface AuthService {
+  restoreSession(): Promise<AuthSession | null>;
+  signOut(): Promise<void>;
+  subscribe(listener: (event: AuthEvent) => void): () => void;
+  setForeground(active: boolean): void;
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<AuthSession>;
   loadAccount(account: Account): Promise<Account>;
@@ -18,3 +24,5 @@ export class AuthFailure extends Error {
     super(message);
   }
 }
+
+export class AuthSessionEnded extends AuthFailure {}

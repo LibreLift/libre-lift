@@ -60,7 +60,7 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
     });
   }
   await renderRouter({
-    _layout: () => <RootLayout service={service} initialSession={authenticatedSession} />,
+    _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} />,
     'templates/[id]': TemplateDetailScreen,
     'templates/exercise': TemplateExerciseDetailScreen,
     'workouts/[id]': WorkoutDetailScreen,

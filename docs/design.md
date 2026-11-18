@@ -118,6 +118,29 @@ with additional neutral colors for readability. Sample weights use pounds.
 The app uses SDK 58 to match the Expo Go version installed on the review device.
 See [setup](./setup.md) for compatibility and device review instructions.
 
+### Authentication session lifecycle (#43)
+
+Stored Supabase authentication is restored before protected navigation mounts,
+then the application User is loaded using the existing name/onboarding contract.
+No application lifetime or inactivity timeout is imposed. The SDK owns persisted
+credentials and refresh; protected operations use its current identity.
+
+Routine same-account token refresh preserves drafts and navigation. Unusable
+access gates training; retryable failures preserve stored credentials and offer
+Retry, Sign out, and appearance Settings. Recovery starts a clean account load
+and discards unsaved work/navigation with an explanation. Definitively ended
+authentication returns to email access. Native foreground/background handling
+starts/stops SDK auto-refresh and checks expired access on return.
+
+Device-local sign-out confirms unsaved changes, is disabled during saves, and
+succeeds locally despite server revocation failure. Local storage cleanup failure
+instead gates access behind Retry sign-out. Forced loss overrides pending guards.
+An account-generation boundary resets account-specific services, providers,
+drafts, cached reads, edits, and navigation, while late results cannot restore
+old state. Appearance preferences and saved backend records remain. Future
+maximums state must share this lifecycle; its concrete verification remains #49.
+See [the confirmed #43 specification](issue-43-auth-sessions.md).
+
 ### Exercise catalog boundary (#44)
 
 RepDB JSON is validated at the service boundary into a shared catalog exercise
@@ -258,7 +281,7 @@ Show an actionable error with **Retry loading account**, which retries only the
 User lookup, without requesting or verifying another code. Appearance Settings
 remains available. Only a successful lookup with no User opens name onboarding;
 a lookup failure remains in the retry state. This recovery is part of #42;
-restoring authentication after an app restart remains #43.
+authentication restoration and lifecycle are specified below.
 
 Template exercises store their placement identity, namespaced catalog identity,
 parent template, and position relationally. Each placement also stores a complete
