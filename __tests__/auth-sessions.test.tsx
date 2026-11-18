@@ -294,3 +294,47 @@ test('forced authentication loss removes a pending template save without a disca
   expect(testRouter.canGoBack()).toBe(false);
   alert.mockRestore();
 });
+
+test('name-save completion preserves credentials renewed while the save was pending', async () => {
+  let notify!: (event: AuthEvent) => void;
+  const clock = createManualClock();
+  const saved = deferred<AuthSession['account']>();
+  const app = await renderAccess({ ...service, async restoreSession() { return { ...session, expiresAt: 2 }; },
+    updateName: () => saved.promise, subscribe(listener) { notify = listener; return () => {}; } }, '/', { authClock: clock });
+  await fireEvent.press(await screen.findByRole('button', { name: /^Account, tab/ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit name' }));
+  await fireEvent.changeText(screen.getByLabelText('Account name'), 'Alex updated');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
+  await act(() => notify({ type: 'refreshed', session: { ...session, expiresAt: 100 } }));
+  await act(() => saved.resolve({ ...session.account, name: 'Alex updated' }));
+  await act(() => clock.advance(3000));
+  expect(screen.getByText('Alex updated')).toBeVisible();
+  expect(app.getPathname()).toBe('/account');
+  expect(screen.queryByText('Your account was reloaded. Unsaved changes were discarded.')).toBeNull();
+});
+
+test('a late token refresh cannot reopen access after forced sign-out', async () => {
+  let notify!: (event: AuthEvent) => void;
+  await renderAccess({ ...service, async restoreSession() { return session; },
+    subscribe(listener) { notify = listener; return () => {}; } });
+  expect(await screen.findByRole('button', { name: /^Templates, tab/ })).toBeVisible();
+  await act(() => notify({ type: 'signed-out' }));
+  expect(await screen.findByLabelText('Email')).toBeVisible();
+  await act(() => notify({ type: 'refreshed', session }));
+  expect(screen.getByLabelText('Email')).toBeVisible();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+});
+
+test('stalled restored account loading offers appearance Settings and sign-out', async () => {
+  const account = deferred<AuthSession['account']>();
+  await renderAccess({ ...service, async restoreSession() { return session; }, loadAccount: () => account.promise });
+  expect(await screen.findByText('Loading your account')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  await fireEvent.press(await screen.findByRole('radio', { name: 'Dark' }));
+  expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
+  await fireEvent.press(screen.getByRole('button', { name: 'Back to account loading' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+  expect(await screen.findByLabelText('Email')).toBeVisible();
+  await act(() => account.resolve(session.account));
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+});

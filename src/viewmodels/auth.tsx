@@ -7,6 +7,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   const [session, setSession] = useState(initialSession ?? null);
   const currentSession = useRef(initialSession ?? null);
   const restorationSession = useRef<AuthSession | null>(null);
+  const recoveringAccount = useRef<string | null>(null);
   const [restoring, setRestoring] = useState(!initialSession);
   const [restoreError, setRestoreError] = useState('');
   const [loadingRestoredAccount, setLoadingRestoredAccount] = useState(false);
@@ -65,7 +66,9 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
 
   function checkSessionExpiry() {
     if (!cleaning.current && currentSession.current && currentSession.current.expiresAt * 1000 <= clock.now()) {
+      const accountId = currentSession.current.account.id;
       clearAccount();
+      recoveringAccount.current = accountId;
       setNotice('Your account was reloaded. Unsaved changes were discarded.');
       void restore();
     }
@@ -86,7 +89,10 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     } else if (restorationSession.current?.account.id === event.session.account.id) {
       restorationSession.current = event.session;
     } else if (!(operation.current === 'verifyCode' && event.session.account.email === address)) {
+      if (event.type === 'refreshed' && recoveringAccount.current !== event.session.account.id) return;
+      const recovered = recoveringAccount.current === event.session.account.id;
       clearAccount();
+      if (recovered) setNotice('Your account was reloaded. Unsaved changes were discarded.');
       void restore(event.session);
     }
   }
@@ -94,6 +100,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   async function restore(supplied?: AuthSession) {
     const current = ++attempt.current;
     restorationSession.current = supplied ?? null;
+    setLoadingRestoredAccount(false);
     setRestoring(true);
     setRestoreError('');
     try {
@@ -106,6 +113,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
         if (current !== attempt.current) return;
         if (account.id !== restored.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
         acceptSession({ ...restorationSession.current, account });
+        recoveringAccount.current = null;
       }
     } catch (cause) {
       if (current === attempt.current) {
@@ -129,6 +137,8 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     setPending(false);
     acceptSession(null);
     restorationSession.current = null;
+    recoveringAccount.current = null;
+    setLoadingRestoredAccount(false);
     setVerifiedSession(null);
     setRestoring(false);
     setRestoreError('');
@@ -252,8 +262,9 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     }
     if (!session) return false;
     return perform('saveName', () => service.updateName(name, session.account), (account) => {
-      if (account.id !== session.account.id) throw new AuthFailure('Your name could not be saved. Please try again.');
-      acceptSession({ ...session, account });
+      const latest = currentSession.current;
+      if (!latest || account.id !== latest.account.id) throw new AuthFailure('Your name could not be saved. Please try again.');
+      acceptSession({ ...latest, account });
     });
   }
 

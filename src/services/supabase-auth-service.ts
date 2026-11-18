@@ -85,8 +85,7 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
       const { data, error } = await getClient().auth.verifyOtp({ email, token, type: 'email' });
       if (error) throw failure(error);
       if (!data.session || !data.user) throw new AuthFailure('Verification did not complete. Please try again.');
-      return { account: accountFrom(data.user), accessToken: data.session.access_token,
-        refreshToken: data.session.refresh_token, expiresAt: data.session.expires_at ?? 0 };
+      return sessionFrom(data.session);
     },
     loadAccount,
     async updateName(value, account) {

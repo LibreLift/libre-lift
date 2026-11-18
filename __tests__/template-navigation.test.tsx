@@ -83,7 +83,7 @@ test('saving locks fields and all navigation, then a failed save restores the dr
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const app = await renderRouter({
     appDir: './app',
-    overrides: { _layout: () => <RootLayout service={service} initialSession={authenticatedSession} /> },
+    overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> },
   });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));

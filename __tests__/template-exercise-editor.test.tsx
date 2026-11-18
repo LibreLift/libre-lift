@@ -5,7 +5,7 @@ import { createSampleWorkoutService } from '../src/services/sample-workout-servi
 
 test('template overview opens a separate set editor and keeps edits in the shared draft until Save', async () => {
   const service = createSampleWorkoutService();
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} initialSession={authenticatedSession} /> } });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
@@ -35,7 +35,7 @@ test('template overview opens a separate set editor and keeps edits in the share
 
 test('removing every set and returning keeps an incomplete draft, while Cancel restores the saved template', async () => {
   const service = createSampleWorkoutService();
-  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} initialSession={authenticatedSession} /> } });
+  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 2' }));

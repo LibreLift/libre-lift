@@ -46,9 +46,13 @@ const options: readonly { value: ThemePreference; label: string }[] = [
 ];
 
 export function SettingsScreen() {
+  return <Screen><AppearanceSettings /></Screen>;
+}
+
+export function AppearanceSettings() {
   const model = useTheme();
   return (
-    <Screen>
+    <>
       <Copy kind="title">Settings</Copy>
       <Card>
         <Copy kind="heading">Appearance</Copy>
@@ -61,6 +65,7 @@ export function SettingsScreen() {
               <Pressable
                 key={value}
                 accessibilityRole="radio"
+                accessibilityLabel={label}
                 accessibilityState={{ checked: selected, disabled }}
                 disabled={disabled}
                 onPress={() => void model.selectPreference(value)}
@@ -90,7 +95,7 @@ export function SettingsScreen() {
               : 'Your preference is saved on this device.'}
         </Copy>
       </Card>
-    </Screen>
+    </>
   );
 }
 

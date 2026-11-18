@@ -5,7 +5,8 @@ import {
 } from 'expo-router/react-navigation';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState, type PropsWithChildren } from 'react';
 import { createSampleWorkoutService } from '../src/services/sample-workout-service';
 import type { WorkoutService } from '../src/services/workout-service';
@@ -17,10 +18,12 @@ import type { Account, AuthService, AuthSession } from '../src/services/auth-ser
 import { createAppAuthService } from '../src/services/supabase-client';
 import { WorkoutProvider } from '../src/viewmodels/workout-provider';
 import { createExerciseCatalogService, type ExerciseCatalogService } from '../src/services/exercise-catalog-service';
+import { AppearanceSettings } from '../src/views/account';
+import { Button } from '../src/views/ui';
+import { SignOutButton } from '../src/views/sign-out';
 import { ExerciseCatalogProvider } from '../src/viewmodels/exercise-catalog';
 
-export default function RootLayout({ service: providedService, authService, initialSession, authClock, catalogService: providedCatalogService, workoutServiceFactory }: {
-  service?: WorkoutService;
+export default function RootLayout({ authService, initialSession, authClock, catalogService: providedCatalogService, workoutServiceFactory }: {
   authService?: AuthService;
   initialSession?: AuthSession;
   authClock?: AuthClock;
@@ -32,7 +35,7 @@ export default function RootLayout({ service: providedService, authService, init
   return (
     <AuthProvider service={authentication} initialSession={initialSession} clock={authClock}>
       <ThemeProvider store={themePreferenceStore}>
-        <AccountScope service={providedService} factory={workoutServiceFactory} catalogService={catalogService}>
+        <AccountScope factory={workoutServiceFactory} catalogService={catalogService}>
             <Navigation />
         </AccountScope>
       </ThemeProvider>
@@ -40,7 +43,7 @@ export default function RootLayout({ service: providedService, authService, init
   );
 }
 
-type AccountServicesProps = PropsWithChildren<{ service?: WorkoutService; catalogService: ExerciseCatalogService;
+type AccountServicesProps = PropsWithChildren<{ catalogService: ExerciseCatalogService;
   factory?: (account: Account | null) => WorkoutService; account?: Account | null }>;
 
 function AccountScope({ children, ...props }: AccountServicesProps) {
@@ -48,8 +51,8 @@ function AccountScope({ children, ...props }: AccountServicesProps) {
   return <AccountServices key={`${accountGeneration}:${session?.account.id ?? 'none'}`} {...props} account={session?.account ?? null}>{children}</AccountServices>;
 }
 
-function AccountServices({ service: provided, factory, account = null, catalogService, children }: AccountServicesProps) {
-  const [service] = useState(() => factory ? factory(account) : provided ?? createSampleWorkoutService());
+function AccountServices({ factory, account = null, catalogService, children }: AccountServicesProps) {
+  const [service] = useState(() => factory ? factory(account) : createSampleWorkoutService());
   return <WorkoutProvider service={service}>
     <ExerciseCatalogProvider service={catalogService}>{children}</ExerciseCatalogProvider>
   </WorkoutProvider>;
@@ -59,6 +62,7 @@ function Navigation() {
   const { scheme, colors, ready } = useTheme();
   const { session, restoring, loadingRestoredAccount, accountGeneration, notice } = useAuth();
   const router = useRouter();
+  const [loadingSettings, setLoadingSettings] = useState(false);
   const entry = session ? (session.account.name ? '/templates' : '/account-name') : '/sign-in';
   useEffect(() => {
     if (ready && !restoring && accountGeneration > 0) router.replace(entry);
@@ -82,7 +86,9 @@ function Navigation() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {ready && !restoring ? (
         <View style={{ flex: 1 }}>
-          {session && notice ? <Text accessibilityRole="alert" style={{ color: colors.text, padding: 16, backgroundColor: colors.background }}>{notice}</Text> : null}
+          {session && notice ? <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background }}>
+            <Text accessibilityRole="alert" style={{ color: colors.text, padding: 16 }}>{notice}</Text>
+          </SafeAreaView> : null}
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Protected guard={!session}><Stack.Screen name="sign-in" options={{ headerShown: true, title: 'Account access' }} /></Stack.Protected>
@@ -94,10 +100,21 @@ function Navigation() {
         </Stack>
         </View>
       ) : (
-        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}>
-          <ActivityIndicator accessibilityLabel={ready ? 'Loading account access' : 'Loading appearance'} color={colors.text} />
-          {ready ? <Text style={{ color: colors.text }}>{loadingRestoredAccount ? 'Loading your account' : 'Restoring your account'}</Text> : null}
-        </View>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24, gap: 16 }}>
+            {ready && loadingSettings ? <>
+              <AppearanceSettings />
+              <Button label="Back to account loading" onPress={() => setLoadingSettings(false)} />
+            </> : <>
+              <ActivityIndicator accessibilityLabel={ready ? 'Loading account access' : 'Loading appearance'} color={colors.text} />
+              {ready ? <>
+                <Text style={{ color: colors.text, fontSize: 24 }}>{loadingRestoredAccount ? 'Loading your account' : 'Restoring your account'}</Text>
+                <Button label="Settings" onPress={() => setLoadingSettings(true)} />
+                <SignOutButton />
+              </> : null}
+            </>}
+          </ScrollView>
+        </SafeAreaView>
       )}
     </NavigationThemeProvider>
   );

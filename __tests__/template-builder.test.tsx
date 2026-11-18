@@ -11,7 +11,7 @@ async function builder(service = createSampleWorkoutService(), failure = false) 
   const catalogService = createExerciseCatalogService(async () => ({ ok: !failure,
     async json() { return { schema_version: 3, exercises: [bench] }; },
   }));
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
   return { app, service };
 }
 async function editSample() {

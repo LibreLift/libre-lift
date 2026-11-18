@@ -10,6 +10,7 @@ require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileMo
   readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } },
 ).outputText, filename);
 const { createSupabaseAuthService } = require('../src/services/supabase-auth-service.ts');
+const { AuthSessionEnded } = require('../src/services/auth-service.ts');
 require.extensions['.ts'] = previousLoader;
 
 async function main() {
@@ -108,6 +109,17 @@ async function main() {
     await unreliableAccess.signOut();
     assert.equal(await createSupabaseAuthService(() => client()).restoreSession(), null);
     console.log('Credential cleanup failure and retry passed.');
+    // Local sign-out revoked this cloned session. Force its stored access expiry
+    // so restoration must exercise the real rejected refresh-token path.
+    const revoked = JSON.parse(separateRecords.get('auth43-check'));
+    separateRecords.set('auth43-check', JSON.stringify({ ...revoked, expires_at: 0 }));
+    const expired = client({ getItem: (key) => separateRecords.get(key) ?? null,
+      setItem: (key, value) => { separateRecords.set(key, value); }, removeItem: (key) => { separateRecords.delete(key); } });
+    let invalid = null;
+    try { invalid = await createSupabaseAuthService(() => expired).restoreSession(); }
+    catch (error) { assert.ok(error instanceof AuthSessionEnded); }
+    assert.equal(invalid, null);
+    console.log('Revoked stored authentication is not restored.');
   } finally {
     if (otherUserId) assert.ifError((await admin.auth.admin.deleteUser(otherUserId)).error);
     const removed = await admin.auth.admin.deleteUser(created.data.user.id);
