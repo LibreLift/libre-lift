@@ -60,15 +60,29 @@ out-of-range repetition count now returns validation/400 rather than unavailable
 Both issues were reproduced before correction; the complete fresh-backend check,
 TypeScript/Jest, and clean/populated database checks were rerun for these changes.
 
+## Hosted rollout and physical-device verification
+
+On November 18, 2026, the maintainer reported that even a minimal template failed
+to save during hosted physical-device review. The configured template endpoint
+returned 404 because it had not been deployed; hosted migration history contained
+only the two foundation migrations. The deployment dry run identified the five
+pending template migrations.
+
+With explicit maintainer authorization, all five migrations were applied to the
+shared OpenFit development project and `workout-templates` was deployed. Migration
+history then matched the checkout, the function was active at version 1, and an
+unauthenticated request returned the handler's expected authentication/401 response
+instead of 404.
+
+After deployment, the maintainer reported: “Hosted verification on a physical
+device passes.” This is maintainer-reported device evidence; the report did not
+enumerate individual platforms or each scenario in the audit checklist. The agent
+did not independently operate the physical device.
+
 ## Review still required
 
-No iOS simulator runtimes/devices were installed, and no supported physical target
-was connected for this session. Physical restart/update/reinstall + entered email
-OTP, native dragging, keyboard, increased text size, and theme review remain
-pending. Service recreation and bundle export do not establish those checks.
-
-Nothing was deployed to the shared hosted backend. Maintainer-reviewed migration
-and endpoint deployment, independent review, and the repository's post-merge
-production audit remain required. See [setup](setup.md) for repeatable isolated
-checks and [maintainer rollout](maintainers.md#template-rollout-audit) for deployment
-ordering and the actual device/hosted audit.
+The PR-comment Codex review loop, independent non-author contributor approval,
+maintainer merge, and the repository's post-merge author/non-author production
+audit remain separate completion requirements. See [setup](setup.md) for
+repeatable isolated checks and the [maintainer rollout checklist](maintainers.md#template-rollout-audit)
+for deployment ordering and the individual device/hosted audit scenarios.
