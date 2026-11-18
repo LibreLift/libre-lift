@@ -22,15 +22,17 @@ Read-only configuration comparison found differences that need reconciliation:
 
 | Setting | Committed local value | Hosted value |
 | --- | --- | --- |
-| Email confirmations | Enabled | Disabled |
+| Email confirmations | Disabled (aligned after audit) | Disabled |
 | New-account email subject | Your LibreLift code | Confirm your email address |
 | Returning-account email subject | Your LibreLift code | Your One-Time Password |
 
 Hosted custom SMTP is enabled. This comparison does not prove that delivered
 email bodies contain codes instead of links, or that email delivery succeeds.
-No hosted settings have been changed during this audit. The email-confirmation
-difference must be resolved or explained before configuration parity is claimed;
-subject differences alone do not establish a functional email failure.
+No hosted settings have been changed during this audit. The author selected
+disabled email confirmation, and the committed local configuration now matches
+the hosted value. The app still requires successful email-code verification
+before loading the application User or entering training. Subject differences
+alone do not establish a functional email failure.
 
 ## User-reported hands-on evidence
 

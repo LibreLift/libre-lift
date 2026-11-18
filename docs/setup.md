@@ -272,7 +272,10 @@ Hosted administration and deployments are covered in the [maintainer guide](main
 ## Email OTP configuration and verification
 
 The local Auth configuration sets six-digit codes, a 600-second expiry, and a
-one-minute send frequency. Both confirmation (new account) and magic-link
+one-minute send frequency, with email confirmation disabled to match hosted
+development. The app still requires successful email-code verification before
+loading the application User or entering training. Both confirmation (new account)
+and magic-link
 (returning account) email template slots use the committed code-only email
 content. The returning-account template slot is named “Magic Link” by Supabase;
 it must contain the token, not a sign-in URL. No mobile callback is required.
