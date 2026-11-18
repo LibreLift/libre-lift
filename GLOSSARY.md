@@ -17,9 +17,9 @@ The identity through which a user signs in and accesses their saved training dat
 _Avoid_: User when referring specifically to sign-in identity
 
 **Account name**:
-The editable display name a user chooses for their account. It is not a unique
-handle or a sign-in identifier.
-_Avoid_: Username when implying a unique handle
+The name a user chooses to display for their account. It can be changed without
+changing the email address used to sign in.
+_Avoid_: Username when implying a unique sign-in identifier
 
 ### Planning
 

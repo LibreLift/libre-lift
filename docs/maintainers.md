@@ -87,8 +87,11 @@ Diffs do not capture all platform configuration or data changes.
 | Auth settings in `config.toml` | Review hosted settings separately; do not blindly push local defaults |
 | `.env` app URL and public key | Select either local values or hosted values as a pair |
 
-Auth redirects, SMTP, feature policies, and application endpoints are handled in
-their feature tasks. Hosted settings are not synchronized just by committing
+For #42 email OTP, apply the confirmation and returning-account code templates
+and six-digit / ten-minute / one-minute Auth settings described in
+[setup](setup.md#email-otp-configuration-and-verification). Test actual hosted
+email delivery separately from the health endpoint. No email callback is needed.
+SMTP, feature policies, and application endpoints require their own verification. Hosted settings are not synchronized just by committing
 `config.toml`; deliberate config changes require separate review. Automated
 hosted deployments are deferred to later M1 or M2.
 

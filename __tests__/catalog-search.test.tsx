@@ -1,3 +1,4 @@
+import { authenticatedSession } from '../test-support/authenticated-router';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
 import { createExerciseCatalogService } from '../src/services/exercise-catalog-service';
@@ -15,7 +16,7 @@ async function openCatalog() {
     async json() { return { schema_version: 3, count: exercises.length, exercises }; },
   }));
   const catalogService = createExerciseCatalogService(request);
-  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout catalogService={catalogService} /> } });
+  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout initialSession={authenticatedSession} catalogService={catalogService} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: 'Exercise catalog' }));
   await screen.findByText('Bench press');
   return request;

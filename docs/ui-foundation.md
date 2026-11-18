@@ -79,6 +79,16 @@ the template presentation refinement is also under #46. All four tasks depend on
 #38 for a published app foundation. The accepted scope does not imply readiness
 from the default branch while that dependency remains unresolved.
 
+## Account-access integration (#42)
+
+[ADR 0004](./adr/0004-email-otp-account-access.md) supersedes the original
+unauthenticated sample preview and sign-in placeholder. Signed-out users now see
+email-code access, while appearance Settings remains available. Verified accounts
+without an account name supply one before entering Templates. Account shows the
+name, email, and Settings and supports name editing. Training data remains sample
+data until its persistence tasks land; session restoration and sign-out remain
+in #43.
+
 ## Scope and remaining questions
 
 The sample-data preview does not remove authentication or training-data

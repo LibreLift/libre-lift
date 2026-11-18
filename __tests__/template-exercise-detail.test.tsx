@@ -1,3 +1,4 @@
+import { renderAuthenticatedRouter, authenticatedSession } from '../test-support/authenticated-router';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
 import { createSampleWorkoutService } from '../src/services/sample-workout-service';
@@ -8,7 +9,7 @@ test('saved template overview opens an exercise image and compact read-only sets
   await service.updateTemplate(template.id, { ...template, exercises: template.exercises.map((exercise) => ({
     ...exercise, images: { preferred: 'main', main: 'https://example.org/saved-exercise.webp' },
   })) });
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} /> } });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} initialSession={authenticatedSession} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   expect(screen.getByRole('button', { name: 'Bench press. 3 sets' })).toBeVisible();
   expect(screen.queryByText(/95 lb/)).toBeNull();
@@ -29,7 +30,7 @@ test('saved template overview opens an exercise image and compact read-only sets
 });
 
 test('saved exercise detail handles missing imagery and missing placements without exposing editors', async () => {
-  await renderRouter('./app', { initialUrl: '/templates/exercise?templateId=upper-body&exerciseId=placement-bench-press' });
+  await renderAuthenticatedRouter({ initialUrl: '/templates/exercise?templateId=upper-body&exerciseId=placement-bench-press' });
   expect(await screen.findByText('Image unavailable')).toBeVisible();
   expect(screen.getByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
   expect(screen.queryByRole('button', { name: /Add set|Save|Sets for/ })).toBeNull();
@@ -39,7 +40,7 @@ test.each([
   'templateId=missing&exerciseId=placement-bench-press',
   'templateId=upper-body&exerciseId=missing',
 ])('saved exercise detail offers a return path when the record is missing: %s', async (query) => {
-  const app = await renderRouter('./app', { initialUrl: `/templates/exercise?${query}` });
+  const app = await renderAuthenticatedRouter({ initialUrl: `/templates/exercise?${query}` });
   expect(await screen.findByText('This template exercise couldn’t be found.')).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: 'Open templates' }));
   expect(app.getPathname()).toBe('/templates');
