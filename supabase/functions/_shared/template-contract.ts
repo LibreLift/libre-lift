@@ -55,10 +55,8 @@ export function exerciseSnapshot(value: unknown) {
     } }),
   };
 }
-export function savedTemplate(value: unknown) {
+export function templateContent(value: unknown) {
   const row = object(value);
-  const createdAt = text(row.createdAt);
-  if (!Number.isFinite(Date.parse(createdAt))) throw new TemplateFailure('Invalid template creation time.');
   const ids = new Set<string>();
   const exercises = array(row.exercises).map((value) => {
     const exercise = object(value);
@@ -76,11 +74,27 @@ export function savedTemplate(value: unknown) {
     return { ...exerciseSnapshot(exercise), id, catalogId: catalogId as `${string}:${string}`, sets };
   });
   if (!exercises.length) throw new TemplateFailure('Add at least one exercise.');
-  return { id: uuid(row.id), title: text(row.title, true), description: text(row.description), createdAt, exercises };
+  return { title: text(row.title, true), description: text(row.description), exercises };
+}
+export function savedTemplate(value: unknown) {
+  const row = object(value);
+  const createdAt = text(row.createdAt);
+  if (!Number.isFinite(Date.parse(createdAt))) throw new TemplateFailure('Invalid template creation time.');
+  return { id: uuid(row.id), createdAt, ...templateContent(row) };
 }
 export function savedTemplates(value: unknown) { return array(value).map(savedTemplate); }
 
 export type TemplateReadRequest = { action: 'list' } | { action: 'get'; id: string };
+export type TemplateCreateRequest = { action: 'create'; id: string; operationId: string; content: ReturnType<typeof templateContent> };
+export type TemplateRequest = TemplateReadRequest | TemplateCreateRequest;
+export function templateRequest(value: unknown): TemplateRequest {
+  const row = object(value);
+  if (row.action === 'create') {
+    const content = templateContent(row.content);
+    return { action: 'create', id: uuid(row.id), operationId: uuid(row.operationId), content: { ...content, title: content.title.trim() } };
+  }
+  return templateReadRequest(value);
+}
 export function templateReadRequest(value: unknown): TemplateReadRequest {
   const row = object(value);
   if (row.action === 'list') return { action: 'list' };

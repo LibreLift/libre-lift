@@ -177,3 +177,5 @@ Device review and hosted delivery verification remain separate from these checks
 The optional [persisted template read check](./issue-121-template-reads.md) exercises
 the production service through a disposable local Edge Function and database.
 Production template composition remains in-memory until the #45 cutover.
+The same check now covers [atomic creation and retry safety](./issue-122-template-creation.md),
+including an injected late-write failure in the disposable database.

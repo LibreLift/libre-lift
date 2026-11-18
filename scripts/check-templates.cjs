@@ -2,7 +2,8 @@
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
-const { readFileSync } = require('node:fs');
+const { readFileSync, writeFileSync, mkdtempSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
 const path = require('node:path');
 const ts = require('typescript');
 const { createClient } = require('@supabase/supabase-js');
@@ -20,6 +21,13 @@ async function main() {
   const options = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
   const admin = createClient(settings.API_URL, settings.SECRET_KEY, options);
   const accountIds = [];
+  const scratch = mkdtempSync(path.join(tmpdir(), 'template-check-'));
+  function sql(statement) {
+    const file = path.join(scratch, 'fault.sql');
+    writeFileSync(file, `do $check$ begin ${statement} end; $check$;`);
+    execFileSync('npx', ['--yes', 'supabase@3.1.0', 'db', 'query', '--workdir', process.env.TEMPLATE_TEST_WORKDIR,
+      '--file', file], { stdio: 'inherit' });
+  }
   try {
     const email = `templates-${Date.now()}@example.com`;
     const created = await admin.auth.admin.createUser({ email, email_confirm: true });
@@ -107,8 +115,111 @@ async function main() {
     assert.equal(invalidToken.status, 401);
     console.log('Actual anonymous/malformed authentication is rejected; foreign and missing detail are indistinguishable.');
 
+    const creating = createSupabaseWorkoutService(() => actor, randomUUID);
+    const draft = { title: '  New plan  ', description: 'Saved together', exercises: [
+      { id: 'draft-press', catalogId: 'repdb:bench-press', ...snapshot,
+        sets: [{ setNumber: 1, targetWeight: 12.5, targetReps: 8 }] },
+      { id: 'draft-press-again', catalogId: 'repdb:bench-press', ...snapshot,
+        sets: [{ setNumber: 1, targetWeight: 0, targetReps: 12 }] },
+    ] };
+    const context = {};
+    const saved = await creating.createTemplate(draft, context);
+    assert.equal(saved.title, 'New plan');
+    assert.match(saved.id, /^[0-9a-f-]{36}$/);
+    assert.notEqual(saved.exercises[0].id, saved.exercises[1].id);
+    assert.deepEqual(await creating.getTemplate(saved.id), saved);
+    assert.deepEqual(await creating.createTemplate(structuredClone(draft), context), saved);
+    assert.notEqual((await creating.createTemplate(draft, {})).id, saved.id);
+    console.log('Complete creation, independent UUID placements, duplicate names and unchanged retries round-trip.');
+
+    const concurrentDraft = { ...draft, title: `Concurrent ${randomUUID()}` };
+    const concurrentContext = {};
+    const simultaneous = await Promise.all([creating.createTemplate(concurrentDraft, concurrentContext),
+      creating.createTemplate(structuredClone(concurrentDraft), concurrentContext)]);
+    assert.deepEqual(simultaneous[0], simultaneous[1]);
+    assert.equal((await creating.listTemplates()).filter(template => template.title === concurrentDraft.title).length, 1);
+    const session = (await actor.auth.getSession()).data.session;
+    let dropResponse = true;
+    const unreliable = createClient(settings.API_URL, settings.PUBLISHABLE_KEY, { ...options, global: { fetch: async (url, init) => {
+      const response = await fetch(url, init);
+      if (String(url).includes('/functions/v1/workout-templates') && JSON.parse(init.body).action === 'create' && dropResponse) {
+        dropResponse = false;
+        assert.equal(response.status, 200);
+        throw new Error('Lost response after the server committed');
+      }
+      return response;
+    } } });
+    assert.ifError((await unreliable.auth.setSession(session)).error);
+    const uncertain = createSupabaseWorkoutService(() => unreliable, randomUUID);
+    const uncertainContext = {};
+    const uncertainDraft = { ...draft, title: `Uncertain ${randomUUID()}` };
+    await assert.rejects(uncertain.createTemplate(uncertainDraft, uncertainContext));
+    const committed = (await creating.listTemplates()).filter(template => template.title === uncertainDraft.title);
+    assert.equal(committed.length, 1);
+    assert.deepEqual(await uncertain.createTemplate(structuredClone(uncertainDraft), uncertainContext), committed[0]);
+    assert.deepEqual(await createSupabaseWorkoutService(() => actor).getTemplate(committed[0].id), committed[0]);
+    console.log('Concurrent identical saves and a real committed-but-lost response recover one durable template.');
+
+    const wireContent = { ...draft, title: 'Wire creation', exercises: draft.exercises.map(exercise => ({ ...exercise, id: randomUUID() })) };
+    const wire = { action: 'create', id: randomUUID(), operationId: randomUUID(), content: wireContent };
+    const firstWire = await actor.functions.invoke('workout-templates', { body: wire });
+    assert.ifError(firstWire.error);
+    assert.equal((await actor.functions.invoke('workout-templates', { body: {
+      ...wire, content: { ...wireContent, title: 'Changed operation content' },
+    } })).error.context.status, 400);
+    const foreignReplay = await secondActor.functions.invoke('workout-templates', { body: wire });
+    assert.equal(foreignReplay.error.context.status, 400);
+    assert.deepEqual(await otherService.listTemplates(), []);
+    assert.deepEqual(await creating.getTemplate(wire.id), firstWire.data);
+    await assert.rejects(createSupabaseWorkoutService(() => createClient(settings.API_URL, settings.PUBLISHABLE_KEY, options), randomUUID)
+      .createTemplate(draft, {}));
+    for (const content of [
+      { ...wireContent, title: '  ' }, { ...wireContent, exercises: [] },
+      { ...wireContent, exercises: [{ ...wireContent.exercises[0], sets: [] }] },
+      { ...wireContent, exercises: [{ ...wireContent.exercises[0], primaryMuscles: 'not an array' }] },
+      ...[{ setNumber: 1, targetWeight: -1, targetReps: 8 }, { setNumber: 1, targetWeight: 0, targetReps: 0 },
+        { setNumber: 2, targetWeight: 0, targetReps: 8 }].map(set => ({ ...wireContent,
+        exercises: [{ ...wireContent.exercises[0], sets: [set] }] })),
+    ]) {
+      const rejected = await actor.functions.invoke('workout-templates', { body: { ...wire, id: randomUUID(), operationId: randomUUID(), content } });
+      assert.equal(rejected.error.context.status, 400);
+    }
+    const invalidRpc = await actor.rpc('save_workout_template', { p_id: randomUUID(), p_operation: randomUUID(),
+      p_content: { ...wireContent, exercises: [] } });
+    assert.equal(invalidRpc.error.code, '22023');
+    const anonymousRpc = await createClient(settings.API_URL, settings.PUBLISHABLE_KEY, options).rpc('save_workout_template', {
+      p_id: randomUUID(), p_operation: randomUUID(), p_content: wireContent,
+    });
+    assert.equal(anonymousRpc.error.code, '42501');
+    const privateMetadata = await actor.schema('template_private').from('save_operations').select('*');
+    assert.ok(privateMetadata.error, 'Retry recognition is not an exposed table API.');
+    console.log('Operation-content reuse, foreign replay, anonymous creation and invalid whole-template payloads are rejected.');
+
+    const rollbackDraft = { ...draft, title: `Rollback ${randomUUID()}`, exercises: draft.exercises.map(exercise => ({ ...exercise,
+      sets: [{ setNumber: 1, targetWeight: 5, targetReps: 777 }] })) };
+    const rollbackContext = {};
+    sql(`create function public.template_check_fail_set() returns trigger language plpgsql as $$ begin
+      if auth.uid() = '${created.data.user.id}'::uuid and new.target_reps = 777 then raise exception 'Injected later set write failure'; end if;
+      return new; end $$;
+      create trigger template_check_fail_set before insert on public.template_sets for each row execute function public.template_check_fail_set();`);
+    try {
+      await assert.rejects(creating.createTemplate(rollbackDraft, rollbackContext));
+      assert.equal((await creating.listTemplates()).filter(template => template.title === rollbackDraft.title).length, 0);
+    } finally { sql('drop trigger if exists template_check_fail_set on public.template_sets; drop function if exists public.template_check_fail_set();'); }
+    const recovered = await creating.createTemplate(rollbackDraft, rollbackContext);
+    assert.equal(recovered.title, rollbackDraft.title);
+    assert.deepEqual(await creating.getTemplate(recovered.id), recovered);
+    assert.ifError((await actor.from('workout_templates').delete().eq('id', wire.id)).error);
+    const deletedReplay = await actor.functions.invoke('workout-templates', { body: wire });
+    assert.equal(deletedReplay.error.context.status, 404);
+    const deletedContinuation = await actor.functions.invoke('workout-templates', { body: { ...wire, operationId: randomUUID() } });
+    assert.equal(deletedContinuation.error.context.status, 404);
+    assert.equal(await creating.getTemplate(wire.id), null);
+    console.log('A failure after earlier aggregate writes rolls back completely and retries; deleted creations cannot be resurrected.');
+
   } finally {
     for (const id of accountIds) assert.ifError((await admin.auth.admin.deleteUser(id)).error);
+    rmSync(scratch, { recursive: true, force: true });
   }
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });
