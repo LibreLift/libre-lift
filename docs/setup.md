@@ -116,11 +116,12 @@ From the repository root, use the pinned Supabase CLI 3.1.0:
 ```sh
 npx --yes supabase@3.1.0 start
 npx --yes supabase@3.1.0 status
-npx --yes supabase@3.1.0 db push
+npx --yes supabase@3.1.0 db push --include-all
 npx --yes supabase@3.1.0 db query --read-only 'select 1 as connected'
 ```
 
-`db push` applies migrations after pulling changes; the query should return
+`db push --include-all` applies pending migrations, including older-numbered
+changes from parallel branches; the query should return
 `connected: 1`. First startup downloads images.
 Set BOTH `.env` values to the local URL and publishable key from `status`.
 Use `http://127.0.0.1:54321` on the computer, `http://10.0.2.2:54321` for Android

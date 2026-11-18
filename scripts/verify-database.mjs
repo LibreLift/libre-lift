@@ -42,7 +42,7 @@ function check(condition, message) {
 }
 function apply(filename) {
   copyFileSync(join(root, 'supabase/migrations', filename), join(migrations, filename));
-  cli('migration', 'up');
+  cli('db', 'push', '--include-all', '--yes');
 }
 let cleaned = false;
 function cleanup() {
@@ -81,9 +81,16 @@ try {
       values ('${placement}', '${template}', 1, 'repdb:bench-press',
         '{"name":"Bench press","primaryMuscles":["pectoralis major"],"secondaryMuscles":[],"equipment":{"kind":"none"}}');
     insert into public.template_sets values ('${placement}', 1, 12.5, 8); end $$;`);
-  // Later feature migrations must preserve an already-populated M1 aggregate.
-  for (const filename of files.slice(2)) apply(filename);
-  cli('migration', 'up');
+  // The parallel deletion slice can land before the older-numbered update slice.
+  // Verify that adding the missing update later preserves the populated aggregate.
+  const featureFiles = files.slice(2);
+  const updateIndex = featureFiles.indexOf('20261118000300_update_workout_template.sql');
+  const deleteIndex = featureFiles.indexOf('20261118000400_delete_workout_template.sql');
+  if (updateIndex >= 0 && deleteIndex >= 0) {
+    [featureFiles[updateIndex], featureFiles[deleteIndex]] = [featureFiles[deleteIndex], featureFiles[updateIndex]];
+  }
+  for (const filename of featureFiles) apply(filename);
+  cli('migration', 'up', '--include-all');
   check(`exists (select 1 from public.users u join public.workout_templates t on t.user_id = u.id
     join public.template_exercises e on e.template_id = t.id
     join public.template_sets s on s.template_exercise_id = e.id

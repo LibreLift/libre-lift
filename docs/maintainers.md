@@ -37,8 +37,8 @@ Then check hosted migration history and the pending SQL:
 
 ```sh
 npx --yes supabase@3.1.0 migration list --remote=jibzcwwursyzvvthazby
-npx --yes supabase@3.1.0 db push --remote=jibzcwwursyzvvthazby --dry-run
-npx --yes supabase@3.1.0 db push --remote=jibzcwwursyzvvthazby
+npx --yes supabase@3.1.0 db push --remote=jibzcwwursyzvvthazby --include-all --dry-run
+npx --yes supabase@3.1.0 db push --remote=jibzcwwursyzvvthazby --include-all
 npx --yes supabase@3.1.0 functions deploy health --remote=jibzcwwursyzvvthazby --use-api
 ```
 
@@ -72,7 +72,7 @@ Review the generated SQL, any migration-history reconciliation prompt, and the
 migration list before accepting. This workflow may update hosted migration
 history even though it does not reapply the schema change. Commit the migration
 and verify a local reset. Contributors then pull Git changes and run local
-`db push` (preserves existing data where the SQL allows), or `db reset` (discards
+`db push --include-all` (preserves existing data where the SQL allows), or `db reset` (discards
 local data). Do not blindly push a migration for a change already applied through
 the dashboard. Coordinate any overlapping pending migrations before deployment.
 Diffs do not capture all platform configuration or data changes.
