@@ -113,7 +113,7 @@ test('saving locks fields and all navigation, then a failed save restores the dr
 });
 
 test('edit set targets, append a copied set, remove an exercise and reopen the saved template', async () => {
-  await renderRouter('./app');
+  await renderAuthenticatedRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
@@ -136,7 +136,7 @@ test('edit set targets, append a copied set, remove an exercise and reopen the s
 });
 
 test('incomplete targets and empty exercises remain drafts until corrected', async () => {
-  await renderRouter('./app');
+  await renderAuthenticatedRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
