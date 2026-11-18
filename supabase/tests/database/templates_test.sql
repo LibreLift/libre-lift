@@ -8,6 +8,16 @@ insert into auth.users (id, email, aud, role, email_confirmed_at) values
 insert into public.users values
   ('10000000-0000-4000-8000-000000000001', 'Alex'),
   ('10000000-0000-4000-8000-000000000002', 'Jordan');
+-- Unrelated developer data must not change administrative fixture assertions.
+insert into auth.users (id, email, aud, role, email_confirmed_at) values
+  ('10000000-0000-4000-8000-000000000003', 'unrelated@example.test', 'authenticated', 'authenticated', now());
+insert into public.users values ('10000000-0000-4000-8000-000000000003', 'Unrelated User');
+insert into public.workout_templates (id, user_id, title) values
+  ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000003', 'Unrelated template');
+insert into public.template_exercises (id, template_id, position, catalog_id, snapshot) values
+  ('30000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000003', 1,
+    'repdb:row', '{"name":"Unrelated row","primaryMuscles":[],"secondaryMuscles":[],"equipment":{"kind":"none"}}');
+insert into public.template_sets values ('30000000-0000-4000-8000-000000000004', 1, 35, 12);
 set local role authenticated;
 set local request.jwt.claim.sub = '10000000-0000-4000-8000-000000000001';
 select lives_ok($$insert into public.workout_templates (id, user_id, title, description)
@@ -152,7 +162,8 @@ select lives_ok($$delete from public.workout_templates$$, 'owners can delete tem
 select is_empty($$select * from public.template_exercises$$, 'template deletion removes its placements');
 select is_empty($$select * from public.template_sets$$, 'template deletion removes its sets');
 reset role;
-select is((select count(*) from public.workout_templates), 2::bigint,
+select is((select count(*) from public.workout_templates
+  where user_id = '10000000-0000-4000-8000-000000000001'), 2::bigint,
   'another User''s template deletion preserves the first User''s templates');
 set local role authenticated;
 insert into public.workout_templates (id, user_id, title)
@@ -163,14 +174,27 @@ insert into public.template_exercises (id, template_id, position, catalog_id, sn
 insert into public.template_sets values ('30000000-0000-4000-8000-000000000003', 1, 20, 5);
 reset role;
 delete from auth.users where id = '10000000-0000-4000-8000-000000000001';
-select results_eq($$select title from public.workout_templates$$, array['Retained'],
+select results_eq($$select title from public.workout_templates
+  where user_id in ('10000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000002')$$, array['Retained'],
   'Auth-account deletion removes owned templates and preserves another User''s template');
-select results_eq($$select id from public.template_exercises$$,
+select results_eq($$select id from public.template_exercises
+  where id in ('30000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000002',
+    '30000000-0000-4000-8000-000000000003')$$,
   array['30000000-0000-4000-8000-000000000003'::uuid],
   'Auth-account deletion removes owned placements and preserves another User''s placement');
-select results_eq($$select target_weight from public.template_sets$$, array[20::numeric],
+select results_eq($$select target_weight from public.template_sets
+  where template_exercise_id in ('30000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000002',
+    '30000000-0000-4000-8000-000000000003')$$, array[20::numeric],
   'Auth-account deletion removes owned sets and preserves another User''s set');
-select results_eq($$select account_name from public.users$$, array['Jordan'],
+select results_eq($$select account_name from public.users
+  where id in ('10000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000002')$$, array['Jordan'],
   'Auth-account deletion preserves another User');
+select results_eq($$select u.account_name, t.title, e.snapshot->>'name', s.target_weight, s.target_reps
+  from public.users u join public.workout_templates t on t.user_id = u.id
+  join public.template_exercises e on e.template_id = t.id
+  join public.template_sets s on s.template_exercise_id = e.id
+  where u.id = '10000000-0000-4000-8000-000000000003'$$,
+  $$values ('Unrelated User'::text, 'Unrelated template'::text, 'Unrelated row'::text, 35::numeric, 12)$$,
+  'fixture operations and cascades preserve an unrelated User''s complete template');
 select * from finish();
 rollback;
