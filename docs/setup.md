@@ -244,6 +244,28 @@ Stopping preserves local data. If startup cannot connect to Docker, check that
 Docker Desktop is running (`docker info`). If ports are busy, stop any other
 local Supabase stack first. Keep local services on a trusted network.
 
+### Verify the database in isolation
+
+With Node/npm and Docker available, run:
+
+```sh
+npm run test:db
+```
+
+This starts a temporary PostgreSQL-only Supabase project on unused local ports,
+using CLI 3.1.0. It applies migrations around existing Auth and application User
+records, checks saved-template preservation, rebuilds from scratch, and runs the
+real database tests. Its containers and volumes are removed afterward. It never
+resets your existing local stack or connects to the hosted project, and needs no
+hosted credentials or separately installed PostgreSQL client. The first run may
+download Supabase images. A nonzero exit means a migration, assertion, or cleanup
+failed; cleanup failures print the temporary configuration location for recovery.
+
+The M1 schema now stores application Users and template aggregates. Account-name
+onboarding integration remains #42; template API/service integration and replacing
+the app's in-memory template service remain #45. Merely applying these migrations
+does not make the current UI persist training data.
+
 For backend contributions, see the [local migration workflow](../supabase/migrations/README.md).
 Hosted administration and deployments are covered in the [maintainer guide](maintainers.md).
 

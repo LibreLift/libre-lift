@@ -12,7 +12,8 @@
     "ios": "expo start --go --ios",
     "android": "expo start --go --android",
     "typecheck": "tsc --noEmit",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:db": "node scripts/verify-database.mjs"
   },
   "jest": {
     "preset": "jest-expo",
