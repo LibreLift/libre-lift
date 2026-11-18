@@ -2,6 +2,7 @@ import { AuthFailure } from '../src/services/auth-service';
 import { createManualClock } from '../test-support/auth-clock';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
+import { createSampleWorkoutService } from '../src/services/sample-workout-service';
 
 const session = {
   account: { id: 'account-1', email: 'alex@example.com', name: 'Alex' },
@@ -22,7 +23,7 @@ const service = {
 function renderAccess(props: Parameters<typeof RootLayout>[0] = {}, initialUrl?: string) {
   return renderRouter({
     appDir: './app',
-    overrides: { _layout: () => <RootLayout authService={service} {...props} /> },
+    overrides: { _layout: () => <RootLayout workoutServiceFactory={createSampleWorkoutService} authService={service} {...props} /> },
   }, { initialUrl });
 }
 
@@ -149,7 +150,7 @@ test('name validation and a failed name save preserve input and allow retry', as
 test('pending code requests lock conflicting actions, and restart ignores their late results', async () => {
   let finish = () => {};
   const delayed = new Promise<void>((resolve) => { finish = resolve; });
-  const access = () => <RootLayout authService={{ ...service, requestCode: () => delayed }} />;
+  const access = () => <RootLayout workoutServiceFactory={createSampleWorkoutService} authService={{ ...service, requestCode: () => delayed }} />;
   const app = await renderRouter({ appDir: './app', overrides: { _layout: access } });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));

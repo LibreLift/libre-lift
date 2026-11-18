@@ -92,7 +92,7 @@ Edit the generated `supabase/migrations/<timestamp>_describe_change.sql`, then a
 it to your local database and check its history:
 
 ```sh
-npx --yes supabase@3.1.0 db push
+npx --yes supabase@3.1.0 db push --include-all
 npx --yes supabase@3.1.0 migration list
 ```
 
@@ -113,7 +113,7 @@ npx --yes supabase@3.1.0 db reset
 database. Commit your reviewed SQL with the feature. Once a migration has been
 shared, add a new migration to correct it instead of changing its history.
 
-After pulling other contributors' migrations, run local `db push` to apply them,
+After pulling other contributors' migrations, run local `db push --include-all` to apply them,
 or `db reset` if you want to discard local data and rebuild.
 
 See the [maintainer guide](../../docs/maintainers.md) for hosted target checks,

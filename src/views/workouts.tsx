@@ -13,9 +13,9 @@ export function WorkoutsScreen() {
   const model = useSessionsViewModel();
   return (
     <Screen>
-      <Copy kind="label">ONE SESSION AT A TIME</Copy>
+      <Copy kind="label">Sample workout history</Copy>
       <Copy kind="title">Keep showing up.</Copy>
-      <Copy kind="muted">Your past workouts, with every set accounted for.</Copy>
+      <Copy kind="muted">Demonstration workouts, with every set accounted for.</Copy>
       <Copy kind="heading">Workout history</Copy>
       <Resource {...model}>
         {(sessions) =>

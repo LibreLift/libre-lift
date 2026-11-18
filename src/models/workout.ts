@@ -1,4 +1,5 @@
 import type { CatalogExercise } from './exercise';
+import { MAX_TARGET_REPS } from '../../supabase/functions/_shared/template-contract';
 
 export interface TemplateSet {
   readonly setNumber: number;
@@ -55,6 +56,7 @@ export function createSessionExercise(
 }
 
 export interface WorkoutTemplate {
+  readonly createdAt?: string;
   readonly id: string;
   readonly title: string;
   readonly description: string;
@@ -98,6 +100,8 @@ export function validateTemplate(content: TemplateContent): TemplateContent {
         throw new Error(`Exercise ${index + 1}, set ${setIndex + 1}: enter a weight of zero or more.`);
       if (!Number.isInteger(set.targetReps) || set.targetReps < 1)
         throw new Error(`Exercise ${index + 1}, set ${setIndex + 1}: enter a positive whole number of reps.`);
+      if (set.targetReps > MAX_TARGET_REPS)
+        throw new Error(`Exercise ${index + 1}, set ${setIndex + 1}: enter ${MAX_TARGET_REPS} reps or fewer.`);
       return { ...set, setNumber: setIndex + 1 };
     });
     return createTemplateExercise(exercise.id, exercise, sets);
