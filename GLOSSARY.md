@@ -16,6 +16,11 @@ templates and workout sessions.
 The identity through which a user signs in and accesses their saved training data.
 _Avoid_: User when referring specifically to sign-in identity
 
+**Account name**:
+The editable display name a user chooses for their account. It is not a unique
+handle or a sign-in identifier.
+_Avoid_: Username when implying a unique handle
+
 ### Planning
 
 **Exercise**:
