@@ -91,15 +91,14 @@ export function useTemplateEditorViewModel(id: string) {
 
 // A catalog route can add only to a still-open draft identified by its owner route.
 export function useTemplateCatalogSelection(draftId: string | undefined) {
-  const { drafts, setDraft, savingTemplate } = useWorkouts();
+  const { drafts, setDraft, nextPlacementId, savingTemplate } = useWorkouts();
   const available = !!draftId && !!drafts[draftId] && !savingTemplate;
   function add(exercise: CatalogExercise) {
     if (!available || !draftId) return false;
+    const placementId = nextPlacementId();
     setDraft(draftId, (draft) => {
       if (!draft) return draft;
-      let number = 1;
-      while (draft.exercises.some((value) => value.id === `placement-${number}`)) number++;
-      const placement = createTemplateExercise(`placement-${number}`, exercise, []);
+      const placement = createTemplateExercise(placementId, exercise, []);
       return { ...draft, exercises: [...draft.exercises, { ...placement, sets: [{ weight: '', reps: '' }] }] };
     });
     return true;

@@ -1,6 +1,7 @@
 import { authenticatedSession } from '../test-support/authenticated-router';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
+import { createSampleWorkoutService } from '../src/services/sample-workout-service';
 import { createExerciseCatalogService } from '../src/services/exercise-catalog-service';
 
 const bench = {
@@ -17,7 +18,7 @@ async function openCatalog(records: readonly unknown[] = [bench], initialUrl = '
   }));
   const service = createExerciseCatalogService(request);
   const app = await renderRouter({
-    appDir: './app', overrides: { _layout: () => <RootLayout initialSession={authenticatedSession} catalogService={service} /> },
+    appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={createSampleWorkoutService} initialSession={authenticatedSession} catalogService={service} /> },
   }, { initialUrl });
   if (initialUrl === '/templates') {
     await fireEvent.press(await screen.findByRole('button', { name: 'Exercise catalog' }));

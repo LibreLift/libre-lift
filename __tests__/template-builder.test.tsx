@@ -134,6 +134,23 @@ test('new draft validation, discard and Cancel do not create records', async () 
   expect(await service.listTemplates()).toHaveLength(2);
 });
 
+test('a repetition target outside storage range is correctable before saving', async () => {
+  const { service } = await builder();
+  await editSample();
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '2147483648');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByText('Exercise 1, set 1: enter 2147483647 reps or fewer.')).toBeVisible();
+  expect((await service.getTemplate('upper-body'))?.exercises[0].sets[0].targetReps).toBe(8);
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '2147483647');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
+  await screen.findByRole('button', { name: 'Edit template details' });
+  expect((await service.getTemplate('upper-body'))?.exercises[0].sets[0].targetReps).toBe(2147483647);
+});
+
 test('reordering uses edit-only handles and saves placement order with the original targets', async () => {
   const { service } = await builder();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));

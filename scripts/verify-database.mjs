@@ -42,7 +42,7 @@ function check(condition, message) {
 }
 function apply(filename) {
   copyFileSync(join(root, 'supabase/migrations', filename), join(migrations, filename));
-  cli('migration', 'up');
+  cli('db', 'push', '--include-all', '--yes');
 }
 let cleaned = false;
 function cleanup() {
@@ -72,7 +72,7 @@ try {
     and role = 'authenticated' and email_confirmed_at is not null) and not exists (select 1 from public.users)`,
     'Initial migration must preserve Auth accounts without inventing application Users');
   sql(`insert into public.users values ('${account}', 'Migration sentinel');`);
-  for (const filename of files.slice(1)) apply(filename);
+  apply(files[1]);
   check(`exists (select 1 from public.users where id = '${account}' and account_name = 'Migration sentinel')`,
     'Incremental migration lost the application User');
   sql(`do $$ begin insert into public.workout_templates (id, user_id, title, description, created_at)
@@ -81,7 +81,17 @@ try {
       values ('${placement}', '${template}', 1, 'repdb:bench-press',
         '{"name":"Bench press","primaryMuscles":["pectoralis major"],"secondaryMuscles":[],"equipment":{"kind":"none"}}');
     insert into public.template_sets values ('${placement}', 1, 12.5, 8); end $$;`);
-  cli('migration', 'up');
+  // The parallel deletion slice can land before the older-numbered update slice.
+  // Verify that adding the missing update later preserves the populated aggregate.
+  const featureFiles = files.slice(2);
+  const updateIndex = featureFiles.indexOf('20261118000300_update_workout_template.sql');
+  const deleteIndex = featureFiles.indexOf('20261118000400_delete_workout_template.sql');
+  if (updateIndex >= 0 && deleteIndex >= 0) {
+    const [updateMigration] = featureFiles.splice(updateIndex, 1);
+    featureFiles.push(updateMigration);
+  }
+  for (const filename of featureFiles) apply(filename);
+  cli('migration', 'up', '--include-all');
   check(`exists (select 1 from public.users u join public.workout_templates t on t.user_id = u.id
     join public.template_exercises e on e.template_id = t.id
     join public.template_sets s on s.template_exercise_id = e.id

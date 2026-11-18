@@ -9,7 +9,7 @@ function accountFrom(user: User): Account {
   };
 }
 
-function failure(error: { code?: string; status?: number }): AuthFailure {
+export function supabaseAuthFailure(error: { code?: string; status?: number }): AuthFailure {
   if (['refresh_token_not_found', 'refresh_token_already_used', 'session_not_found', 'user_not_found', 'user_banned'].includes(error.code ?? '')) {
     return new AuthSessionEnded('Your account access ended. Please sign in again.');
   }
@@ -31,7 +31,7 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
   async function loadAccount(account: Account): Promise<Account> {
     const { data, error } = await getClient().from('users')
       .select('account_name').eq('id', account.id).maybeSingle();
-    if (error) throw failure(error);
+    if (error) throw supabaseAuthFailure(error);
     if (data && (typeof data.account_name !== 'string' || !data.account_name.trim())) {
       throw new AuthFailure('Your account could not be loaded. Please try again.');
     }
@@ -74,16 +74,16 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
     },
     async restoreSession() {
       const { data, error } = await getClient().auth.getSession();
-      if (error) throw failure(error);
+      if (error) throw supabaseAuthFailure(error);
       return data.session ? sessionFrom(data.session) : null;
     },
     async requestCode(email) {
       const { error } = await getClient().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-      if (error) throw failure(error);
+      if (error) throw supabaseAuthFailure(error);
     },
     async verifyCode(email, token) {
       const { data, error } = await getClient().auth.verifyOtp({ email, token, type: 'email' });
-      if (error) throw failure(error);
+      if (error) throw supabaseAuthFailure(error);
       if (!data.session || !data.user) throw new AuthFailure('Verification did not complete. Please try again.');
       return sessionFrom(data.session);
     },
@@ -102,7 +102,7 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
         const stored = await loadAccount(account);
         if (stored.name) return stored;
       }
-      if (error) throw failure(error);
+      if (error) throw supabaseAuthFailure(error);
       if (!data || typeof data.account_name !== 'string' || !data.account_name.trim()) {
         throw new AuthFailure('Your name could not be saved. Please try again.');
       }
