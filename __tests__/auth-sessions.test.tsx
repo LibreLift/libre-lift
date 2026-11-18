@@ -25,7 +25,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 function renderAccess(authService: AuthService, initialUrl = '/', props: Parameters<typeof RootLayout>[0] = {}) {
-  return renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout authService={authService} {...props} /> } }, { initialUrl });
+  return renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={createSampleWorkoutService} authService={authService} {...props} /> } }, { initialUrl });
 }
 
 test('restoration gates training and email entry until the application User loads', async () => {

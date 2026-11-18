@@ -88,14 +88,15 @@ export function savedTemplates(value: unknown) { return array(value).map(savedTe
 
 export type TemplateReadRequest = { action: 'list' } | { action: 'get'; id: string };
 export type TemplateCreateRequest = { action: 'create'; id: string; operationId: string; content: ReturnType<typeof templateContent> };
+export type TemplateSaveRequest = Omit<TemplateCreateRequest, 'action'> & { action: 'create' | 'update' };
 export type TemplateDeleteRequest = { action: 'delete'; id: string };
-export type TemplateRequest = TemplateReadRequest | TemplateCreateRequest | TemplateDeleteRequest;
+export type TemplateRequest = TemplateReadRequest | TemplateSaveRequest | TemplateDeleteRequest;
 export function templateRequest(value: unknown): TemplateRequest {
   const row = object(value);
   if (row.action === 'delete') return { action: 'delete', id: uuid(row.id) };
-  if (row.action === 'create') {
+  if (row.action === 'create' || row.action === 'update') {
     const content = templateContent(row.content);
-    return { action: 'create', id: uuid(row.id), operationId: uuid(row.operationId), content: { ...content, title: content.title.trim() } };
+    return { action: row.action, id: uuid(row.id), operationId: uuid(row.operationId), content: { ...content, title: content.title.trim() } };
   }
   return templateReadRequest(value);
 }
