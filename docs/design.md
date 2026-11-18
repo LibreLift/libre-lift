@@ -5,7 +5,7 @@
 | **Authors**      | James Teuscher                                                                                                                                            |
 | **Reviewers**    | [who reviewed it — a teammate, the instructor, a design-review partner]                                                                                   |
 | **Status**       | In review                                                                                                                                                 |
-| **Last updated** | 11-9-26                                                                                                                                                   |
+| **Last updated** | 11-17-26                                                                                                                                                  |
 | **Links**        | [proposal](../cp3/cp3-proposal) · [repository](https://github.com/LibreLift/expo_suite) · [issue tracker](https://github.com/LibreLift/expo_suite/issues) |
 
 ## Revision history
@@ -17,6 +17,7 @@
 | 10-21-26 | James Teuscher | Finished first copy            |
 | 11-4-26  | James Teuscher | Revised to respond to feedback |
 | 11-9-26  | Codex | Record frontend decisions and clarify shared terminology |
+| 11-17-26 | Codex | Record the confirmed M1 database scope and account-name ownership |
 
 ---
 
@@ -216,7 +217,7 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 
 | Entity            | Key fields                                                                             | Relationships                                                             | MVP or roadmap |
 | ----------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------- |
-| User              | id                                                                                     | has workout templates, has workout sessions, and has exercise max weights | MVP            |
+| User              | id, account_name                                                                       | has workout templates, has workout sessions, and has exercise max weights | MVP            |
 | Exercise          | exercise_id, name, muscles, equipmenet                                                 | has a User max weight, part of template exercise and session exercise     | MVP            |
 | Workout template  | userId, template_id, title                                                             | belongs to User, has exercises, fills a workout session                   | MVP            |
 | Template exercise | template_exercise_id, exercise_id, template_id, position                               | part of Workout template, is an exercise, has sets                        | MVP            |
@@ -225,6 +226,78 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 | Workout session   | session_id, user_id, template_id, start_time, end_time                                 | belongs to user, filled by workout template, contains session exercises   | MVP            |
 | Session exercise  | session_exercise_id, session_id, exercise_id, position                                 | part of Workout session, has session sets                                 | MVP            |
 | Session sets      | sesson_exercise_id, set_number, target_weight, target_reps, actual_weight, actual_reps | part of session workout                                                   | MVP            |
+
+### M1 database scope and account data (#102)
+
+See the [confirmed #102 specification](./issue-102-database.md) for acceptance
+criteria, implementation boundaries, and the approved database testing seam.
+
+The M1 database includes an application-owned User table, workout templates,
+template exercises, and template sets. Workout sessions, session exercises,
+session sets, personal exercise maximums, and percentage-based targets are added
+through later migrations for M2; the table above describes the broader MVP model.
+
+The application-owned User table stores the editable account name and uses the
+Supabase Auth account's ID as its identity. Training records reference this
+application User for ownership and relationships. The account name is a display
+name, not a unique sign-in identifier. This decision replaces #42's use of Auth
+user metadata for the account name. Do not add application columns to or otherwise
+alter Supabase's managed Auth schema; Supabase Auth continues to manage credentials
+and authentication sessions.
+
+After email verification, an authenticated account-data read loads the application
+User if one exists. An absent User requires name onboarding without creating a
+row. Submitting a valid account name creates the User with the Auth account's ID;
+a failed save preserves the entered name for retry. Existing Users load their
+stored account name. Account access integration in #42 must follow this flow.
+
+Template exercises store their placement identity, namespaced catalog identity,
+parent template, and position relationally. Each placement also stores a complete
+descriptive JSON snapshot, including name, distinct primary and secondary muscles,
+equipment, and available images, instructions, and translations. Template sets
+remain relational. Saved detail reads these snapshots without consulting the live
+catalog; #102 does not import a shared exercise catalog table. This implements the
+existing catalog identity and snapshot decision rather than treating the ERD's
+Exercise entity as a live source of saved descriptions.
+
+Authenticated database requests use the requesting account's context so row-level
+security applies. Explicit grants and policies allow only owner-scoped access to
+application User and template data; anonymous access is denied. Backend operations
+must not routinely bypass these policies with a privileged service credential.
+Deleting a template cascades to its placements and sets. Deleting an Auth account
+cascades to its application User and owned templates. Users cannot change their
+identity or transfer ownership. An account-deletion UI remains outside M1 scope.
+
+Saved templates and template-exercise placements use UUID identities. Placement
+identity remains unchanged when exercises move; a separate numeric position
+records order. Template sets use numbers within their placement. Templates store
+creation timestamps for stable list ordering. Draft identity conversion belongs
+to #45's persistence integration.
+
+Database constraints enforce valid relationships, nonblank names, nonnegative
+finite decimal weights in pounds, positive integer target repetitions, and unique
+exercise positions and set numbers within their parents. Issue #45 validates and
+saves a complete template atomically, including at least one exercise, at least
+one set per exercise, and consecutive ordering. Multirow edits may temporarily
+have incomplete structure within their transaction.
+
+Issue #102's primary verification seam is the real local Supabase database, using
+anonymous and two authenticated identities. Tests verify allowed operations,
+ownership isolation and attempted ownership changes, invalid values, snapshots,
+ordering, and deletion cascades. Migrations must rebuild cleanly and apply to a
+populated database without losing existing records. App-flow verification remains
+with #42 and #45. Deliver locally verified migrations and hosted deployment
+instructions; applying them to the shared hosted backend follows the existing
+post-review maintainer workflow. Do not automatically seed user data or sample
+templates.
+
+Issue #102 owns the M1 schema, relationship constraints, access grants, row-level
+security, and database verification. Issue #45 builds template persistence
+operations and app integration on that foundation; #43 owns authentication-session
+restoration. Valid stored authentication is restored automatically, while explicit
+sign-out or an app reinstall requires another email OTP. Saved templates belong
+to the account and survive app reloads, restarts, updates, and reinstalls when
+using the same backend. Unsaved template drafts remain temporary.
 
 **ERD:**
 ![Entity-Relationship Diagram](./design-images/librelift-erd.jpg)
