@@ -1,5 +1,14 @@
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2.119.0';
-import { savedTemplate, savedTemplates, TemplateFailure, type TemplateReadRequest, type TemplateCreateRequest } from '../_shared/template-contract.ts';
+import { savedTemplate, savedTemplates, TemplateFailure, type TemplateReadRequest, type TemplateCreateRequest, type TemplateDeleteRequest } from '../_shared/template-contract.ts';
+
+export async function deleteTemplate(client: SupabaseClient, request: TemplateDeleteRequest) {
+  const { error } = await client.rpc('delete_workout_template', { p_id: request.id });
+  if (error) {
+    const invalid = ['22023', '22P02'].includes(error.code);
+    throw new TemplateFailure('Your template could not be deleted.', invalid ? 'validation' : 'unavailable');
+  }
+  return null;
+}
 
 export async function createTemplate(client: SupabaseClient, request: TemplateCreateRequest) {
   const { data, error } = await client.rpc('save_workout_template', {

@@ -53,7 +53,11 @@ export function createSupabaseWorkoutService(getClient: () => SupabaseClient, ne
     },
     updateTemplate: unsupported,
     updateTemplateDetails: unsupported,
-    deleteTemplate: unsupported,
+    async deleteTemplate(id) {
+      if (await request({ action: 'delete', id: uuid(id) }) !== null) {
+        throw new TemplateFailure('Your template could not be deleted. Please try again.', 'unavailable');
+      }
+    },
     listSessions: samples.listSessions,
     getSession: samples.getSession,
   };
