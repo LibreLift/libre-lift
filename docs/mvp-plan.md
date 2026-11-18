@@ -2,7 +2,7 @@
 
 ## 1. What's included
 
-The slice is encapsulated in the following flow: a user logs in using an email and an OTP. They see no seeded data, but are able to create, update, and delete exercise templates using a catalog of exercises. These template changes persist across app sessions. The app client runs on a development build using the Expo Go mobile app. The database, authentication, and backend runs on Supabase.
+The slice is encapsulated in the following flow: a user logs in using an email and an OTP. They see no seeded data, but are able to create, update, and delete exercise templates using a catalog of exercises. These template changes persist across app sessions. The app client runs in Expo Go from the development server. The database, authentication, and backend runs on Supabase.
 
 **Epics:** [#32](https://github.com/open-source-fitness/open-fit/issues/32), [#35](https://github.com/open-source-fitness/open-fit/issues/35), [#40](https://github.com/open-source-fitness/open-fit/issues/40).
 
@@ -12,7 +12,7 @@ The slice is encapsulated in the following flow: a user logs in using an email a
 
 - **The cut that was made:** improving app performance ([#54](https://github.com/open-source-fitness/open-fit/issues/54)) and ([#55](https://github.com/open-source-fitness/open-fit/issues/55)). I wanted to focus on ensure that there was any app performance at all before improving it.
 - **Throwaway corners:** Expo Go app environment for testing. v2 will include real app builds that behave the way users would expect on their smart phones, in terms of app lifecycle.
-- **Emergency cut: persistent database** ([#102](https://github.com/open-source-fitness/open-fit/issues/102)). Replace with seeded in-memory data if necessary.
+- **Emergency cut: template persistence integration** ([#45](https://github.com/open-source-fitness/open-fit/issues/45), built on the database foundation in [#102](https://github.com/open-source-fitness/open-fit/issues/102)). Replace with seeded in-memory data only for a reduced demonstration if necessary. Activating this fallback means the documented M1 scope was not delivered: template persistence and the no-seeded-data flow cannot be claimed, and the backend integration risk remains unresolved.
 
 ## 3. The risks it addresses:
 
@@ -36,10 +36,13 @@ The three claims, ordered by most doubtful to least:
 
 #### Script
 
-1. Login with a new, unused email, not touched during testing. Showcase email OTP for auth
-2. Create a template or two, demonstrating exercise catalog search, filtering, and template building.
-3. Close the app and reopen it without signing in again. Show account info and template data persisting. If a fresh login is required, record that as failure of the technical claim.
+1. Before the run, choose a muscle group and equipment requirement supported by an available catalog exercise with an image. Write those criteria in a task for a first-time participant. Prepare an unused email address and access to its inbox, and open the app signed out. Do not walk the participant through the UI.
+2. Ask the participant to create one saved workout template meeting those criteria, without assistance. Start a timer at their first interaction with account access; stop when the newly saved template detail appears. Include email OTP delivery, name entry, exercise selection, and saving in the elapsed time. Record the duration and any help given. A duration of 180 seconds or more, failure to save, or any required assistance fails the unaided three-minute claim.
+3. During that run, observe email OTP access and an initially empty template list. The participant must search/filter the catalog, check that the selected exercise targets the chosen muscle group and lists the specified equipment, open its detail and see a loaded exercise image, then add it to the template with valid fixed-weight targets and repetitions. Record the saved name, exercise, and targets. Failure to find a matching exercise, see its image, or save the matching template fails the exercise-selection claim; preexisting sample templates fail the no-seeded-data scope. Equipment is checked from exercise information; an equipment filter is not required.
+4. After saving, close the app and reopen it without signing in again. Show the same account info and reopen the template; compare its name, exercise, and targets with the recorded values. A fresh login fails the technical claim; a missing template or changed values fails template persistence.
+5. Edit the saved template's name and a set target, save, then close and reopen the app and template. Verify the edited values persist. An unsuccessful save or lost edit fails the M1 edit/persistence flow.
+6. Delete the template using its confirmation, then close and reopen the app. Verify the deleted template remains absent from the list. Failed deletion or a reappearing template fails the M1 delete/persistence flow.
 
 #### Fallback
 
-Have a branch with in-memory data ready to showcase template building at the very least.
+Have a branch with in-memory data ready to showcase template building at the very least. Label this a reduced demonstration, record that M1 persistence was not delivered, and do not count its seeded records or temporary saves as evidence for the full M1 claims.
