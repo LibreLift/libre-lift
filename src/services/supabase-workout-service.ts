@@ -14,7 +14,6 @@ export function createSupabaseWorkoutService(getClient: () => SupabaseClient, ne
     if (!newId) throw new TemplateFailure('Saving templates is not configured.', 'unavailable');
     return uuid(newId());
   }
-  const unsupported = async () => { throw new TemplateFailure('This template operation is not available yet.', 'unavailable'); };
   async function request(body: TemplateRequest): Promise<unknown> {
     const { data, error } = await getClient().functions.invoke<unknown>('workout-templates', { body });
     if (error) {
@@ -75,7 +74,11 @@ export function createSupabaseWorkoutService(getClient: () => SupabaseClient, ne
       if (template.id !== id) throw new TemplateFailure('This draft belongs to another template.');
       return save('update', { ...template, ...details }, context, id);
     },
-    deleteTemplate: unsupported,
+    async deleteTemplate(id) {
+      if (await request({ action: 'delete', id: uuid(id) }) !== null) {
+        throw new TemplateFailure('Your template could not be deleted. Please try again.', 'unavailable');
+      }
+    },
     listSessions: samples.listSessions,
     getSession: samples.getSession,
   };

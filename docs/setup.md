@@ -182,3 +182,5 @@ the production service through a disposable local Edge Function and database.
 Production template composition remains in-memory until the #45 cutover.
 The same check now covers [atomic creation and retry safety](./issue-122-template-creation.md),
 including an injected late-write failure in the disposable database.
+It also verifies [retry-safe deletion](./issue-124-template-deletion.md), including
+lost responses, owner isolation, cascade failure recovery, and creation replay.
