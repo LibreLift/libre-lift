@@ -2,17 +2,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router/js-tabs';
 import { PlatformPressable } from 'expo-router/react-navigation';
 import { useTheme } from '../../src/viewmodels/theme';
+import { useAuth } from '../../src/viewmodels/auth';
 import { useWorkouts } from '../../src/viewmodels/workout-provider';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { savingTemplate } = useWorkouts();
+  const { pending } = useAuth();
+  const navigationLocked = savingTemplate || pending;
   return (
     <Tabs
       backBehavior="history"
       screenListeners={{
         tabPress: (event) => {
-          if (savingTemplate) event.preventDefault();
+          if (navigationLocked) event.preventDefault();
         },
       }}
       screenOptions={{
@@ -24,9 +27,9 @@ export default function TabsLayout() {
         tabBarButton: (props) => (
           <PlatformPressable
             {...props}
-            disabled={savingTemplate}
-            accessibilityState={{ ...props.accessibilityState, disabled: savingTemplate }}
-            style={[props.style, { opacity: savingTemplate ? 0.5 : 1 }]}
+            disabled={navigationLocked}
+            accessibilityState={{ ...props.accessibilityState, disabled: navigationLocked }}
+            style={[props.style, { opacity: navigationLocked ? 0.5 : 1 }]}
           />
         ),
       }}

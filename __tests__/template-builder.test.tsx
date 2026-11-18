@@ -1,3 +1,4 @@
+import { authenticatedSession } from '../test-support/authenticated-router';
 import { Alert } from 'react-native';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
@@ -10,7 +11,7 @@ async function builder(service = createSampleWorkoutService(), failure = false) 
   const catalogService = createExerciseCatalogService(async () => ({ ok: !failure,
     async json() { return { schema_version: 3, exercises: [bench] }; },
   }));
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} catalogService={catalogService} /> } });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
   return { app, service };
 }
 async function editSample() {
