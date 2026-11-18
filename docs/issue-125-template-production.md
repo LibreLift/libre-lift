@@ -67,6 +67,20 @@ before renewal/retry. Public-service and router regressions cover discarded
 requests after re-entry to either the same or a different account; the old request
 is not resent and cannot end the newly loaded account's access.
 
+The editor and shared HTTP contract now reject repetition targets above the
+existing integer storage maximum with correction feedback. Additive migration
+`00600` enforces that same bound for direct RPC callers; the full-stack check
+rejects an out-of-range write without consuming its operation identity, then
+saves the inclusive maximum. This review migration is pending the next reviewed
+hosted rollout; the earlier device report covers the deployment through `00500`.
+
+The populated migration check also reproduces the parallel review order (`00400`
+before missing `00300`). It first failed with `MigrationMissingRemoteError`;
+documented `db push --include-all` now applies the missing migration while
+preserving saved templates. Already-deployed migration versions remain unchanged.
+After these review corrections, all 139 Jest tests, TypeScript, the three fresh
+HTTP suites, 100 database assertions, and iOS/Android exports passed.
+
 ## Hosted rollout and physical-device verification
 
 On November 18, 2026, the maintainer reported that even a minimal template failed

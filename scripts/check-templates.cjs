@@ -161,12 +161,17 @@ async function main() {
     assert.equal(invalidRange.error?.context.status, 400, 'Storage-range input errors must be validation failures.');
     assert.equal((await invalidRange.error.context.json()).kind, 'validation');
     assert.equal(await creating.getTemplate(rangeId), null);
-    rangeContent.exercises[0].sets[0].targetReps = 8;
+    const invalidRangeRpc = await actor.rpc('save_workout_template', {
+      p_id: rangeId, p_operation: rangeOperation, p_content: rangeContent, p_mode: 'create',
+    });
+    assert.equal(invalidRangeRpc.error?.code, '22023', 'RPC validation must reject out-of-range targets before integer casts.');
+    assert.equal(await creating.getTemplate(rangeId), null);
+    rangeContent.exercises[0].sets[0].targetReps = 2147483647;
     const correctedRange = await actor.functions.invoke('workout-templates', {
       body: { action: 'create', id: rangeId, operationId: rangeOperation, content: rangeContent },
     });
     assert.ifError(correctedRange.error);
-    assert.equal((await creating.getTemplate(rangeId)).exercises[0].sets[0].targetReps, 8);
+    assert.equal((await creating.getTemplate(rangeId)).exercises[0].sets[0].targetReps, 2147483647);
     await creating.deleteTemplate(rangeId);
     console.log('Out-of-range repetition input is validation, with no partial save or committed retry identity.');
     const context = {};
