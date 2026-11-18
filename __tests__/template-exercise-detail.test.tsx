@@ -9,7 +9,7 @@ test('saved template overview opens an exercise image and compact read-only sets
   await service.updateTemplate(template.id, { ...template, exercises: template.exercises.map((exercise) => ({
     ...exercise, images: { preferred: 'main', main: 'https://example.org/saved-exercise.webp' },
   })) });
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout service={service} initialSession={authenticatedSession} /> } });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   expect(screen.getByRole('button', { name: 'Bench press. 3 sets' })).toBeVisible();
   expect(screen.queryByText(/95 lb/)).toBeNull();
