@@ -11,12 +11,12 @@ test('a failed edit keeps the draft for retry and a successful save refreshes li
   let fail = true;
   const service: WorkoutService = {
     ...storage,
-    async updateTemplateDetails(id, details) {
+    async updateTemplate(id, details) {
       if (fail) {
         fail = false;
         throw new Error('Offline');
       }
-      return storage.updateTemplateDetails(id, details);
+      return storage.updateTemplate(id, details);
     },
   };
   const wrapper = ({ children }: PropsWithChildren) => (

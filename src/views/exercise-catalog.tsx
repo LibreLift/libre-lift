@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ export function ExerciseCatalogScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const { colors } = useTheme();
   const router = useRouter();
+  const { draftId } = useLocalSearchParams<{ draftId?: string }>();
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
@@ -21,7 +22,7 @@ export function ExerciseCatalogScreen() {
         renderItem={({ item }) => (
           <Pressable accessibilityRole="button" accessibilityLabel={`View ${item.exercise.name}. ${catalogExerciseFacts(item).join('. ')}`} onPress={() => {
             selectExercise(item);
-            router.push({ pathname: '/templates/catalog-exercise', params: { catalogId: item.exercise.catalogId } });
+            router.push({ pathname: '/templates/catalog-exercise', params: { catalogId: item.exercise.catalogId, ...(draftId ? { draftId } : {}) } });
           }}>
             <CatalogExerciseCard item={item} />
           </Pressable>

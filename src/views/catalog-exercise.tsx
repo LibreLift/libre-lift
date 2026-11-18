@@ -1,11 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCatalogExerciseDetailViewModel } from '../viewmodels/exercise-catalog';
+import { useTemplateCatalogSelection } from '../viewmodels/template-editor';
 import { CatalogExerciseImages } from './catalog-exercise-images';
 import { CatalogExerciseFacts } from './catalog-exercise-facts';
 import { Button, Copy, Screen } from './ui';
 
 export function CatalogExerciseDetailScreen() {
-  const { catalogId } = useLocalSearchParams<{ catalogId: string }>();
+  const { catalogId, draftId } = useLocalSearchParams<{ catalogId: string; draftId?: string }>();
+  const selection = useTemplateCatalogSelection(draftId);
   const router = useRouter();
   const item = useCatalogExerciseDetailViewModel(catalogId);
   if (!item) return (
@@ -19,6 +21,9 @@ export function CatalogExerciseDetailScreen() {
   return (
     <Screen>
       <Copy kind="title">{exercise.name}</Copy>
+      {selection.available ? <Button label="Add to template" onPress={() => {
+        if (selection.add(exercise)) router.dismissTo(draftId === 'new' ? '/templates/new' : { pathname: '/templates/[id]', params: { id: draftId! } });
+      }} /> : null}
       <CatalogExerciseImages key={exercise.catalogId} images={images} name={exercise.name} />
       <CatalogExerciseFacts item={item} />
       {exercise.instructions?.length ? <>

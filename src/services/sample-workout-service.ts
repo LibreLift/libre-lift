@@ -1,4 +1,4 @@
-import { createSessionExercise, createTemplateExercise, validateTemplateDetails, type WorkoutSession, type WorkoutTemplate } from '../models/workout';
+import { snapshotTemplate, validateTemplate, createSessionExercise, createTemplateExercise, type TemplateContent, type WorkoutSession, type WorkoutTemplate } from '../models/workout';
 import type { WorkoutService } from './workout-service';
 
 const templates: readonly WorkoutTemplate[] = [
@@ -113,20 +113,37 @@ const sessions: readonly WorkoutSession[] = [
 
 // A new service instance starts a fresh app session, without changing the fixtures.
 export function createSampleWorkoutService(): WorkoutService {
-  let savedTemplates = templates;
+  let savedTemplates = templates.map(snapshotTemplate);
+  let nextId = 1;
+  async function updateTemplate(id: string, content: TemplateContent) {
+    if (!savedTemplates.some((value) => value.id === id)) throw new Error('This template couldn’t be found.');
+    const updated = { id, ...validateTemplate(content) };
+    savedTemplates = savedTemplates.map((value) => value.id === id ? updated : value);
+    return snapshotTemplate(updated);
+  }
   return {
+    async deleteTemplate(id) {
+      if (!savedTemplates.some((template) => template.id === id)) throw new Error('This template couldn’t be found.');
+      savedTemplates = savedTemplates.filter((template) => template.id !== id);
+    },
+    async createTemplate(content) {
+      const validated = validateTemplate(content);
+      const template = { id: `template-${nextId++}`, ...validated };
+      savedTemplates = [...savedTemplates, template];
+      return snapshotTemplate(template);
+    },
     async listTemplates() {
-      return savedTemplates;
+      return savedTemplates.map(snapshotTemplate);
     },
     async getTemplate(id) {
-      return savedTemplates.find((template) => template.id === id) ?? null;
+      const template = savedTemplates.find((value) => value.id === id);
+      return template ? snapshotTemplate(template) : null;
     },
+    updateTemplate,
     async updateTemplateDetails(id, details) {
       const template = savedTemplates.find((value) => value.id === id);
       if (!template) throw new Error('This template couldn’t be found.');
-      const updated = { ...template, ...validateTemplateDetails(details) };
-      savedTemplates = savedTemplates.map((value) => (value.id === id ? updated : value));
-      return updated;
+      return updateTemplate(id, { ...template, ...details });
     },
     async listSessions() {
       return sessions;

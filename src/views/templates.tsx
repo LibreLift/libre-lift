@@ -1,9 +1,9 @@
 import { Stack, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, TextInput } from 'react-native';
+import { useEffect } from 'react';
+import { Alert } from 'react-native';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
-import { useTheme } from '../viewmodels/theme';
-import { ExerciseSummary } from './exercise-summary';
+import { TemplateForm } from './template-form';
 import { Button, Card, Copy, LinkCard, Resource, Screen } from './ui';
 
 export function TemplatesScreen() {
@@ -15,6 +15,7 @@ export function TemplatesScreen() {
       <Copy kind="title">Make a plan.{'\n'}Make it yours.</Copy>
       <Copy kind="muted">A few good exercises. A plan you can come back to.</Copy>
       <Copy kind="heading">Templates</Copy>
+      <Button label="Create template" onPress={() => router.push('/templates/new')} />
       <Button label="Exercise catalog" onPress={() => router.push('/templates/catalog')} />
       <Resource {...model}>
         {(templates) =>
@@ -43,6 +44,58 @@ export function TemplatesScreen() {
 export function TemplateDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const model = useTemplateEditorViewModel(id);
+  const router = useRouter();
+  useEffect(() => { if (model.deleted) router.dismissTo('/templates'); }, [model.deleted, router]);
+  useTemplateNavigationGuard(model);
+  return (
+    <>
+      <Stack.Screen options={{ gestureEnabled: !model.saving, headerBackVisible: !model.saving }} />
+      <Screen>
+        <Resource {...model}>
+          {(template) =>
+            template ? (
+              <>
+                <Copy kind="label">WORKOUT TEMPLATE</Copy>
+                {model.draft ? (
+                  <TemplateForm model={model} />
+                ) : (
+                  <>
+                    <Copy kind="title">{template.title}</Copy>
+                    <Copy kind="muted">{template.description}</Copy>
+                    <Button label="Edit template details" disabled={model.saving} onPress={model.startEditing} />
+                    {model.error ? <Copy>{model.error}</Copy> : null}
+                    <Button label={model.saving ? 'Deleting…' : model.error ? 'Retry delete' : 'Delete template'} disabled={model.saving} onPress={() => {
+                      Alert.alert('Delete template?', `Delete “${template.title}”?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => void model.removeTemplate() },
+                      ]);
+                    }} />
+                  </>
+                )}
+                {!model.draft && <>
+                  <Copy kind="heading">{template.exercises.length} {template.exercises.length === 1 ? 'exercise' : 'exercises'}</Copy>
+                  {template.exercises.map((exercise) => (
+                    <LinkCard key={exercise.id} title={exercise.name}
+                      subtitle={`${exercise.sets.length} ${exercise.sets.length === 1 ? 'set' : 'sets'}`}
+                      icon="barbell-outline" onPress={() => router.push({
+                        pathname: '/templates/exercise', params: { templateId: template.id, exerciseId: exercise.id },
+                      })} />
+                  ))}
+                </>}
+              </>
+            ) : (
+              <Card>
+                <Copy>This template couldn’t be found.</Copy>
+              </Card>
+            )
+          }
+        </Resource>
+      </Screen>
+    </>
+  );
+}
+
+function useTemplateNavigationGuard(model: ReturnType<typeof useTemplateEditorViewModel>) {
   usePreventRemove(model.dirty || model.saving, ({ repeat }) => {
     if (model.saving) return;
     Alert.alert('Discard changes?', 'Your template has unsaved changes.', [
@@ -57,84 +110,20 @@ export function TemplateDetailScreen() {
       },
     ]);
   });
-  const { colors } = useTheme();
-  const fieldStyle = {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    backgroundColor: colors.background,
-    color: colors.text,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 48,
-  };
-  return (
-    <>
-      <Stack.Screen options={{ gestureEnabled: !model.saving, headerBackVisible: !model.saving }} />
-      <Screen>
-        <Resource {...model}>
-          {(template) =>
-            template ? (
-              <>
-                <Copy kind="label">WORKOUT TEMPLATE</Copy>
-                {model.draft ? (
-                  <Card>
-                    <Copy kind="heading">Edit template details</Copy>
-                    <Copy>Title</Copy>
-                    <TextInput
-                      accessibilityLabel="Template title"
-                      value={model.draft.title}
-                      onChangeText={(value) => model.change('title', value)}
-                      editable={!model.saving}
-                      accessibilityState={{ disabled: model.saving }}
-                      style={fieldStyle}
-                    />
-                    <Copy>Description</Copy>
-                    <TextInput
-                      accessibilityLabel="Template description"
-                      value={model.draft.description}
-                      onChangeText={(value) => model.change('description', value)}
-                      editable={!model.saving}
-                      accessibilityState={{ disabled: model.saving }}
-                      multiline
-                      style={[fieldStyle, { minHeight: 96, textAlignVertical: 'top' }]}
-                    />
-                    {model.error ? <Copy>{model.error}</Copy> : null}
-                    <Button
-                      label={model.saving ? 'Saving…' : model.error ? 'Retry save' : 'Save'}
-                      disabled={model.saving}
-                      onPress={() => void model.save()}
-                    />
-                    <Button label="Cancel" disabled={model.saving} onPress={model.cancelEditing} />
-                  </Card>
-                ) : (
-                  <>
-                    <Copy kind="title">{template.title}</Copy>
-                    <Copy kind="muted">{template.description}</Copy>
-                    <Button label="Edit template details" onPress={model.startEditing} />
-                  </>
-                )}
-                {template.exercises.map((exercise, index) => (
-                  <Card key={exercise.id}>
-                    <Copy kind="label">EXERCISE {index + 1}</Copy>
-                    <Copy kind="heading">{exercise.name}</Copy>
-                    <ExerciseSummary exercise={exercise} />
-                    {exercise.sets.map((set) => (
-                      <Copy key={set.setNumber}>
-                        Set {set.setNumber} · {set.targetReps} reps × {set.targetWeight} lb
-                      </Copy>
-                    ))}
-                  </Card>
-                ))}
-              </>
-            ) : (
-              <Card>
-                <Copy>This template couldn’t be found.</Copy>
-              </Card>
-            )
-          }
-        </Resource>
-      </Screen>
-    </>
-  );
+}
+
+export function NewTemplateScreen() {
+  const model = useTemplateEditorViewModel('new');
+  const router = useRouter();
+  useTemplateNavigationGuard(model);
+  useEffect(() => {
+    if (!model.draft && !model.createdId && model.state.status === 'ready') router.dismissTo('/templates');
+  }, [model.draft, model.createdId, model.state.status, router]);
+  useEffect(() => {
+    if (model.createdId) router.replace({ pathname: '/templates/[id]', params: { id: model.createdId } });
+  }, [model.createdId, router]);
+  return <>
+    <Stack.Screen options={{ title: 'Create template', gestureEnabled: !model.saving, headerBackVisible: !model.saving }} />
+    <Screen><Copy kind="title">Create template</Copy><TemplateForm model={model} /></Screen>
+  </>;
 }
