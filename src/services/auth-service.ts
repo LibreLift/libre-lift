@@ -7,6 +7,7 @@ export type AuthSession = Readonly<{
 }>;
 
 export interface AuthService {
+  restoreSession(): Promise<AuthSession | null>;
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<AuthSession>;
   loadAccount(account: Account): Promise<Account>;

@@ -1,4 +1,4 @@
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import { AuthFailure, type Account, type AuthService } from './auth-service';
 
 function accountFrom(user: User): Account {
@@ -19,6 +19,11 @@ function failure(error: { code?: string; status?: number }): AuthFailure {
   return new AuthFailure('Account access is unavailable. Check your connection and try again.');
 }
 
+function sessionFrom(session: Session) {
+  return { account: accountFrom(session.user), accessToken: session.access_token,
+    refreshToken: session.refresh_token, expiresAt: session.expires_at ?? 0 };
+}
+
 export function createSupabaseAuthService(getClient: () => SupabaseClient): AuthService {
   async function loadAccount(account: Account): Promise<Account> {
     const { data, error } = await getClient().from('users')
@@ -31,6 +36,11 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
   }
 
   return {
+    async restoreSession() {
+      const { data, error } = await getClient().auth.getSession();
+      if (error) throw failure(error);
+      return data.session ? sessionFrom(data.session) : null;
+    },
     async requestCode(email) {
       const { error } = await getClient().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
       if (error) throw failure(error);

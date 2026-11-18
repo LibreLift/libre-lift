@@ -399,3 +399,20 @@ is needed; the image comes from the saved exercise snapshot. Missing imagery
 shows Image unavailable while set targets remain readable. Back returns to the
 saved overview. In the editor, Sets opens the set editor and sits inline with
 the exercise title and trash icon.
+
+### Authentication session restoration (#43)
+
+App launch restores stored Supabase authentication before mounting protected
+navigation. It loads the application User before opening training; missing Users
+require account-name onboarding, while lookup failures offer retry. Temporary
+restoration failures retain stored authentication and keep Settings available.
+
+The opt-in session check uses a disposable local stack, never hosted services:
+
+```sh
+AUTH_TEST_WORKDIR=/absolute/path/to/disposable-supabase-project node scripts/check-auth-sessions.cjs
+```
+
+It verifies persisted authentication across client recreation and application
+User loading through the real authentication service. The full agreed lifecycle
+and testing boundaries are recorded in [the #43 spec](issue-43-auth-sessions.md).

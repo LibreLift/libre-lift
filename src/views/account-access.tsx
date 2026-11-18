@@ -6,6 +6,12 @@ import { Button, Card, Copy, FormError, Screen } from './ui';
 export function AccountAccessScreen() {
   const model = useAuth();
   const router = useRouter();
+  if (model.restoreError) return <Screen>
+    <Copy kind="title">Account access interrupted</Copy>
+    <FormError message={model.restoreError} />
+    <Button label="Retry account access" onPress={() => void model.restore()} />
+    <Button label="Settings" onPress={() => router.push('/settings')} />
+  </Screen>;
   if (model.resolvingAccount) return <Screen>
     <Copy kind="title">Loading your account</Copy>
     <Card>

@@ -9,6 +9,7 @@ const session = {
 };
 
 const service = {
+  async restoreSession() { return null; },
   async requestCode() {},
   async verifyCode() { return session; },
   async loadAccount() { return session.account; },
@@ -182,11 +183,9 @@ test('missing backend settings show an actionable error instead of crashing', as
   delete process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   try {
     await renderRouter('./app');
-    await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
-    await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/not configured/);
-    expect(screen.getByDisplayValue('alex@example.com')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Continue with email' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Retry account access' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Retry account access' })).toBeEnabled();
   } finally {
     if (originalUrl === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_URL;
     else process.env.EXPO_PUBLIC_SUPABASE_URL = originalUrl;

@@ -4,6 +4,9 @@ import { systemAuthClock, type AuthClock } from '../services/auth-clock';
 
 function useAccountAccess(service: AuthService, clock: AuthClock, initialSession?: AuthSession) {
   const [session, setSession] = useState(initialSession ?? null);
+  const [restoring, setRestoring] = useState(!initialSession);
+  const [restoreError, setRestoreError] = useState('');
+  const [loadingRestoredAccount, setLoadingRestoredAccount] = useState(false);
   const [verifiedSession, setVerifiedSession] = useState<AuthSession | null>(null);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -25,6 +28,31 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   const coolingDown = Math.max(remaining, verificationWait, nameWait, accountWait) > 0;
 
   useEffect(() => () => { attempt.current++; }, []);
+  useEffect(() => { if (!initialSession) void restore(); }, [service]);
+
+  async function restore() {
+    const current = ++attempt.current;
+    setRestoring(true);
+    setRestoreError('');
+    try {
+      const restored = await service.restoreSession();
+      if (current !== attempt.current) return;
+      if (restored) {
+        setLoadingRestoredAccount(true);
+        const account = await service.loadAccount(restored.account);
+        if (current !== attempt.current) return;
+        if (account.id !== restored.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
+        setSession({ ...restored, account });
+      }
+    } catch (cause) {
+      if (current === attempt.current) setRestoreError(cause instanceof Error ? cause.message : 'Account access is unavailable. Please try again.');
+    } finally {
+      if (current === attempt.current) {
+        setRestoring(false);
+        setLoadingRestoredAccount(false);
+      }
+    }
+  }
   useEffect(() => {
     if (coolingDown) return clock.subscribe(() => setNow(clock.now()));
   }, [clock, coolingDown]);
@@ -121,7 +149,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     });
   }
 
-  return { saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
+  return { restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
     email, setEmail, code, setCode, step, pending, error, submit,
     verificationWait, nameWait, remaining, resend: sendCode, changeEmail };
 }

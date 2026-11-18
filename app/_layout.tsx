@@ -5,7 +5,7 @@ import {
 } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { useState } from 'react';
 import { createSampleWorkoutService } from '../src/services/sample-workout-service';
 import type { WorkoutService } from '../src/services/workout-service';
@@ -44,7 +44,7 @@ export default function RootLayout({ service: providedService, authService, init
 
 function Navigation() {
   const { scheme, colors, ready } = useTheme();
-  const { session } = useAuth();
+  const { session, restoring, loadingRestoredAccount } = useAuth();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   return (
     <NavigationThemeProvider
@@ -62,7 +62,7 @@ function Navigation() {
       }}
     >
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      {ready ? (
+      {ready && !restoring ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Protected guard={!session}><Stack.Screen name="sign-in" options={{ headerShown: true, title: 'Account access' }} /></Stack.Protected>
@@ -74,7 +74,8 @@ function Navigation() {
         </Stack>
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}>
-          <ActivityIndicator accessibilityLabel="Loading appearance" color={colors.text} />
+          <ActivityIndicator accessibilityLabel={ready ? 'Loading account access' : 'Loading appearance'} color={colors.text} />
+          {ready ? <Text style={{ color: colors.text }}>{loadingRestoredAccount ? 'Loading your account' : 'Restoring your account'}</Text> : null}
         </View>
       )}
     </NavigationThemeProvider>
