@@ -338,3 +338,31 @@ test('stalled restored account loading offers appearance Settings and sign-out',
   await act(() => account.resolve(session.account));
   expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
 });
+
+test.each(['pending', 'retry'])('refresh during %s verified account loading preserves the draft after the old expiry', async (loading) => {
+  let notify!: (event: AuthEvent) => void;
+  const clock = createManualClock();
+  const account = deferred<AuthSession['account']>();
+  let lookups = 0;
+  const app = await renderAccess({ ...service, async verifyCode() { return { ...session, expiresAt: 2 }; },
+    loadAccount: () => {
+      if (++lookups === 1 && loading === 'retry') return Promise.reject(new Error('Lookup unavailable'));
+      return account.promise;
+    }, subscribe(listener) { notify = listener; return () => {}; } }, '/', { authClock: clock });
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  expect(await screen.findByText('Loading your account')).toBeVisible();
+  if (loading === 'retry') expect(await screen.findByText('Lookup unavailable')).toBeVisible();
+  await act(() => notify({ type: 'refreshed', session: { ...session, expiresAt: 100 } }));
+  if (loading === 'retry') await fireEvent.press(screen.getByRole('button', { name: 'Retry loading account' }));
+  await act(() => account.resolve(session.account));
+  await fireEvent.press(await screen.findByRole('button', { name: /^Upper body\./ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Newly opened draft');
+  await act(() => clock.advance(3000));
+  expect(screen.getByDisplayValue('Newly opened draft')).toBeVisible();
+  expect(app.getPathname()).toBe('/templates/upper-body');
+  expect(screen.queryByText('Your account was reloaded. Unsaved changes were discarded.')).toBeNull();
+});

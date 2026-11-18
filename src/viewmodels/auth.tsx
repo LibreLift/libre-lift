@@ -19,6 +19,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   const cleanupRequired = useRef(false);
   const operation = useRef('');
   const [verifiedSession, setVerifiedSession] = useState<AuthSession | null>(null);
+  const currentVerifiedSession = useRef<AuthSession | null>(null);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -88,6 +89,8 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
       acceptSession({ ...event.session, account: currentSession.current.account });
     } else if (restorationSession.current?.account.id === event.session.account.id) {
       restorationSession.current = event.session;
+    } else if (currentVerifiedSession.current?.account.id === event.session.account.id) {
+      currentVerifiedSession.current = event.session;
     } else if (!(operation.current === 'verifyCode' && event.session.account.email === address)) {
       if (event.type === 'refreshed' && recoveringAccount.current !== event.session.account.id) return;
       const recovered = recoveringAccount.current === event.session.account.id;
@@ -140,6 +143,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     recoveringAccount.current = null;
     setLoadingRestoredAccount(false);
     setVerifiedSession(null);
+    currentVerifiedSession.current = null;
     setRestoring(false);
     setRestoreError('');
     setError('');
@@ -180,8 +184,9 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     if (!verified) return;
     await perform('loadAccount', () => service.loadAccount(verified.account), (account) => {
       if (account.id !== verified.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
-      acceptSession({ ...verified, account });
+      acceptSession({ ...(currentVerifiedSession.current ?? verified), account });
       setVerifiedSession(null);
+      currentVerifiedSession.current = null;
     });
   }
 
@@ -243,7 +248,10 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
       setError('Enter the six-digit code from your email.');
       return;
     }
-    await perform('verifyCode', () => service.verifyCode(address, code.trim()), setVerifiedSession);
+    await perform('verifyCode', () => service.verifyCode(address, code.trim()), (verified) => {
+      currentVerifiedSession.current = verified;
+      setVerifiedSession(verified);
+    });
   }
 
   function changeEmail() {

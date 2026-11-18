@@ -23,7 +23,8 @@ and blocking links. The parent issue's specification was preserved.
 
 Run in the implementation workspace on November 18, 2026:
 
-- `npm test`: 16 suites, 117 tests passed, including 19 session-router tests.
+- `npm test`: 16 suites, 119 tests passed, including 21 session-router tests
+  after the GitHub review fix.
 - `npm run typecheck`: passed.
 - `npx expo-doctor`: 20/20 checks passed.
 - `npx expo export --platform ios --platform android`: both bundles passed,
@@ -60,6 +61,22 @@ Spec review identified the stale-name-save race, unavailable controls during
 stalled restored User loading, fixed-service lifetime bypass, and acceptance of
 unmatched late refreshes. Router regressions cover those cases. Follow-up review
 reported **zero remaining Spec findings** and no scope creep.
+
+## GitHub automated review follow-up (#118)
+
+Codex identified discarded token refreshes while a newly verified account's User
+lookup was pending or awaiting retry. A router regression reproduced draft loss
+at the original token expiry. The provider now retains renewed verified
+credentials through the lookup; both pending and retry variants pass. Typecheck
+and the complete test suite were repeated after the fix.
+
+An earlier finding about expired/offline sign-out applied to auth-js 2.118.0,
+not the locked 2.119.0 dependency. The published package matches the lockfile
+integrity and already removes local credentials after retryable refresh failure.
+A real-SDK check through the app service, using an expired persisted fixture and
+HTTP 503 for every request, confirmed sign-out resolves, credentials are removed,
+and a fresh client restores no account. Evidence is recorded on the resolved PR
+thread; no duplicate credential-removal implementation was added.
 
 ## Physical-device verification
 
