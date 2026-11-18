@@ -6,6 +6,17 @@ import { Button, Card, Copy, FormError, Screen } from './ui';
 export function AccountAccessScreen() {
   const model = useAuth();
   const router = useRouter();
+  if (model.resolvingAccount) return <Screen>
+    <Copy kind="title">Loading your account</Copy>
+    <Card>
+      <Copy>Your email is verified. We’re loading your account details.</Copy>
+      <FormError message={model.error} />
+      {model.accountWait > 0 ? <Copy>Try again in {model.accountWait}s.</Copy> : null}
+      <Button label={model.pending ? 'Loading account…' : 'Retry loading account'}
+        onPress={() => void model.loadAccount()} disabled={model.pending || model.accountWait > 0} />
+    </Card>
+    <Button label="Settings" onPress={() => router.push('/settings')} />
+  </Screen>;
   const verifying = model.step === 'code';
   const action = verifying ? 'Verify code' : 'Continue with email';
   const progress = verifying ? 'Verifying…' : 'Sending…';

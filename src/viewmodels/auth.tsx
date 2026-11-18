@@ -4,6 +4,7 @@ import { systemAuthClock, type AuthClock } from '../services/auth-clock';
 
 function useAccountAccess(service: AuthService, clock: AuthClock, initialSession?: AuthSession) {
   const [session, setSession] = useState(initialSession ?? null);
+  const [verifiedSession, setVerifiedSession] = useState<AuthSession | null>(null);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -14,18 +15,32 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   const [cooldowns, setCooldowns] = useState(() => new Map<string, number>());
   const [now, setNow] = useState(clock.now);
   const [error, setError] = useState('');
-  const [retryAt, setRetryAt] = useState({ requestCode: 0, verifyCode: 0, saveName: 0 });
+  const [retryAt, setRetryAt] = useState({ requestCode: 0, verifyCode: 0, loadAccount: 0, saveName: 0 });
   const address = email.trim().toLowerCase();
   const secondsUntil = (deadline: number) => Math.max(0, Math.ceil((deadline - now) / 1000));
   const remaining = secondsUntil(Math.max(cooldowns.get(address) ?? 0, retryAt.requestCode));
   const verificationWait = secondsUntil(retryAt.verifyCode);
   const nameWait = secondsUntil(retryAt.saveName);
-  const coolingDown = Math.max(remaining, verificationWait, nameWait) > 0;
+  const accountWait = secondsUntil(retryAt.loadAccount);
+  const coolingDown = Math.max(remaining, verificationWait, nameWait, accountWait) > 0;
 
   useEffect(() => () => { attempt.current++; }, []);
   useEffect(() => {
     if (coolingDown) return clock.subscribe(() => setNow(clock.now()));
   }, [clock, coolingDown]);
+
+  useEffect(() => {
+    if (verifiedSession) void loadAccount(verifiedSession);
+  }, [verifiedSession]);
+
+  async function loadAccount(verified = verifiedSession) {
+    if (!verified) return;
+    await perform('loadAccount', () => service.loadAccount(verified.account), (account) => {
+      if (account.id !== verified.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
+      setSession({ ...verified, account });
+      setVerifiedSession(null);
+    });
+  }
 
   async function perform<T>(
     kind: keyof typeof retryAt,
@@ -82,7 +97,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
       setError('Enter the six-digit code from your email.');
       return;
     }
-    await perform('verifyCode', () => service.verifyCode(address, code.trim()), setSession);
+    await perform('verifyCode', () => service.verifyCode(address, code.trim()), setVerifiedSession);
   }
 
   function changeEmail() {
@@ -100,13 +115,14 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
       return false;
     }
     if (!session) return false;
-    return perform('saveName', () => service.updateName(name), (account) => {
+    return perform('saveName', () => service.updateName(name, session.account), (account) => {
       if (account.id !== session.account.id) throw new AuthFailure('Your name could not be saved. Please try again.');
       setSession({ ...session, account });
     });
   }
 
-  return { saveName, clearError: () => setError(''), session, email, setEmail, code, setCode, step, pending, error, submit,
+  return { saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
+    email, setEmail, code, setCode, step, pending, error, submit,
     verificationWait, nameWait, remaining, resend: sendCode, changeEmail };
 }
 

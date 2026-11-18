@@ -9,7 +9,8 @@ export type AuthSession = Readonly<{
 export interface AuthService {
   requestCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<AuthSession>;
-  updateName(name: string): Promise<Account>;
+  loadAccount(account: Account): Promise<Account>;
+  updateName(name: string, account: Account): Promise<Account>;
 }
 
 export class AuthFailure extends Error {

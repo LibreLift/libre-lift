@@ -5,7 +5,7 @@ function accountFrom(user: User): Account {
   return {
     id: user.id,
     email: user.email ?? '',
-    name: typeof user.user_metadata.name === 'string' ? user.user_metadata.name.trim() || null : null,
+    name: null,
   };
 }
 
@@ -20,6 +20,16 @@ function failure(error: { code?: string; status?: number }): AuthFailure {
 }
 
 export function createSupabaseAuthService(getClient: () => SupabaseClient): AuthService {
+  async function loadAccount(account: Account): Promise<Account> {
+    const { data, error } = await getClient().from('users')
+      .select('account_name').eq('id', account.id).maybeSingle();
+    if (error) throw failure(error);
+    if (data && (typeof data.account_name !== 'string' || !data.account_name.trim())) {
+      throw new AuthFailure('Your account could not be loaded. Please try again.');
+    }
+    return { ...account, name: data ? data.account_name.trim() : null };
+  }
+
   return {
     async requestCode(email) {
       const { error } = await getClient().auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
@@ -32,11 +42,26 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
       return { account: accountFrom(data.user), accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token, expiresAt: data.session.expires_at ?? 0 };
     },
-    async updateName(name) {
-      const { data, error } = await getClient().auth.updateUser({ data: { name } });
+    loadAccount,
+    async updateName(value, account) {
+      const name = value.trim();
+      if (!name) throw new AuthFailure('Enter an account name.');
+      const users = getClient().from('users');
+      const write = account.name === null
+        ? users.insert({ id: account.id, account_name: name })
+        : users.update({ account_name: name }).eq('id', account.id);
+      const { data, error } = await write.select('account_name').single();
+      // An insert can succeed even if its response is lost. Recover its stored name
+      // on retry instead of overwriting an existing User with an onboarding draft.
+      if (error?.code === '23505' && account.name === null) {
+        const stored = await loadAccount(account);
+        if (stored.name) return stored;
+      }
       if (error) throw failure(error);
-      if (!data.user) throw new AuthFailure('Your name could not be saved. Please try again.');
-      return accountFrom(data.user);
+      if (!data || typeof data.account_name !== 'string' || !data.account_name.trim()) {
+        throw new AuthFailure('Your name could not be saved. Please try again.');
+      }
+      return { ...account, name: data.account_name.trim() };
     },
   };
 }

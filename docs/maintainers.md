@@ -4,7 +4,7 @@ Use this guide to administer the shared hosted **development** backend. For
 installation and local services, start with [setup](setup.md). All commands use
 Supabase CLI **3.1.0** and run from the repository root.
 
-Project: **LibreLift**, region **us-east-2**, reference `jibzcwwursyzvvthazby`.
+Project: **OpenFit**, region **us-east-2**, reference `jibzcwwursyzvvthazby`.
 Supabase labels its main branch “production”; this project is our development
 environment, not a separate LibreLift production deployment.
 

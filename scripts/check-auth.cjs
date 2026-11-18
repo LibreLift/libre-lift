@@ -49,14 +49,59 @@ async function main() {
   assert.deepEqual(session.account, { id: session.account.id, email, name: null });
   assert.ok(session.accessToken && session.refreshToken);
   await assert.rejects(service.verifyCode(email, code), /invalid or expired/i, 'Wrong or reused codes must fail.');
-  assert.deepEqual(await service.updateName('Alex'), { ...session.account, name: 'Alex' });
+  async function storedUser() {
+    const { data, error } = await client.from('users').select('id, account_name').eq('id', session.account.id).maybeSingle();
+    assert.ifError(error);
+    return data;
+  }
+  assert.equal(await storedUser(), null, 'Verification must not create an application User.');
+  const { error: metadataError } = await client.auth.updateUser({ data: { name: 'Old metadata name' } });
+  assert.ifError(metadataError);
+  assert.deepEqual(await service.loadAccount(session.account), session.account,
+    'Metadata alone must not bypass name onboarding.');
+  assert.equal(await storedUser(), null, 'Loading an absent User must not create one.');
+  await assert.rejects(service.updateName('   ', session.account), /name/i);
+  const created = await service.updateName('  Alex  ', session.account);
+  assert.deepEqual(created, { ...session.account, name: 'Alex' });
+  assert.deepEqual(await storedUser(), { id: session.account.id, account_name: 'Alex' });
+  // The first insert may succeed even when its response is lost. Reconcile a retry.
+  assert.deepEqual(await service.updateName('Different draft', session.account), created,
+    'An onboarding retry must recover the stored User instead of overwriting it.');
+  const edited = await service.updateName('Alex Rivera', created);
+  assert.deepEqual(edited, { ...created, name: 'Alex Rivera' });
+  assert.deepEqual(await storedUser(), { id: session.account.id, account_name: 'Alex Rivera' });
+  assert.deepEqual(await service.loadAccount(session.account), edited,
+    'Application User names must take precedence over differing Auth metadata.');
+  const outsider = createClient(settings.API_URL, settings.PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  const anonymous = await outsider.from('users').select('account_name');
+  assert.ok(anonymous.error, 'Anonymous reads must be rejected.');
+  // Provision another authenticated actor locally without sending email.
+  const admin = createClient(settings.API_URL, settings.SECRET_KEY, { auth: { persistSession: false } });
+  const otherEmail = `other-${email}`;
+  const provisioned = await admin.auth.admin.createUser({ email: otherEmail, email_confirm: true });
+  assert.ifError(provisioned.error);
+  const link = await admin.auth.admin.generateLink({ type: 'magiclink', email: otherEmail });
+  assert.ifError(link.error);
+  const otherAuth = await outsider.auth.verifyOtp({ token_hash: link.data.properties.hashed_token, type: 'magiclink' });
+  assert.ifError(otherAuth.error);
+  const otherService = createSupabaseAuthService(() => outsider);
+  const otherAccount = { id: otherAuth.data.user.id, email: otherEmail, name: null };
+  await otherService.updateName('Another User', otherAccount);
+  const foreign = await outsider.from('users').select('account_name').eq('id', session.account.id);
+  assert.ifError(foreign.error);
+  assert.deepEqual(foreign.data, [], 'A different User cannot read the account name.');
+  await assert.rejects(otherService.updateName('Intrusion', edited), /unavailable/i,
+    'A different User cannot edit the stored account name.');
+  assert.equal((await storedUser()).account_name, 'Alex Rivera');
   console.log('Verified access and name persistence.');
   console.log('New account, code-only email, invalid/reused code rejection, and name save passed. Waiting for the real resend interval…');
   await new Promise((resolve) => setTimeout(resolve, 61000));
   await service.requestCode(email);
   await assert.rejects(service.requestCode(email), /wait/i, 'Repeated returning-account requests must be limited.');
   const returning = await service.verifyCode(email, await emailedCode());
-  assert.deepEqual(returning.account, { ...session.account, name: 'Alex' });
+  assert.deepEqual(await service.loadAccount(returning.account), { ...session.account, name: 'Alex Rivera' });
   console.log('Returning account and persisted name passed.');
 }
 main().catch((error) => { console.error(error.message); process.exitCode = 1; });
