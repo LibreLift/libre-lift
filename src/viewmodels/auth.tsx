@@ -1,17 +1,21 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
-import { AuthFailure, type AuthEvent, type AuthService, type AuthSession } from '../services/auth-service';
+import { AppState } from 'react-native';
+import { AuthFailure, AuthSessionEnded, type AuthEvent, type AuthService, type AuthSession } from '../services/auth-service';
 import { systemAuthClock, type AuthClock } from '../services/auth-clock';
 
 function useAccountAccess(service: AuthService, clock: AuthClock, initialSession?: AuthSession) {
   const [session, setSession] = useState(initialSession ?? null);
   const currentSession = useRef(initialSession ?? null);
+  const restorationSession = useRef<AuthSession | null>(null);
   const [restoring, setRestoring] = useState(!initialSession);
   const [restoreError, setRestoreError] = useState('');
   const [loadingRestoredAccount, setLoadingRestoredAccount] = useState(false);
   const [accountGeneration, setAccountGeneration] = useState(0);
   const [cleanupPending, setCleanupPending] = useState(false);
   const [cleanupError, setCleanupError] = useState('');
+  const [notice, setNotice] = useState('');
   const cleaning = useRef(false);
+  const cleanupRequired = useRef(false);
   const operation = useRef('');
   const [verifiedSession, setVerifiedSession] = useState<AuthSession | null>(null);
   const [email, setEmail] = useState('');
@@ -41,6 +45,31 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     try { return service.subscribe((event) => events.current(event)); }
     catch { /* Restoration reports configuration/storage errors through its recovery UI. */ }
   }, [service]);
+  const checkExpiry = useRef(checkSessionExpiry);
+  checkExpiry.current = checkSessionExpiry;
+  useEffect(() => {
+    function foreground(active: boolean) {
+      try { service.setForeground(active && !cleanupRequired.current); } catch { /* Restoration reports configuration errors. */ }
+      if (active) checkExpiry.current();
+    }
+    foreground(AppState.currentState === 'active');
+    const state = AppState.addEventListener('change', (value) => foreground(value === 'active'));
+    const unsubscribe = clock.subscribe(() => checkExpiry.current());
+    return () => { state.remove(); unsubscribe(); foreground(false); };
+  }, [clock, service]);
+  useEffect(() => {
+    if (session) {
+      try { service.setForeground(AppState.currentState === 'active' && !cleanupRequired.current); } catch { /* Restoration reports configuration errors. */ }
+    }
+  }, [!!session, service]);
+
+  function checkSessionExpiry() {
+    if (!cleaning.current && currentSession.current && currentSession.current.expiresAt * 1000 <= clock.now()) {
+      clearAccount();
+      setNotice('Your account was reloaded. Unsaved changes were discarded.');
+      void restore();
+    }
+  }
 
   function acceptSession(value: AuthSession | null) {
     currentSession.current = value;
@@ -48,13 +77,15 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   }
 
   function handleAuthEvent(event: AuthEvent) {
-    if (cleaning.current) return;
+    if (cleanupRequired.current) return;
     if (event.type === 'signed-out') {
       clearAccount();
       setError('Your account access ended. Please sign in again.');
     } else if (currentSession.current?.account.id === event.session.account.id) {
       acceptSession({ ...event.session, account: currentSession.current.account });
-    } else if (operation.current !== 'verifyCode' && !restoring) {
+    } else if (restorationSession.current?.account.id === event.session.account.id) {
+      restorationSession.current = event.session;
+    } else if (!(operation.current === 'verifyCode' && event.session.account.email === address)) {
       clearAccount();
       void restore(event.session);
     }
@@ -62,22 +93,29 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
 
   async function restore(supplied?: AuthSession) {
     const current = ++attempt.current;
+    restorationSession.current = supplied ?? null;
     setRestoring(true);
     setRestoreError('');
     try {
       const restored = supplied ?? await service.restoreSession();
       if (current !== attempt.current) return;
       if (restored) {
+        restorationSession.current = restored;
         setLoadingRestoredAccount(true);
         const account = await service.loadAccount(restored.account);
         if (current !== attempt.current) return;
         if (account.id !== restored.account.id) throw new AuthFailure('Your account could not be loaded. Please try again.');
-        acceptSession({ ...restored, account });
+        acceptSession({ ...restorationSession.current, account });
       }
     } catch (cause) {
-      if (current === attempt.current) setRestoreError(cause instanceof Error ? cause.message : 'Account access is unavailable. Please try again.');
+      if (current === attempt.current) {
+        if (cause instanceof AuthSessionEnded) {
+          void signOut(cause.message);
+        } else setRestoreError(cause instanceof Error ? cause.message : 'Account access is unavailable. Please try again.');
+      }
     } finally {
       if (current === attempt.current) {
+        restorationSession.current = null;
         setRestoring(false);
         setLoadingRestoredAccount(false);
       }
@@ -90,25 +128,30 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     operation.current = '';
     setPending(false);
     acceptSession(null);
+    restorationSession.current = null;
     setVerifiedSession(null);
     setRestoring(false);
     setRestoreError('');
     setError('');
+    setNotice('');
     setEmail('');
     setCode('');
     setStep('email');
     setAccountGeneration((value) => value + 1);
   }
 
-  async function signOut() {
+  async function signOut(message = '') {
     if (cleaning.current) return;
     cleaning.current = true;
+    cleanupRequired.current = true;
+    try { service.setForeground(false); } catch { /* Local sign-out reports cleanup failures below. */ }
     clearAccount();
     const current = attempt.current;
     setCleanupPending(true);
     setCleanupError('');
     try {
       await service.signOut();
+      if (current === attempt.current) { cleanupRequired.current = false; setError(message); }
     } catch {
       if (current === attempt.current) setCleanupError('Device sign-out could not be completed. Please retry.');
     } finally {
@@ -150,6 +193,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
       return true;
     } catch (cause) {
       if (current !== attempt.current) return false;
+      if (cause instanceof AuthSessionEnded) { void signOut(cause.message); return false; }
       setError(cause instanceof Error ? cause.message : 'Account access failed. Please try again.');
       if (cause instanceof AuthFailure && cause.retryAfterSeconds > 0) {
         const deadline = clock.now() + cause.retryAfterSeconds * 1000;
@@ -213,7 +257,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     });
   }
 
-  return { accountGeneration, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
+  return { notice, accountGeneration, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
     email, setEmail, code, setCode, step, pending, error, submit,
     verificationWait, nameWait, remaining, resend: sendCode, changeEmail };
 }

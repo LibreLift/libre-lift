@@ -1,5 +1,5 @@
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
-import { AuthFailure, type Account, type AuthService } from './auth-service';
+import { AuthFailure, AuthSessionEnded, type Account, type AuthService } from './auth-service';
 
 function accountFrom(user: User): Account {
   return {
@@ -10,6 +10,9 @@ function accountFrom(user: User): Account {
 }
 
 function failure(error: { code?: string; status?: number }): AuthFailure {
+  if (['refresh_token_not_found', 'refresh_token_already_used', 'session_not_found', 'user_not_found', 'user_banned'].includes(error.code ?? '')) {
+    return new AuthSessionEnded('Your account access ended. Please sign in again.');
+  }
   if (error.status === 429 || error.code === 'over_email_send_rate_limit') {
     return new AuthFailure('Too many requests. Please wait before trying again.', 60);
   }
@@ -36,6 +39,12 @@ export function createSupabaseAuthService(getClient: () => SupabaseClient): Auth
   }
 
   return {
+    setForeground(active) {
+      const auth = getClient().auth;
+      void (active ? auth.startAutoRefresh() : auth.stopAutoRefresh()).catch(() => {
+        // A retryable SDK refresh failure is handled at expiry by the app's recovery gate.
+      });
+    },
     subscribe(listener) {
       const { data: { subscription } } = getClient().auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') listener({ type: 'signed-out' });

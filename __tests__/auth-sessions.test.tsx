@@ -1,8 +1,9 @@
-import { Alert } from 'react-native';
+import { Alert, AppState, type AppStateStatus } from 'react-native';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
+import { createManualClock } from '../test-support/auth-clock';
 import { createSampleWorkoutService } from '../src/services/sample-workout-service';
-import type { AuthEvent, AuthService, AuthSession } from '../src/services/auth-service';
+import { AuthSessionEnded, type AuthEvent, type AuthService, type AuthSession } from '../src/services/auth-service';
 
 const session: AuthSession = {
   account: { id: 'alex', email: 'alex@example.com', name: 'Alex' },
@@ -12,6 +13,7 @@ const service = {
   async restoreSession(): Promise<AuthSession | null> { return null; },
   async signOut() {},
   subscribe() { return () => {}; },
+  setForeground() {},
   async requestCode() {}, async verifyCode() { return session; },
   async loadAccount(account: AuthSession['account']) { return { ...account, name: 'Alex' }; },
   async updateName(name: string, account: AuthSession['account']) { return { ...account, name }; },
@@ -170,4 +172,125 @@ test('saved sample mutations are discarded after sign-out and same-account re-en
   await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
   expect(await screen.findByText('Upper body')).toBeVisible();
   expect(screen.queryByText('Private saved sample')).toBeNull();
+});
+
+test('routine same-account refresh preserves the open draft and route', async () => {
+  let notify!: (event: AuthEvent) => void;
+  const app = await renderAccess({ ...service, async restoreSession() { return session; },
+    subscribe(listener) { notify = listener; return () => {}; } }, '/templates/upper-body');
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Draft survives refresh');
+  await act(() => notify({ type: 'refreshed', session: { ...session, accessToken: 'renewed', expiresAt: session.expiresAt + 3600 } }));
+  expect(screen.getByDisplayValue('Draft survives refresh')).toBeVisible();
+  expect(app.getPathname()).toBe('/templates/upper-body');
+});
+
+test('expired unusable access gates training and recovery discards drafts and navigation', async () => {
+  const clock = createManualClock();
+  const expiring = { ...session, expiresAt: 2 };
+  let attempts = 0;
+  const app = await renderAccess({ ...service, async restoreSession() {
+    attempts++;
+    if (attempts === 2) throw new Error('Connection unavailable');
+    return attempts === 1 ? expiring : session;
+  } }, '/templates/upper-body', { authClock: clock });
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Lost after expiry');
+  await act(() => clock.advance(3000));
+  expect(await screen.findByText('Connection unavailable')).toBeVisible();
+  expect(screen.queryByLabelText('Template title')).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry account access' }));
+  expect(await screen.findByText('Your account was reloaded. Unsaved changes were discarded.')).toBeVisible();
+  await waitFor(() => expect(app.getPathname()).toBe('/templates'));
+  await fireEvent.press(await screen.findByRole('button', { name: /^Upper body\./ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  expect(screen.getByDisplayValue('Upper body')).toBeVisible();
+  expect(screen.queryByDisplayValue('Lost after expiry')).toBeNull();
+});
+
+test('cleanup failure cannot be bypassed by a late refreshed session', async () => {
+  let notify!: (event: AuthEvent) => void;
+  await renderAccess({ ...service, async restoreSession() { return session; },
+    async signOut() { throw new Error('storage unavailable'); },
+    subscribe(listener) { notify = listener; return () => {}; } });
+  await fireEvent.press(await screen.findByRole('button', { name: /^Account, tab/ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Sign out' }));
+  expect(await screen.findByText('Device sign-out incomplete')).toBeVisible();
+  await act(() => notify({ type: 'refreshed', session }));
+  expect(screen.getByText('Device sign-out incomplete')).toBeVisible();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+});
+
+test('a newer account replaces an unresolved restoration and its late User result is ignored', async () => {
+  let notify!: (event: AuthEvent) => void;
+  const oldUser = deferred<AuthSession['account']>();
+  const other = { ...session, account: { id: 'blair', email: 'blair@example.com', name: 'Blair' } };
+  await renderAccess({ ...service, async restoreSession() { return session; },
+    loadAccount(account) { return account.id === 'alex' ? oldUser.promise : Promise.resolve(account); },
+    subscribe(listener) { notify = listener; return () => {}; } });
+  expect(await screen.findByText('Loading your account')).toBeVisible();
+  await act(() => notify({ type: 'signed-in', session: other }));
+  await fireEvent.press(await screen.findByRole('button', { name: /^Account, tab/ }));
+  expect(await screen.findByText('blair@example.com')).toBeVisible();
+  await act(() => oldUser.resolve(session.account));
+  expect(screen.getByText('blair@example.com')).toBeVisible();
+  expect(screen.queryByText('alex@example.com')).toBeNull();
+});
+
+test('sign-out remains available while verified account loading is stuck', async () => {
+  const account = deferred<AuthSession['account']>();
+  await renderAccess({ ...service, loadAccount: () => account.promise });
+  await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
+  await fireEvent.press(screen.getByRole('button', { name: 'Verify code' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Sign out' }));
+  expect(await screen.findByLabelText('Email')).toBeVisible();
+  await act(() => account.resolve(session.account));
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+});
+
+test('foregrounding checks expired access even when background clock notifications were suspended', async () => {
+  let changed!: (state: AppStateStatus) => void;
+  const nativeSubscribe = jest.mocked(AppState.addEventListener);
+  const originalListener = nativeSubscribe.getMockImplementation()!;
+  nativeSubscribe.mockImplementation((_event, callback) => { changed = callback; return { remove() {} }; });
+  let now = 0;
+  let attempts = 0;
+  const app = await renderAccess({ ...service, async restoreSession() {
+    if (++attempts === 1) return { ...session, expiresAt: 2 };
+    throw new AuthSessionEnded('Your account access ended. Please sign in again.');
+  } }, '/', { authClock: { now: () => now, subscribe: () => () => {} } });
+  expect(await screen.findByRole('button', { name: /^Templates, tab/ })).toBeVisible();
+  await act(() => changed('background'));
+  now = 3000;
+  await act(() => changed('active'));
+  expect(await screen.findByRole('button', { name: 'Continue with email' })).toBeVisible();
+  expect(screen.getByRole('alert')).toHaveTextContent(/access ended/);
+  await app.unmount();
+  nativeSubscribe.mockImplementation(originalListener);
+});
+
+test('forced authentication loss removes a pending template save without a discard prompt', async () => {
+  let notify!: (event: AuthEvent) => void;
+  const sample = createSampleWorkoutService();
+  const template = await sample.getTemplate('upper-body');
+  const saved = deferred<NonNullable<typeof template>>();
+  const alert = jest.spyOn(Alert, 'alert');
+  await renderAccess({ ...service, async restoreSession() { return session; },
+    subscribe(listener) { notify = listener; return () => {}; } }, '/templates/upper-body', {
+    workoutServiceFactory: () => ({ ...sample, updateTemplate: () => saved.promise }),
+  });
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Pending template');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+  await act(() => notify({ type: 'signed-out' }));
+  expect(await screen.findByRole('button', { name: 'Continue with email' })).toBeVisible();
+  expect(alert).not.toHaveBeenCalled();
+  await act(() => saved.resolve({ ...template!, title: 'Pending template' }));
+  expect(screen.queryByText('Pending template')).toBeNull();
+  expect(testRouter.canGoBack()).toBe(false);
+  alert.mockRestore();
 });

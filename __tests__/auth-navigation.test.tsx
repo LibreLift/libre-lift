@@ -5,13 +5,14 @@ import RootLayout from '../app/_layout';
 
 const session = {
   account: { id: 'account-1', email: 'alex@example.com', name: 'Alex' },
-  accessToken: 'access', refreshToken: 'refresh', expiresAt: 3600,
+  accessToken: 'access', refreshToken: 'refresh', expiresAt: 4102444800,
 };
 
 const service = {
   async restoreSession() { return null; },
   async signOut() {},
   subscribe() { return () => {}; },
+  setForeground() {},
   async requestCode() {},
   async verifyCode() { return session; },
   async loadAccount() { return session.account; },

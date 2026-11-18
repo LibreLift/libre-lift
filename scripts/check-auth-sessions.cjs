@@ -29,6 +29,7 @@ async function main() {
   const email = `session43-${Date.now()}@example.com`;
   const created = await admin.auth.admin.createUser({ email, email_confirm: true });
   assert.ifError(created.error);
+  let otherUserId;
   try {
     const first = client();
     const access = createSupabaseAuthService(() => first);
@@ -47,19 +48,50 @@ async function main() {
     assert.equal(restored.account.id, named.id);
     assert.deepEqual(await restoredAccess.loadAccount(restored.account), named);
     console.log('Persisted restoration and authenticated application User loading passed.');
-    const separate = client({ ...storage, getItem: () => null, setItem() {}, removeItem() {} });
+    const oldAccessToken = restored.accessToken;
+    const renewed = await reopened.auth.refreshSession();
+    assert.ifError(renewed.error);
+    const current = await restoredAccess.restoreSession();
+    assert.notEqual(current.accessToken, oldAccessToken);
+    assert.equal(current.account.id, named.id);
+    assert.deepEqual(await restoredAccess.loadAccount(current.account), named);
+    await restoredAccess.updateName('After refresh', named);
+    assert.equal((await access.loadAccount(named)).name, 'After refresh');
+    console.log('Real token renewal and protected requests using current identity passed.');
+    const otherEmail = `other-${email}`;
+    const other = await admin.auth.admin.createUser({ email: otherEmail, email_confirm: true });
+    assert.ifError(other.error);
+    otherUserId = other.data.user.id;
+    const otherLink = await admin.auth.admin.generateLink({ type: 'magiclink', email: otherEmail });
+    assert.ifError(otherLink.error);
+    const otherVerified = await reopened.auth.verifyOtp({ token_hash: otherLink.data.properties.hashed_token, type: 'magiclink' });
+    assert.ifError(otherVerified.error);
+    const switched = await restoredAccess.restoreSession();
+    assert.equal(switched.account.id, otherUserId);
+    await restoredAccess.updateName('Other account', switched.account);
+    assert.equal((await restoredAccess.loadAccount(switched.account)).name, 'Other account');
+    assert.equal((await restoredAccess.loadAccount(named)).name, null);
+    await assert.rejects(restoredAccess.updateName('Wrong identity', named));
+    const returned = await reopened.auth.setSession({ access_token: current.accessToken, refresh_token: current.refreshToken });
+    assert.ifError(returned.error);
+    assert.equal((await restoredAccess.loadAccount(named)).name, 'After refresh');
+    console.log('Protected requests follow the current account after switching identities.');
+
+
+    const separateRecords = new Map();
+    const separate = client({ getItem: (key) => separateRecords.get(key) ?? null,
+      setItem: (key, value) => { separateRecords.set(key, value); }, removeItem: (key) => { separateRecords.delete(key); } });
     const secondLink = await admin.auth.admin.generateLink({ type: 'magiclink', email });
     assert.ifError(secondLink.error);
     const secondSession = await separate.auth.verifyOtp({ token_hash: secondLink.data.properties.hashed_token, type: 'magiclink' });
     assert.ifError(secondSession.error);
     // Use a distinct persisted store for the second device/session.
-    await separate.auth.setSession(secondSession.data.session);
     const offline = client(storage, (url, options) => String(url).includes('/logout')
       ? Promise.resolve(new Response(JSON.stringify({ message: 'Service unavailable' }), { status: 500 }))
       : fetch(url, options));
     await createSupabaseAuthService(() => offline).signOut();
     assert.equal(await createSupabaseAuthService(() => client()).restoreSession(), null);
-    const otherRefresh = await separate.auth.refreshSession(secondSession.data.session);
+    const otherRefresh = await separate.auth.refreshSession();
     assert.ifError(otherRefresh.error);
     assert.equal(otherRefresh.data.user.id, named.id);
     console.log('Local sign-out despite server failure and separate-session survival passed.');
@@ -77,6 +109,7 @@ async function main() {
     assert.equal(await createSupabaseAuthService(() => client()).restoreSession(), null);
     console.log('Credential cleanup failure and retry passed.');
   } finally {
+    if (otherUserId) assert.ifError((await admin.auth.admin.deleteUser(otherUserId)).error);
     const removed = await admin.auth.admin.deleteUser(created.data.user.id);
     assert.ifError(removed.error);
   }

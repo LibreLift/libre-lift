@@ -57,7 +57,7 @@ function AccountServices({ service: provided, factory, account = null, catalogSe
 
 function Navigation() {
   const { scheme, colors, ready } = useTheme();
-  const { session, restoring, loadingRestoredAccount, accountGeneration } = useAuth();
+  const { session, restoring, loadingRestoredAccount, accountGeneration, notice } = useAuth();
   const router = useRouter();
   const entry = session ? (session.account.name ? '/templates' : '/account-name') : '/sign-in';
   useEffect(() => {
@@ -81,6 +81,8 @@ function Navigation() {
     >
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {ready && !restoring ? (
+        <View style={{ flex: 1 }}>
+          {session && notice ? <Text accessibilityRole="alert" style={{ color: colors.text, padding: 16, backgroundColor: colors.background }}>{notice}</Text> : null}
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Protected guard={!session}><Stack.Screen name="sign-in" options={{ headerShown: true, title: 'Account access' }} /></Stack.Protected>
@@ -90,6 +92,7 @@ function Navigation() {
           </Stack.Protected>
           <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
         </Stack>
+        </View>
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.background }}>
           <ActivityIndicator accessibilityLabel={ready ? 'Loading account access' : 'Loading appearance'} color={colors.text} />

@@ -4,7 +4,7 @@ import type { AuthSession } from '../src/services/auth-service';
 
 export const authenticatedSession: AuthSession = {
   account: { id: 'test-account', email: 'alex@example.com', name: 'Alex' },
-  accessToken: 'test-access', refreshToken: 'test-refresh', expiresAt: 3600,
+  accessToken: 'test-access', refreshToken: 'test-refresh', expiresAt: 4102444800,
 };
 
 export function renderAuthenticatedRouter(

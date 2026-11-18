@@ -143,7 +143,7 @@ browsing and exercise selection from an open template draft.
 - `src/services/`: Async workout interface, sample implementation, and preference storage.
 - `src/theme/`: Shared light/dark color tokens based on the chosen palette.
 
-The root layout creates the session-local workout service and injects it with the
+The root layout creates an account-scoped workout service and injects it with the
 preference store. The workout provider refreshes template reads after successful
 template mutations and exposes the pending-mutation state used by navigation. To integrate
 real data, implement `WorkoutService` and replace the injected implementation;
@@ -305,13 +305,13 @@ If verification succeeds but User loading fails, the app retains verified
 authentication in memory and keeps training gated. **Retry loading account**
 retries only the User lookup, with Settings still available. A lookup failure
 does not imply that the User is absent and never opens name onboarding. Closing
-the app during this recovery still starts account access afresh; restoration is
-part of #43.
+the app during this recovery restores usable stored authentication on the next
+launch and loads the application User again.
 
 The app injects an asynchronous auth service, uses the SDK's native session
-storage and process lock, and keeps SDK tokens out of View components. #43 must
-restore persisted sessions into app state and manage their lifecycle. There is
-no app-imposed maximum session lifetime or inactivity timeout in #42.
+storage and process lock, and keeps SDK tokens out of View components. It restores
+persisted sessions and handles refresh, expiration, recovery, and device-local
+sign-out. There is no app-imposed maximum lifetime or inactivity timeout.
 
 An opt-in check exercises the actual service against a **disposable local** stack
 and its Mailpit inbox, without sending external email:
@@ -430,3 +430,17 @@ Retry sign-out; access remains gated until cleanup succeeds. The disposable
 session check also covers server failure, separate-session survival, and local
 credential-removal failure/retry. During device review, verify unsaved-change
 confirmation, sign-out/re-entry, and that Back never reveals the prior account.
+
+Routine same-account token refresh preserves drafts and navigation. If access
+expires before renewal succeeds, training is gated while authentication is
+recovered. Temporary failures preserve stored credentials and offer Retry,
+Sign out, and Settings. Successful recovery starts at Templates with fresh
+account-specific state and explains that unsaved changes were discarded.
+Definitively ended authentication returns to email access. Backgrounding pauses
+SDK auto-refresh; foregrounding resumes it and checks expired access.
+
+The disposable check verifies real token renewal, current-identity User requests
+across two accounts, and local sign-out. Native review must additionally check
+process restart and background/foreground transitions on iOS and Android; no
+simulator runtime/device is available in the implementation workspace. Bundling
+and router tests cannot substitute for that review.

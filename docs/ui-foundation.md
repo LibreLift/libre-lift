@@ -86,8 +86,9 @@ unauthenticated sample preview and sign-in placeholder. Signed-out users now see
 email-code access, while appearance Settings remains available. Verified accounts
 without an account name supply one before entering Templates. Account shows the
 name, email, and Settings and supports name editing. Training data remains sample
-data until its persistence tasks land; session restoration and sign-out remain
-in #43.
+data until its persistence tasks land. #43 adds stored authentication
+restoration, device-local sign-out, and account-state cleanup; see the
+[session lifecycle](design.md#authentication-session-lifecycle-43).
 
 ## Scope and remaining questions
 
