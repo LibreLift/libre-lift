@@ -12,6 +12,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   const [restoreError, setRestoreError] = useState('');
   const [loadingRestoredAccount, setLoadingRestoredAccount] = useState(false);
   const [accountGeneration, setAccountGeneration] = useState(0);
+  const currentGeneration = useRef(0);
   const [cleanupPending, setCleanupPending] = useState(false);
   const [cleanupError, setCleanupError] = useState('');
   const [notice, setNotice] = useState('');
@@ -151,7 +152,13 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     setEmail('');
     setCode('');
     setStep('email');
-    setAccountGeneration((value) => value + 1);
+    currentGeneration.current++;
+    setAccountGeneration(currentGeneration.current);
+  }
+
+  function reportSessionEnded(accountId: string | null, generation: number, cause: AuthSessionEnded) {
+    if (generation !== currentGeneration.current || !accountId || currentSession.current?.account.id !== accountId) return;
+    void signOut(cause.message);
   }
 
   async function signOut(message = '') {
@@ -276,7 +283,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     });
   }
 
-  return { notice, accountGeneration, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
+  return { notice, accountGeneration, reportSessionEnded, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
     email, setEmail, code, setCode, step, pending, error, submit,
     verificationWait, nameWait, remaining, resend: sendCode, changeEmail };
 }
