@@ -3,8 +3,8 @@
 ## Preflight: November 17, 2026
 
 Implementation: `1d3ff78`, plus Expo 58.0.26, Expo Router 58.0.32, and Jest Expo
-58.0.15 patch updates included in this PR. The code-only email body uses the
-maintainer's OpenFit wording.
+58.0.15 patch updates included in this PR. Sign-in emails retain the installed
+app's LibreLift branding; OpenFit is the hosted Supabase project's display name.
 
 Local checks on this reviewed working tree:
 
