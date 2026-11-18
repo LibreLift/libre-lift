@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.119.0';
-import { templateReadRequest, TemplateFailure } from '../_shared/template-contract.ts';
-import { readTemplates } from './data-access.ts';
+import { templateRequest, TemplateFailure } from '../_shared/template-contract.ts';
+import { createTemplate, readTemplates } from './data-access.ts';
 
 Deno.serve(async (request: Request) => {
   const headers = {
@@ -27,10 +27,11 @@ Deno.serve(async (request: Request) => {
     }
     let payload: unknown;
     try { payload = await request.json(); } catch { throw new TemplateFailure('Invalid request JSON.'); }
-    return reply(await readTemplates(client, templateReadRequest(payload)));
+    const parsed = templateRequest(payload);
+    return reply(await (parsed.action === 'create' ? createTemplate(client, parsed) : readTemplates(client, parsed)));
   } catch (error) {
-    const validation = error instanceof TemplateFailure && error.kind === 'validation';
-    return reply({ kind: validation ? 'validation' : 'unavailable',
-      message: validation ? error.message : 'Your templates could not be loaded. Please try again.' }, validation ? 400 : 503);
+    const kind = error instanceof TemplateFailure ? error.kind : 'unavailable';
+    return reply({ kind, message: error instanceof TemplateFailure ? error.message : 'Your templates could not be loaded. Please try again.' },
+      kind === 'validation' ? 400 : kind === 'missing' ? 404 : 503);
   }
 });

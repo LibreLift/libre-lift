@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useRef, useState, type SetStateAction, type PropsWithChildren } from 'react';
 import type { TemplateContent, WorkoutTemplate } from '../models/workout';
 import type { TemplateDraft } from './template-editor';
-import type { WorkoutService } from '../services/workout-service';
+import type { TemplateSaveContext, WorkoutService } from '../services/workout-service';
 
 interface WorkoutContextValue {
   drafts: Readonly<Record<string, TemplateDraft>>;
   setDraft(id: string, update: SetStateAction<TemplateDraft | null>): void;
+  nextPlacementId(): string;
   service: WorkoutService;
   templatesVersion: number;
   savingTemplate: boolean;
@@ -18,16 +19,19 @@ interface WorkoutContextValue {
 const WorkoutContext = createContext<WorkoutContextValue | null>(null);
 
 export function WorkoutProvider({ service, children }: PropsWithChildren<{ service: WorkoutService }>) {
-  const [drafts, setDrafts] = useState<Record<string, TemplateDraft>>({});
+  const [draftRecords, setDraftRecords] = useState<Record<string, { content: TemplateDraft; context: TemplateSaveContext }>>({});
+  const drafts = Object.fromEntries(Object.entries(draftRecords).map(([id, draft]) => [id, draft.content]));
+  const placementNumber = useRef(0);
+  const nextPlacementId = useCallback(() => `placement-${++placementNumber.current}`, []);
   const [dirtyDrafts, setDirtyDrafts] = useState<Readonly<Record<string, boolean>>>({});
   const setDraftDirty = useCallback((id: string, dirty: boolean) => {
     setDirtyDrafts((current) => current[id] === dirty ? current : { ...current, [id]: dirty });
   }, []);
   const setDraft = useCallback((id: string, update: SetStateAction<TemplateDraft | null>) => {
-    setDrafts((current) => {
-      const draft = typeof update === 'function' ? update(current[id] ?? null) : update;
+    setDraftRecords((current) => {
+      const draft = typeof update === 'function' ? update(current[id]?.content ?? null) : update;
       const next = { ...current };
-      if (draft) next[id] = draft;
+      if (draft) next[id] = { content: draft, context: current[id]?.context ?? {} };
       else delete next[id];
       return next;
     });
@@ -49,10 +53,11 @@ export function WorkoutProvider({ service, children }: PropsWithChildren<{ servi
     }
   }, []);
   const saveTemplate = useCallback((id: string | null, content: TemplateContent) =>
-    mutate(() => id === null ? service.createTemplate(content) : service.updateTemplate(id, content)), [mutate, service]);
+    mutate(() => id === null ? service.createTemplate(content, draftRecords.new?.context)
+      : service.updateTemplate(id, content, draftRecords[id]?.context)), [mutate, service, draftRecords]);
   const deleteTemplate = useCallback((id: string) => mutate(() => service.deleteTemplate(id)), [mutate, service]);
   return (
-    <WorkoutContext.Provider value={{ drafts, setDraft, service, templatesVersion, savingTemplate, saveTemplate, deleteTemplate,
+    <WorkoutContext.Provider value={{ drafts, setDraft, nextPlacementId, service, templatesVersion, savingTemplate, saveTemplate, deleteTemplate,
       setDraftDirty, hasUnsavedChanges: Object.values(dirtyDrafts).some(Boolean) }}>
       {children}
     </WorkoutContext.Provider>

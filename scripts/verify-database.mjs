@@ -72,7 +72,7 @@ try {
     and role = 'authenticated' and email_confirmed_at is not null) and not exists (select 1 from public.users)`,
     'Initial migration must preserve Auth accounts without inventing application Users');
   sql(`insert into public.users values ('${account}', 'Migration sentinel');`);
-  for (const filename of files.slice(1)) apply(filename);
+  apply(files[1]);
   check(`exists (select 1 from public.users where id = '${account}' and account_name = 'Migration sentinel')`,
     'Incremental migration lost the application User');
   sql(`do $$ begin insert into public.workout_templates (id, user_id, title, description, created_at)
@@ -81,6 +81,8 @@ try {
       values ('${placement}', '${template}', 1, 'repdb:bench-press',
         '{"name":"Bench press","primaryMuscles":["pectoralis major"],"secondaryMuscles":[],"equipment":{"kind":"none"}}');
     insert into public.template_sets values ('${placement}', 1, 12.5, 8); end $$;`);
+  // Later feature migrations must preserve an already-populated M1 aggregate.
+  for (const filename of files.slice(2)) apply(filename);
   cli('migration', 'up');
   check(`exists (select 1 from public.users u join public.workout_templates t on t.user_id = u.id
     join public.template_exercises e on e.template_id = t.id
