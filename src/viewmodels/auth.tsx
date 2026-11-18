@@ -8,6 +8,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [pending, setPending] = useState(false);
+  // Block repeated taps before React renders the pending state.
   const busy = useRef(false);
   const attempt = useRef(0);
   const [cooldowns, setCooldowns] = useState(() => new Map<string, number>());
@@ -26,20 +27,27 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     if (coolingDown) return clock.subscribe(() => setNow(clock.now()));
   }, [clock, coolingDown]);
 
-  async function perform(kind: keyof typeof retryAt, operation: () => Promise<void>) {
+  async function perform<T>(
+    kind: keyof typeof retryAt,
+    request: () => Promise<T>,
+    onSuccess: (result: T) => void,
+  ) {
     if (busy.current || retryAt[kind] > clock.now()) return false;
     const current = attempt.current;
     busy.current = true;
     setPending(true);
     setError('');
     try {
-      await operation();
-      return current === attempt.current;
+      const result = await request();
+      if (current !== attempt.current) return false;
+      onSuccess(result);
+      return true;
     } catch (cause) {
       if (current !== attempt.current) return false;
       setError(cause instanceof Error ? cause.message : 'Account access failed. Please try again.');
       if (cause instanceof AuthFailure && cause.retryAfterSeconds > 0) {
-        setRetryAt((previous) => ({ ...previous, [kind]: clock.now() + cause.retryAfterSeconds * 1000 }));
+        const deadline = clock.now() + cause.retryAfterSeconds * 1000;
+        setRetryAt((previous) => ({ ...previous, [kind]: deadline }));
         setNow(clock.now());
       }
       return false;
@@ -53,11 +61,9 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
 
   async function sendCode() {
     if ((cooldowns.get(address) ?? 0) > clock.now()) return;
-    const current = attempt.current;
-    await perform('requestCode', async () => {
-      await service.requestCode(address);
-      if (current !== attempt.current) return;
-      setCooldowns((previous) => new Map(previous).set(address, clock.now() + 60000));
+    await perform('requestCode', () => service.requestCode(address), () => {
+      const deadline = clock.now() + 60000;
+      setCooldowns((previous) => new Map(previous).set(address, deadline));
       setNow(clock.now());
       setEmail(address);
       setCode('');
@@ -76,11 +82,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
       setError('Enter the six-digit code from your email.');
       return;
     }
-    const current = attempt.current;
-    await perform('verifyCode', async () => {
-      const result = await service.verifyCode(address, code.trim());
-      if (current === attempt.current) setSession(result);
-    });
+    await perform('verifyCode', () => service.verifyCode(address, code.trim()), setSession);
   }
 
   function changeEmail() {
@@ -93,13 +95,14 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
 
   async function saveName(value: string) {
     const name = value.trim();
-    if (!name) { setError('Enter an account name.'); return false; }
+    if (!name) {
+      setError('Enter an account name.');
+      return false;
+    }
     if (!session) return false;
-    const current = attempt.current;
-    return perform('saveName', async () => {
-      const account = await service.updateName(name);
+    return perform('saveName', () => service.updateName(name), (account) => {
       if (account.id !== session.account.id) throw new AuthFailure('Your name could not be saved. Please try again.');
-      if (current === attempt.current) setSession({ ...session, account });
+      setSession({ ...session, account });
     });
   }
 

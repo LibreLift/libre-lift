@@ -14,11 +14,15 @@ const service = {
   async updateName(name: string) { return { ...session.account, name }; },
 };
 
-test('a returning user verifies an emailed code before entering Templates', async () => {
-  const app = await renderRouter({
+function renderAccess(props: Parameters<typeof RootLayout>[0] = {}, initialUrl?: string) {
+  return renderRouter({
     appDir: './app',
-    overrides: { _layout: () => <RootLayout authService={service} /> },
-  }, { initialUrl: '/templates/upper-body' });
+    overrides: { _layout: () => <RootLayout authService={service} {...props} /> },
+  }, { initialUrl });
+}
+
+test('a returning user verifies an emailed code before entering Templates', async () => {
+  const app = await renderAccess({}, '/templates/upper-body');
   expect(await screen.findByRole('button', { name: 'Continue with email' })).toBeVisible();
   expect(screen.queryByText('Bench press')).toBeNull();
   await fireEvent.changeText(screen.getByLabelText('Email'), 'alex@example.com');
@@ -33,12 +37,10 @@ test('a returning user verifies an emailed code before entering Templates', asyn
 
 test('invalid input and failed verification allow correction and retry', async () => {
   let attempts = 0;
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout authService={{ ...service, async verifyCode() {
+  await renderAccess({ authService: { ...service, async verifyCode() {
       if (++attempts === 1) throw new Error('That code is invalid or expired. Try again or request a new code.');
       return session;
-    } }} />,
-  } });
+    } } });
   await fireEvent.press(await screen.findByRole('button', { name: 'Continue with email' }));
   expect(screen.getByText('Enter a valid email address.')).toBeVisible();
   await fireEvent.changeText(screen.getByLabelText('Email'), 'alex@example.com');
@@ -56,11 +58,9 @@ test('invalid input and failed verification allow correction and retry', async (
 
 test('a failed code request preserves the email and can be retried', async () => {
   let attempts = 0;
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout authService={{ ...service, async requestCode() {
+  await renderAccess({ authService: { ...service, async requestCode() {
       if (++attempts === 1) throw new Error('Check your connection and try again.');
-    } }} />,
-  } });
+    } } });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
   expect(await screen.findByText('Check your connection and try again.')).toBeVisible();
@@ -70,16 +70,14 @@ test('a failed code request preserves the email and can be retried', async () =>
 });
 
 test('appearance Settings is reachable while signed out', async () => {
-  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout authService={service} /> } });
+  await renderAccess();
   await fireEvent.press(await screen.findByRole('button', { name: 'Settings' }));
   expect(await screen.findByRole('radio', { name: 'Dark' })).toBeVisible();
 });
 
 test('a code can be resent after sixty seconds, and Change email starts a fresh attempt', async () => {
   const clock = createManualClock();
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout authService={service} authClock={clock} />,
-  } });
+  await renderAccess({ authClock: clock });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
   expect(await screen.findByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
@@ -99,11 +97,9 @@ test('a code can be resent after sixty seconds, and Change email starts a fresh 
 });
 
 test('a verified account without a name supplies one before Templates, then can edit it', async () => {
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout authService={{ ...service,
+  await renderAccess({ authService: { ...service,
       async verifyCode() { return { ...session, account: { ...session.account, name: null } }; },
-    }} />,
-  } });
+    } });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
   await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
@@ -123,12 +119,10 @@ test('a verified account without a name supplies one before Templates, then can 
 
 test('name validation and a failed name save preserve input and allow retry', async () => {
   let saves = 0;
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout initialSession={session} authService={{ ...service, async updateName(name) {
+  await renderAccess({ initialSession: session, authService: { ...service, async updateName(name) {
       if (++saves === 1) throw new Error('Your name could not be saved. Please try again.');
       return { ...session.account, name };
-    } }} />,
-  } }, { initialUrl: '/account' });
+    } } }, '/account');
   await fireEvent.press(await screen.findByRole('button', { name: 'Edit name' }));
   await fireEvent.changeText(screen.getByLabelText('Account name'), '  ');
   await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
@@ -143,6 +137,8 @@ test('name validation and a failed name save preserve input and allow retry', as
   await fireEvent.changeText(screen.getByLabelText('Account name'), 'Discard me');
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
   expect(screen.getByText('Alex Rivera')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit name' }));
+  expect(screen.getByLabelText('Account name')).toHaveDisplayValue('Alex Rivera');
 });
 
 test('pending code requests lock conflicting actions, and restart ignores their late results', async () => {
@@ -166,11 +162,9 @@ test('pending code requests lock conflicting actions, and restart ignores their 
 test('rate limits show a wait and allow a fresh request once it ends', async () => {
   const clock = createManualClock();
   let attempts = 0;
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout authClock={clock} authService={{ ...service, async requestCode() {
+  await renderAccess({ authClock: clock, authService: { ...service, async requestCode() {
       if (++attempts === 1) throw new AuthFailure('Too many requests. Please wait before trying again.', 60);
-    } }} />,
-  } });
+    } } });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/Too many requests/);
@@ -203,12 +197,10 @@ test('missing backend settings show an actionable error instead of crashing', as
 test('verification rate limits disable verification until the retry deadline', async () => {
   const clock = createManualClock();
   let attempts = 0;
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout authClock={clock} authService={{ ...service, async verifyCode() {
+  await renderAccess({ authClock: clock, authService: { ...service, async verifyCode() {
       if (++attempts === 1) throw new AuthFailure('Please wait before verifying again.', 60);
       return session;
-    } }} />,
-  } });
+    } } });
   await fireEvent.changeText(await screen.findByLabelText('Email'), 'alex@example.com');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
   await fireEvent.changeText(await screen.findByLabelText('Email code'), '123456');
@@ -223,12 +215,10 @@ test('verification rate limits disable verification until the retry deadline', a
 test('name-save rate limits preserve the draft and disable saving until retry is allowed', async () => {
   const clock = createManualClock();
   let attempts = 0;
-  await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout initialSession={session} authClock={clock} authService={{ ...service, async updateName(name) {
+  await renderAccess({ initialSession: session, authClock: clock, authService: { ...service, async updateName(name) {
       if (++attempts === 1) throw new AuthFailure('Please wait before saving again.', 60);
       return { ...session.account, name };
-    } }} />,
-  } }, { initialUrl: '/account' });
+    } } }, '/account');
   await fireEvent.press(await screen.findByRole('button', { name: 'Edit name' }));
   await fireEvent.changeText(screen.getByLabelText('Account name'), 'Alex Rivera');
   await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));

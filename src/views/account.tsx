@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePreventRemove } from 'expo-router/react-navigation';
 import { useAuth } from '../viewmodels/auth';
-import { AccountInput } from './account-access';
+import { AccountNameForm } from './account-forms';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import type { ThemePreference } from '../services/theme-preference-store';
@@ -12,23 +12,21 @@ export function AccountScreen() {
   const router = useRouter();
   const model = useAuth();
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState('');
   usePreventRemove(model.pending, () => {});
   return (
     <Screen>
       <Copy kind="label">LIBRELIFT</Copy>
       <Copy kind="title">Your account</Copy>
       <Card>
-        {editing ? <>
-          <AccountInput label="Account name" value={name} onChangeText={setName} disabled={model.pending} kind="name" />
-          <FormError message={model.error ?? ''} />
-          {model.nameWait > 0 ? <Copy>Try again in {model.nameWait}s.</Copy> : null}
-          <Button label={model.pending ? 'Saving…' : 'Save name'} disabled={model.pending || model.nameWait > 0}
-            onPress={() => { void model.saveName(name).then((saved) => { if (saved) setEditing(false); }); }} />
-          <Button label="Cancel" disabled={model.pending} onPress={() => { model.clearError(); setEditing(false); }} />
-        </> : <>
+        {editing ? (
+          <AccountNameForm
+            initialName={model.session?.account.name ?? ''}
+            onSaved={() => setEditing(false)}
+            onCancel={() => setEditing(false)}
+          />
+        ) : <>
           <Copy kind="heading">{model.session?.account.name}</Copy>
-          <Button label="Edit name" onPress={() => { model.clearError(); setName(model.session?.account.name ?? ''); setEditing(true); }} />
+          <Button label="Edit name" onPress={() => { model.clearError(); setEditing(true); }} />
         </>}
         <Copy>{model.session?.account.email}</Copy>
       </Card>

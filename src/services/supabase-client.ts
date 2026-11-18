@@ -4,6 +4,8 @@ import { createClient, processLock, type SupabaseClient } from '@supabase/supaba
 import { AuthFailure } from './auth-service';
 import { createSupabaseAuthService } from './supabase-auth-service';
 
+const configurationError = 'Account access is not configured. Check the app settings and try again.';
+
 export function createAppAuthService() {
   let client: SupabaseClient | undefined;
   return createSupabaseAuthService(() => {
@@ -11,7 +13,7 @@ export function createAppAuthService() {
     const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
     const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
     if (!url || !key || key.startsWith('replace-with-')) {
-      throw new AuthFailure('Account access is not configured. Check the app settings and try again.');
+      throw new AuthFailure(configurationError);
     }
     try {
       client = createClient(url, key, {
@@ -20,7 +22,7 @@ export function createAppAuthService() {
       });
       return client;
     } catch {
-      throw new AuthFailure(`Account access is not configured. Check the app settings and try again.`);
+      throw new AuthFailure(configurationError);
     }
   });
 }
