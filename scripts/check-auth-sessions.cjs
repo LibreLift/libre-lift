@@ -49,11 +49,11 @@ async function main() {
     assert.equal(restored.account.id, named.id);
     assert.deepEqual(await restoredAccess.loadAccount(restored.account), named);
     console.log('Persisted restoration and authenticated application User loading passed.');
-    const oldAccessToken = restored.accessToken;
     const renewed = await reopened.auth.refreshSession();
     assert.ifError(renewed.error);
     const current = await restoredAccess.restoreSession();
-    assert.notEqual(current.accessToken, oldAccessToken);
+    assert.ok(current.accessToken === renewed.data.session.access_token && current.refreshToken === renewed.data.session.refresh_token,
+      'Restoration must expose the credentials returned by renewal.');
     assert.equal(current.account.id, named.id);
     assert.deepEqual(await restoredAccess.loadAccount(current.account), named);
     await restoredAccess.updateName('After refresh', named);
@@ -112,13 +112,13 @@ async function main() {
     // Local sign-out revoked this cloned session. Force its stored access expiry
     // so restoration must exercise the real rejected refresh-token path.
     const revoked = JSON.parse(separateRecords.get('auth43-check'));
-    separateRecords.set('auth43-check', JSON.stringify({ ...revoked, expires_at: 0 }));
+    separateRecords.set('auth43-check', JSON.stringify({ ...revoked, expires_at: Math.floor(Date.now() / 1000) - 10 }));
     const expired = client({ getItem: (key) => separateRecords.get(key) ?? null,
       setItem: (key, value) => { separateRecords.set(key, value); }, removeItem: (key) => { separateRecords.delete(key); } });
     let invalid = null;
     try { invalid = await createSupabaseAuthService(() => expired).restoreSession(); }
     catch (error) { assert.ok(error instanceof AuthSessionEnded); }
-    assert.equal(invalid, null);
+    assert.ok(invalid === null, 'Revoked authentication must not restore an account.');
     console.log('Revoked stored authentication is not restored.');
   } finally {
     if (otherUserId) assert.ifError((await admin.auth.admin.deleteUser(otherUserId)).error);
