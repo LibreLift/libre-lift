@@ -1,5 +1,6 @@
 import { renderRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
+import { createSampleWorkoutService } from '../src/services/sample-workout-service';
 import type { AuthSession } from '../src/services/auth-service';
 
 export const authenticatedSession: AuthSession = {
@@ -12,6 +13,6 @@ export function renderAuthenticatedRouter(
 ) {
   return renderRouter({
     appDir: './app',
-    overrides: { _layout: () => <RootLayout initialSession={authenticatedSession} /> },
+    overrides: { _layout: () => <RootLayout initialSession={authenticatedSession} workoutServiceFactory={createSampleWorkoutService} /> },
   }, options);
 }
