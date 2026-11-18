@@ -61,12 +61,22 @@ stalled restored User loading, fixed-service lifetime bypass, and acceptance of
 unmatched late refreshes. Router regressions cover those cases. Follow-up review
 reported **zero remaining Spec findings** and no scope creep.
 
-## Outstanding validation
+## Physical-device verification
 
-`xcrun simctl list devices available` reported no available devices. Physical
-mobile review was not performed. Review on iPhone/Expo Go and Android must still
-cover process restart, foreground/background behavior, sign-out/re-entry, keyboard
-and increased text size, both themes, and the absence of protected-content flashes.
-Hosted/production audit and independent contributor PR approval remain part of
-the repository definition of done; these results do not close the issues or mark
+After correcting the hosted API-key configuration, the maintainer reported that
+the feature was verified on a physical device. This verification was performed
+by the maintainer, not by the implementation agent. The configuration correction
+did not require a tracked code change; the old and new email-code request paths
+produce the same error when the gateway rejects an invalid key.
+
+The implementation workspace had no available simulator devices. The particular
+physical-device platform and individual scenario results were not recorded here,
+so this report does not independently claim an exhaustive iOS/Android, keyboard,
+large-text, or both-theme matrix.
+
+## Remaining release requirements
+
+Independent non-author contributor PR approval and the repository's post-merge
+production audit remain part of the definition of done. These local results and
+the maintainer's device verification do not themselves close the issues or mark
 them Done. Concrete personal exercise maximum cleanup remains #49.
