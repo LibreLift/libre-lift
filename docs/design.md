@@ -308,6 +308,18 @@ sign-out or an app reinstall requires another email OTP. Saved templates belong
 to the account and survive app reloads, restarts, updates, and reinstalls when
 using the same backend. Unsaved template drafts remain temporary.
 
+The [confirmed #45 specification](./issue-45-template-persistence.md) records the
+agreed persistence integration, not implementation completion. Whole-template
+saves use an authenticated Edge Function/data-access boundary and an invoker-rights
+transactional database function; see [ADR 0005](./adr/0005-save-template-aggregates-transactionally.md).
+An unchanged save retry recovers its original committed result without duplicate
+creation or overwriting later saves. Distinct concurrent saves use last-committed
+whole-template replacement; updates never recreate deleted templates, and deletion
+of an absent template succeeds. Production accounts receive no sample templates;
+workout history remains visibly labeled sample data until #47. The approved tests
+combine existing router-level behavior checks with the real production service
+through HTTP to disposable local Supabase.
+
 **ERD:**
 ![Entity-Relationship Diagram](./design-images/librelift-erd.jpg)
 
