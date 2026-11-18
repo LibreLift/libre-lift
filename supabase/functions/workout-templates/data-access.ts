@@ -16,7 +16,7 @@ export async function saveTemplate(client: SupabaseClient, request: TemplateSave
   });
   if (error) {
     if (error.code === 'P0002') throw new TemplateFailure('This template couldn’t be found.', 'missing');
-    const invalid = ['22023', '22P02', '23503', '23505', '23514', '42501'].includes(error.code);
+    const invalid = ['22003', '22023', '22P02', '23503', '23505', '23514', '42501'].includes(error.code);
     throw new TemplateFailure('Your template could not be saved.', invalid ? 'validation' : 'unavailable');
   }
   return savedTemplate(data);
