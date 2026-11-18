@@ -20,6 +20,34 @@ RLS. Column grants allow editing the name but not the identity. Anonymous access
 and direct application User deletion are denied. Account names in Auth metadata
 are not authoritative. Do not alter Supabase's managed Auth schema.
 
+## Workout template contract
+
+`public.workout_templates` stores a UUID, owning application `user_id`, nonblank
+`title`, optional `description`, and immutable `created_at`. Duplicate titles are
+valid. `public.template_exercises` stores its own UUID, parent `template_id`,
+positive one-based `position`, namespaced `catalog_id`, and descriptive JSONB
+`snapshot`. The snapshot preserves the existing catalog description (name,
+primary/secondary muscles, equipment, and optional instructions, images, and
+translations); catalog identity is relational. No live catalog table is required.
+
+`public.template_sets` uses `(template_exercise_id, set_number)` as its key and
+stores positive integer `target_reps` and finite nonnegative numeric
+`target_weight` in pounds, preserving decimals and zero. Exercise positions and
+set numbers are unique within their parent. Their uniqueness constraints are
+DEFERRABLE: #45 can defer constraints inside one transaction when swapping order,
+then validate the final order before committing. Database operations may temporarily
+have missing exercises/sets or gaps; #45 must atomically validate and save complete
+templates with consecutive ordering and at least one set per placement.
+
+Authenticated requests can read, insert, edit, and delete their own template
+aggregate under RLS. Column grants keep UUIDs, parents, owners, and creation times
+immutable; metadata, positions, snapshots, and targets remain editable. Child
+access follows the owning template, including inserts. Deleting a template removes
+placements and sets; deleting an Auth account removes its User and templates.
+Issue #45 supplies payload validation, HTTP/data-access/service contracts, draft ID
+conversion, deterministic listing (creation time with UUID tie-break), and app
+integration; this schema does not implement an API or change the current UI.
+
 ## Database tests
 
 After applying migrations to your local backend, run:
