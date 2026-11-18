@@ -15,7 +15,7 @@ import { ThemeProvider, useTheme } from '../src/viewmodels/theme';
 import { AuthProvider, useAuth } from '../src/viewmodels/auth';
 import type { AuthClock } from '../src/services/auth-clock';
 import type { Account, AuthService, AuthSession } from '../src/services/auth-service';
-import { createAppAuthService } from '../src/services/supabase-client';
+import { createAppSupabaseRuntime } from '../src/services/supabase-client';
 import { WorkoutProvider } from '../src/viewmodels/workout-provider';
 import { createExerciseCatalogService, type ExerciseCatalogService } from '../src/services/exercise-catalog-service';
 import { AppearanceSettings } from '../src/views/account';
@@ -30,7 +30,8 @@ export default function RootLayout({ authService, initialSession, authClock, cat
   catalogService?: ExerciseCatalogService;
   workoutServiceFactory?: (account: Account | null) => WorkoutService;
 } = {}) {
-  const [authentication] = useState(() => authService ?? createAppAuthService());
+  const [runtime] = useState(createAppSupabaseRuntime);
+  const [authentication] = useState(() => authService ?? runtime.authService);
   const [catalogService] = useState(() => providedCatalogService ?? createExerciseCatalogService((url) => fetch(url)));
   return (
     <AuthProvider service={authentication} initialSession={initialSession} clock={authClock}>
