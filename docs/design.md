@@ -71,17 +71,42 @@ The root layout supplies a sample implementation until backend integration is
 available. Template targets and historical session values are separate snapshots.
 
 Expo Router provides three bottom tabs: Templates (initial), Workouts, and Account.
-Templates have detail screens with inline title/description editing and
-session-local Save/Cancel. Workout history has independently collapsible exercise
-sections. Account links to a sign-in placeholder and Settings. These screens use
-sample records; authentication, full template CRUD, backend persistence, and
-workout logging remain feature integrations.
+Templates have a saved overview listing exercise names and set counts. Each
+placement opens saved exercise detail with its preserved image (or an unavailable
+placeholder) and compact read-only set rows. Saved detail reads the template
+snapshot without loading the catalog. The complete draft editor manages name,
+optional description, catalog exercise placements, and independent fixed-weight
+sets.
+Editing uses a template overview for name/description, exercise count, membership,
+and order, plus a separate screen for one placement’s sets and targets. Each set
+is one row: Set number, reps input, ×, weight input, and pounds. Back/Done from
+exercise editing returns to the overview without committing; both screens share
+one draft, and Save/Cancel on the overview applies to all changes. The overview's
+Sets button sits beside the exercise title and trash control. Saved targets and
+editable targets use the same row layout; only the editor exposes numeric inputs
+and set removal.
+Creation, whole-template updates, and deletion use the injected asynchronous
+WorkoutService backed by memory. New templates append to the list. Successful
+mutations invalidate list/detail reads and refresh counts. A fresh app session
+restores the two samples; database persistence remains #45.
 
-The root owns a sample service instance for the app session. Successful metadata
-updates invalidate the template ViewModels so both list and detail reload saved
-values. A shared pending-save state locks tab navigation; the editor also guards
-Back/swipe and preserves drafts on failures. See the
-[UI iteration decisions](./ui-foundation.md#approved-ui-iteration) for exact behavior.
+The root owns the service and shared draft state, allowing catalog selection to
+return to the same draft. Repeated catalog exercises have independent placement
+identities and snapshots. The builder supports long-press dragging from an
+edit-only three-line handle, scrolling while dragging, and accessible Move up/down
+alternatives. All targets move with their placement. Existing history remains
+independent of template edits/deletions.
+
+Save validates and commits the whole draft atomically. Failed saves preserve it
+for retry. Tabs preserve unfinished drafts; Back/swipe offers discard/keep editing.
+Save/Cancel applies to the entire draft. Pending saves/deletes lock conflicting
+actions and navigation. Delete requires confirmation naming the template and
+returns to the list on success. See the [confirmed #91 specification](./issue-91-template-crud.md)
+for target validation, lifecycle, and testing decisions.
+
+Workout history has independently collapsible exercise sections. Account links
+to a sign-in placeholder and Settings; authentication and workout logging remain
+feature integrations.
 
 Settings offers Light, Dark, and System appearance, defaulting to System. The
 preference is stored locally through an injected storage interface. Both themes

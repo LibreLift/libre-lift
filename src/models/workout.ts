@@ -77,3 +77,30 @@ export interface WorkoutSession {
   readonly endedAt: string;
   readonly exercises: readonly SessionExercise[];
 }
+
+export type TemplateContent = Omit<WorkoutTemplate, 'id'>;
+
+export function snapshotTemplate(template: WorkoutTemplate): WorkoutTemplate {
+  return { ...template, exercises: template.exercises.map((exercise) =>
+    createTemplateExercise(exercise.id, exercise, exercise.sets)) };
+}
+
+export function validateTemplate(content: TemplateContent): TemplateContent {
+  const details = validateTemplateDetails(content);
+  if (!content.exercises.length) throw new Error('Add at least one exercise.');
+  const ids = new Set<string>();
+  const exercises = content.exercises.map((exercise, index) => {
+    if (!exercise.id || ids.has(exercise.id)) throw new Error('Exercise placements must have unique identities.');
+    ids.add(exercise.id);
+    if (!exercise.sets.length) throw new Error(`Add at least one set to exercise ${index + 1}.`);
+    const sets = exercise.sets.map((set, setIndex) => {
+      if (!Number.isFinite(set.targetWeight) || set.targetWeight < 0)
+        throw new Error(`Exercise ${index + 1}, set ${setIndex + 1}: enter a weight of zero or more.`);
+      if (!Number.isInteger(set.targetReps) || set.targetReps < 1)
+        throw new Error(`Exercise ${index + 1}, set ${setIndex + 1}: enter a positive whole number of reps.`);
+      return { ...set, setNumber: setIndex + 1 };
+    });
+    return createTemplateExercise(exercise.id, exercise, sets);
+  });
+  return { ...details, exercises };
+}
