@@ -1,4 +1,6 @@
 // Shared by the mobile service and Edge handler: all wire data is untrusted.
+// Repetition targets use PostgreSQL's signed integer storage.
+export const MAX_TARGET_REPS = 2147483647;
 export type TemplateFailureKind = 'validation' | 'authentication' | 'unavailable' | 'missing';
 export class TemplateFailure extends Error {
   constructor(message: string, readonly kind: TemplateFailureKind = 'validation') { super(message); }
@@ -23,7 +25,7 @@ function array(value: unknown): unknown[] {
 }
 function texts(value: unknown): string[] { return array(value).map(value => text(value)); }
 function number(value: unknown, positiveInteger = false): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (positiveInteger && (!Number.isInteger(value) || value < 1))) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (positiveInteger && (!Number.isInteger(value) || value < 1 || value > MAX_TARGET_REPS))) {
     throw new TemplateFailure('Invalid template targets.');
   }
   return value;
