@@ -7,7 +7,7 @@ const secondId = '10000000-0000-4000-8000-000000000002';
 function json(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
 }
-function backend(rejectInitialToken = false, permissionFailure = false, endSessionOnReject = false) {
+function backend(rejectInitialToken = false, permissionFailure = false, endSessionOnReject = false, onReject?: () => Promise<void>) {
   let renewed = false;
   let id = firstId;
   const credentials: string[] = [];
@@ -23,6 +23,7 @@ function backend(rejectInitialToken = false, permissionFailure = false, endSessi
       credentials.push(new Headers(init?.headers).get('Authorization') ?? '');
       if (permissionFailure) return json({ kind: 'unavailable' }, 403);
       if (rejectInitialToken && !renewed) {
+        await onReject?.();
         if (endSessionOnReject) await client.auth.signOut({ scope: 'local' });
         return json({ kind: 'authentication' }, 401);
       }
@@ -78,4 +79,20 @@ test('authentication that ends while a protected request is pending reports defi
   });
   await expect(service.listTemplates()).rejects.toBeInstanceOf(AuthSessionEnded);
   expect(ended).toHaveLength(1);
+});
+
+test('a discarded service cannot retry a pending mutation after same-account recovery', async () => {
+  let current = true;
+  const state = backend(true, false, false, async () => {
+    current = false;
+    await state.signIn();
+  });
+  await state.signIn();
+  const ended: Error[] = [];
+  const service = createSupabaseWorkoutService(() => state.client, undefined, {
+    accountId: firstId, isCurrent: () => current, onSessionEnded: error => ended.push(error),
+  });
+  await expect(service.deleteTemplate('20000000-0000-4000-8000-000000000001')).rejects.toThrow('account');
+  expect(state.credentials).toEqual([`Bearer access-${firstId}`]);
+  expect(ended).toEqual([]);
 });

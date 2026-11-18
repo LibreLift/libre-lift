@@ -60,6 +60,13 @@ out-of-range repetition count now returns validation/400 rather than unavailable
 Both issues were reproduced before correction; the complete fresh-backend check,
 TypeScript/Jest, and clean/populated database checks were rerun for these changes.
 
+The PR-comment review also reproduced a stale mutation retry after recovery into
+a new session for the same account. Production services now check both account
+identity and the captured generation before dispatch, after session lookup, and
+before renewal/retry. Public-service and router regressions cover discarded
+requests after re-entry to either the same or a different account; the old request
+is not resent and cannot end the newly loaded account's access.
+
 ## Hosted rollout and physical-device verification
 
 On November 18, 2026, the maintainer reported that even a minimal template failed

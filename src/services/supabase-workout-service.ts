@@ -8,6 +8,7 @@ import { createSampleWorkoutService } from './sample-workout-service';
 
 interface TemplateAccess {
   accountId: string | null;
+  isCurrent?(): boolean;
   onSessionEnded?(error: AuthSessionEnded): void;
 }
 
@@ -23,10 +24,12 @@ export function createSupabaseWorkoutService(
     return uuid(newId());
   }
   async function invoke(body: TemplateRequest, refreshed = false): Promise<unknown> {
+    assertCurrent();
     const client = getClient();
     let authorization: string | undefined;
     if (access) {
       const { data, error } = await client.auth.getSession();
+      assertCurrent();
       if (error) throw supabaseAuthFailure(error);
       if (!data.session) throw new AuthSessionEnded('Your account access ended. Please sign in again.');
       if (data.session.user.id !== access.accountId) {
@@ -47,6 +50,7 @@ export function createSupabaseWorkoutService(
           if (failure.kind === 'authentication') {
             if (access && !refreshed) {
               const current = await client.auth.getSession();
+              assertCurrent();
               if (current.error) throw supabaseAuthFailure(current.error);
               if (!current.data.session) throw new AuthSessionEnded('Your account access ended. Please sign in again.');
               if (current.data.session.user.id !== access.accountId) {
@@ -66,6 +70,11 @@ export function createSupabaseWorkoutService(
       throw new TemplateFailure('Your templates could not be loaded. Please try again.', 'unavailable');
     }
     return data;
+  }
+  function assertCurrent() {
+    if (access?.isCurrent?.() === false) {
+      throw new TemplateFailure('This account access changed. Reopen your template and try again.', 'unavailable');
+    }
   }
   async function request(body: TemplateRequest): Promise<unknown> {
     try { return await invoke(body); }

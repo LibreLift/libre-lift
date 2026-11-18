@@ -55,9 +55,10 @@ function AccountScope({ children, ...props }: AccountServicesProps) {
 }
 
 function AccountServices({ factory, account = null, catalogService, getClient, children }: AccountServicesProps) {
-  const { accountGeneration, reportSessionEnded } = useAuth();
+  const { accountGeneration, isCurrentAccount, reportSessionEnded } = useAuth();
   const [service] = useState(() => factory ? factory(account) : createSupabaseWorkoutService(getClient, randomUUID, {
     accountId: account?.id ?? null,
+    isCurrent: () => isCurrentAccount(account?.id ?? null, accountGeneration),
     onSessionEnded: error => reportSessionEnded(account?.id ?? null, accountGeneration, error),
   }));
   return <WorkoutProvider service={service}>

@@ -61,7 +61,10 @@ test('definitive template authentication failure enters account recovery after a
   } finally { await app.stop(); }
 });
 
-test('an old account request cannot sign out the newly loaded account when its rejection arrives late', async () => {
+test.each([
+  { label: 'another account', next: { id: '10000000-0000-4000-8000-000000000002', email: 'blair@example.com', name: 'Blair' } },
+  { label: 'a new session for the same account', next: account },
+])('a discarded request cannot retry or sign out $label', async ({ next }) => {
   let listener: ((event: AuthEvent) => void) | undefined;
   const service: AuthService = {
     async restoreSession() { return null; }, async signOut() {}, setForeground() {},
@@ -74,26 +77,31 @@ test('an old account request cannot sign out the newly loaded account when its r
     await screen.findByText('No templates yet.');
     const original = app.request.getMockImplementation()!;
     let release!: (response: Response) => void;
-    let attempts = 0;
+    let oldReadAttempts = 0;
     app.request.mockImplementation(async (input, init) => {
       if (String(input).includes('/functions/')) {
-        attempts++;
-        if (attempts === 1) return new Promise<Response>(resolve => { release = resolve; });
-        return json({ kind: 'authentication' }, 401);
+        const body = JSON.parse(String(init?.body ?? '{}'));
+        if (body.action === 'get') {
+          oldReadAttempts++;
+          if (oldReadAttempts === 1) return new Promise<Response>(resolve => { release = resolve; });
+          return json({ kind: 'authentication' }, 401);
+        }
+        return json([]);
       }
       return original(input, init);
     });
     await act(() => router.push('/templates/00000000-0000-4000-8000-000000000001'));
-    await waitFor(() => expect(attempts).toBe(1));
+    await waitFor(() => expect(oldReadAttempts).toBe(1));
+    await act(() => listener?.({ type: 'signed-out' }));
     await act(() => listener?.({ type: 'signed-in', session: {
-      account: { id: '10000000-0000-4000-8000-000000000002', email: 'blair@example.com', name: 'Blair' },
+      account: next,
       accessToken: 'other-access', refreshToken: 'other-refresh', expiresAt: 4102444800,
     } }));
     await fireEvent.press(await screen.findByRole('button', { name: /^Account, tab/ }));
-    expect(await screen.findByText('blair@example.com')).toBeVisible();
+    expect(await screen.findByText(next.email)).toBeVisible();
     await act(() => release(json({ kind: 'authentication' }, 401)));
-    await waitFor(() => expect(attempts).toBe(2));
-    expect(screen.getByText('blair@example.com')).toBeVisible();
+    expect(oldReadAttempts).toBe(1);
+    expect(screen.getByText(next.email)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Continue with email' })).toBeNull();
   } finally { await app.stop(); }
 });

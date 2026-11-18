@@ -157,8 +157,12 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
   }
 
   function reportSessionEnded(accountId: string | null, generation: number, cause: AuthSessionEnded) {
-    if (generation !== currentGeneration.current || !accountId || currentSession.current?.account.id !== accountId) return;
+    if (!isCurrentAccount(accountId, generation)) return;
     void signOut(cause.message);
+  }
+
+  function isCurrentAccount(accountId: string | null, generation: number) {
+    return generation === currentGeneration.current && !!accountId && currentSession.current?.account.id === accountId;
   }
 
   async function signOut(message = '') {
@@ -283,7 +287,7 @@ function useAccountAccess(service: AuthService, clock: AuthClock, initialSession
     });
   }
 
-  return { notice, accountGeneration, reportSessionEnded, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
+  return { notice, accountGeneration, isCurrentAccount, reportSessionEnded, signOut, cleanupPending, cleanupError, restoring, restoreError, restore, loadingRestoredAccount, saveName, clearError: () => setError(''), session, resolvingAccount: !!verifiedSession, loadAccount, accountWait,
     email, setEmail, code, setCode, step, pending, error, submit,
     verificationWait, nameWait, remaining, resend: sendCode, changeEmail };
 }
