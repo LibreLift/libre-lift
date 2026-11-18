@@ -6,9 +6,9 @@ import { createSupabaseAuthService } from './supabase-auth-service';
 
 const configurationError = 'Account access is not configured. Check the app settings and try again.';
 
-export function createAppAuthService() {
+export function createAppSupabaseRuntime() {
   let client: SupabaseClient | undefined;
-  return createSupabaseAuthService(() => {
+  function getClient() {
     if (client) return client;
     const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
     const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -24,5 +24,10 @@ export function createAppAuthService() {
     } catch {
       throw new AuthFailure(configurationError);
     }
-  });
+  }
+  return { getClient, authService: createSupabaseAuthService(getClient) };
+}
+
+export function createAppAuthService() {
+  return createAppSupabaseRuntime().authService;
 }

@@ -8,14 +8,16 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState, type PropsWithChildren } from 'react';
-import { createSampleWorkoutService } from '../src/services/sample-workout-service';
+import { randomUUID } from 'expo-crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseWorkoutService } from '../src/services/supabase-workout-service';
 import type { WorkoutService } from '../src/services/workout-service';
 import { themePreferenceStore } from '../src/services/theme-preference-store';
 import { ThemeProvider, useTheme } from '../src/viewmodels/theme';
 import { AuthProvider, useAuth } from '../src/viewmodels/auth';
 import type { AuthClock } from '../src/services/auth-clock';
 import type { Account, AuthService, AuthSession } from '../src/services/auth-service';
-import { createAppAuthService } from '../src/services/supabase-client';
+import { createAppSupabaseRuntime } from '../src/services/supabase-client';
 import { WorkoutProvider } from '../src/viewmodels/workout-provider';
 import { createExerciseCatalogService, type ExerciseCatalogService } from '../src/services/exercise-catalog-service';
 import { AppearanceSettings } from '../src/views/account';
@@ -30,12 +32,13 @@ export default function RootLayout({ authService, initialSession, authClock, cat
   catalogService?: ExerciseCatalogService;
   workoutServiceFactory?: (account: Account | null) => WorkoutService;
 } = {}) {
-  const [authentication] = useState(() => authService ?? createAppAuthService());
+  const [runtime] = useState(createAppSupabaseRuntime);
+  const [authentication] = useState(() => authService ?? runtime.authService);
   const [catalogService] = useState(() => providedCatalogService ?? createExerciseCatalogService((url) => fetch(url)));
   return (
     <AuthProvider service={authentication} initialSession={initialSession} clock={authClock}>
       <ThemeProvider store={themePreferenceStore}>
-        <AccountScope factory={workoutServiceFactory} catalogService={catalogService}>
+        <AccountScope factory={workoutServiceFactory} catalogService={catalogService} getClient={runtime.getClient}>
             <Navigation />
         </AccountScope>
       </ThemeProvider>
@@ -44,15 +47,20 @@ export default function RootLayout({ authService, initialSession, authClock, cat
 }
 
 type AccountServicesProps = PropsWithChildren<{ catalogService: ExerciseCatalogService;
-  factory?: (account: Account | null) => WorkoutService; account?: Account | null }>;
+  factory?: (account: Account | null) => WorkoutService; account?: Account | null; getClient: () => SupabaseClient }>;
 
 function AccountScope({ children, ...props }: AccountServicesProps) {
   const { accountGeneration, session } = useAuth();
   return <AccountServices key={`${accountGeneration}:${session?.account.id ?? 'none'}`} {...props} account={session?.account ?? null}>{children}</AccountServices>;
 }
 
-function AccountServices({ factory, account = null, catalogService, children }: AccountServicesProps) {
-  const [service] = useState(() => factory ? factory(account) : createSampleWorkoutService());
+function AccountServices({ factory, account = null, catalogService, getClient, children }: AccountServicesProps) {
+  const { accountGeneration, isCurrentAccount, reportSessionEnded } = useAuth();
+  const [service] = useState(() => factory ? factory(account) : createSupabaseWorkoutService(getClient, randomUUID, {
+    accountId: account?.id ?? null,
+    isCurrent: () => isCurrentAccount(account?.id ?? null, accountGeneration),
+    onSessionEnded: error => reportSessionEnded(account?.id ?? null, accountGeneration, error),
+  }));
   return <WorkoutProvider service={service}>
     <ExerciseCatalogProvider service={catalogService}>{children}</ExerciseCatalogProvider>
   </WorkoutProvider>;

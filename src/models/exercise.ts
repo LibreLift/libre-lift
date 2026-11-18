@@ -1,4 +1,4 @@
-export type CatalogExerciseId = `repdb:${string}`;
+export type CatalogExerciseId = `${string}:${string}`;
 
 export type ExerciseEquipment =
   | { readonly kind: 'none' }

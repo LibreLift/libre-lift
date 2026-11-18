@@ -68,8 +68,8 @@ There will only be one type of user interacting with this system. They will crea
 
 The Expo/TypeScript frontend follows MVVM: View components render hooks in the
 ViewModel layer, which depend on an injected asynchronous `WorkoutService`.
-The root layout supplies a sample implementation until backend integration is
-available. Template targets and historical session values are separate snapshots.
+The root layout originally supplied a sample implementation; the #45 persistence
+integration below now supplies production template operations. Template targets and historical session values are separate snapshots.
 
 Expo Router provides three bottom tabs: Templates (initial), Workouts, and Account.
 Templates have a saved overview listing exercise names and set counts. Each
@@ -89,7 +89,8 @@ and set removal.
 Creation, whole-template updates, and deletion use the injected asynchronous
 WorkoutService backed by memory. New templates append to the list. Successful
 mutations invalidate list/detail reads and refresh counts. A fresh app session
-restores the two samples; database persistence remains #45.
+restored the two samples. The #45 integration below supersedes that production
+composition; controlled in-memory services remain test doubles.
 
 The root owns the service and shared draft state, allowing catalog selection to
 return to the same draft. Repeated catalog exercises have independent placement
@@ -330,6 +331,28 @@ restoration. Valid stored authentication is restored automatically, while explic
 sign-out or an app reinstall requires another email OTP. Saved templates belong
 to the account and survive app reloads, restarts, updates, and reinstalls when
 using the same backend. Unsaved template drafts remain temporary.
+
+### Template persistence (#45)
+
+The [confirmed #45 specification](./issue-45-template-persistence.md) governs the
+implemented production template service; hosted deployment and device audit remain
+separate review activities. Whole-template
+saves use an authenticated Edge Function/data-access boundary and an invoker-rights
+transactional database function; see [ADR 0005](./adr/0005-save-template-aggregates-transactionally.md).
+An unchanged save retry recovers its original committed result without duplicate
+creation or overwriting later saves. Distinct concurrent saves use last-committed
+whole-template replacement; updates never recreate deleted templates, and deletion
+of an absent template succeeds. Production accounts receive no sample templates;
+workout history remains visibly labeled sample data until #47. The approved tests
+combine existing router-level behavior checks with the real production service
+through HTTP to disposable local Supabase. The root shares one lazy authenticated
+client and injects Expo Crypto UUID generation into its account-scoped service.
+Every production request checks its account and pins that session's bearer token;
+a switched account cannot reuse an older service. A guarded refresh retries a
+rejected current token once. Definitive loss enters existing account recovery,
+scoped by account identity and generation so late failures cannot clear a new
+account. Ordinary permission/transport errors preserve the draft. See the
+[validation record](./issue-125-template-production.md) and setup commands.
 
 **ERD:**
 ![Entity-Relationship Diagram](./design-images/librelift-erd.jpg)

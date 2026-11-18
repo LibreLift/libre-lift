@@ -78,3 +78,9 @@ content_path = "./supabase/templates/email-code.html"
 [auth.email.template.magic_link]
 subject = "Your LibreLift code"
 content_path = "./supabase/templates/email-code.html"
+
+[functions.workout-templates]
+enabled = true
+# This handler verifies the user JWT and forwards it to RLS-protected data access.
+verify_jwt = false
+entrypoint = "./functions/workout-templates/index.ts"

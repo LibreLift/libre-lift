@@ -13,7 +13,8 @@
     "android": "expo start --go --android",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
-    "test:db": "node scripts/verify-database.mjs"
+    "test:db": "node scripts/verify-database.mjs",
+    "test:templates": "node scripts/verify-templates.mjs"
   },
   "jest": {
     "preset": "jest-expo",
@@ -28,6 +29,7 @@
     "expo": "~58.0.26",
     "expo-asset": "~58.0.20",
     "expo-constants": "~58.0.15",
+    "expo-crypto": "~58.0.8",
     "expo-font": "~58.0.11",
     "expo-linking": "~58.0.17",
     "expo-router": "~58.0.32",
