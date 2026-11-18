@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -10,6 +10,8 @@ const scratch = mkdtempSync(join(tmpdir(), 'open-fit-db-'));
 const backend = join(scratch, 'supabase');
 const migrations = join(backend, 'migrations');
 mkdirSync(migrations, { recursive: true });
+// Config validation resolves email templates even for a database-only stack.
+cpSync(join(root, 'supabase/templates'), join(backend, 'templates'), { recursive: true });
 
 // Only this generated project can be reset or stopped; no linked/hosted state is copied.
 let config = readFileSync(join(root, 'supabase/config.toml'), 'utf8')
