@@ -173,3 +173,7 @@ creation/editing, retry, and access isolation. No external email is sent. To che
 expiry, set only that disposable stack's OTP expiry to two seconds, restart it,
 and add `AUTH_TEST_EXPIRY_SECONDS=2` to the command. Keep committed expiry at 600.
 Device review and hosted delivery verification remain separate from these checks.
+
+The optional [persisted template read check](./issue-121-template-reads.md) exercises
+the production service through a disposable local Edge Function and database.
+Production template composition remains in-memory until the #45 cutover.

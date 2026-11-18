@@ -55,6 +55,7 @@ export function createSessionExercise(
 }
 
 export interface WorkoutTemplate {
+  readonly createdAt?: string;
   readonly id: string;
   readonly title: string;
   readonly description: string;
