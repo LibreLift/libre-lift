@@ -48,6 +48,7 @@ export function createSupabaseWorkoutService(
         try { failure = await response.json(); } catch { /* Malformed responses remain retryable request failures. */ }
         if (failure && typeof failure === 'object' && 'kind' in failure) {
           if (failure.kind === 'authentication') {
+            assertCurrent();
             if (access && !refreshed) {
               const current = await client.auth.getSession();
               assertCurrent();
