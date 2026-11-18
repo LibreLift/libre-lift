@@ -12,6 +12,7 @@ const migrations = join(backend, 'migrations');
 mkdirSync(migrations, { recursive: true });
 // Config validation resolves email templates even for a database-only stack.
 cpSync(join(root, 'supabase/templates'), join(backend, 'templates'), { recursive: true });
+cpSync(join(root, 'supabase/functions'), join(backend, 'functions'), { recursive: true });
 
 // Only this generated project can be reset or stopped; no linked/hosted state is copied.
 let config = readFileSync(join(root, 'supabase/config.toml'), 'utf8')
