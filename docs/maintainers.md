@@ -6,7 +6,7 @@ Supabase CLI **3.1.0** and run from the repository root.
 
 Project: **OpenFit**, region **us-east-2**, reference `jibzcwwursyzvvthazby`.
 Supabase labels its main branch “production”; this project is our development
-environment, not a separate LibreLift production deployment.
+environment, not a separate OpenFit production deployment.
 
 ## Access and deployment
 
@@ -14,7 +14,7 @@ environment, not a separate LibreLift production deployment.
 Only maintainers receive organization/project dashboard access, CLI deployment
 credentials, or database passwords. Contributors submit backend changes through
 PRs and test them locally. Git commits do not automatically deploy anything.
-Review membership in the LibreLift organization's dashboard when granting access.
+Review membership in the OpenFit organization's dashboard when granting access.
 Never distribute an access token, database password, or secret/service-role key
 with contributor app settings. A publishable key does not grant deployment access.
 

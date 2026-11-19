@@ -28,7 +28,7 @@ async function main() {
     const listing = await fetch(`${settings.MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`).then((r) => r.json());
     assert.ok(listing.messages.length, 'The test account must receive an email.');
     const message = await fetch(`${settings.MAILPIT_URL}/api/v1/message/${listing.messages[0].ID}`).then((r) => r.json());
-    assert.equal(message.Subject, 'Your LibreLift code');
+    assert.equal(message.Subject, 'Your OpenFit code');
     assert.ok(!message.HTML.includes('href='), 'Email must contain a code, not a sign-in link.');
     const match = message.HTML.match(/<strong>(\d{6})<\/strong>/);
     assert.ok(match, 'Email must contain a six-digit code.');

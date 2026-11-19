@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "LibreLift",
-    "slug": "libre-lift",
+    "name": "OpenFit",
+    "slug": "open-fit",
     "version": "0.1.0",
-    "scheme": "librelift",
+    "scheme": "openfit",
     "userInterfaceStyle": "automatic",
     "plugins": [
       "expo-router",

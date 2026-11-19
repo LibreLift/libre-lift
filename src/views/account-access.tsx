@@ -38,7 +38,7 @@ export function AccountAccessScreen() {
   const progress = verifying ? 'Verifying…' : 'Sending…';
   const retryWait = verifying ? model.verificationWait : model.remaining;
   return <Screen>
-    <Copy kind="label">LIBRELIFT</Copy>
+    <Copy kind="label">OPENFIT</Copy>
     <Copy kind="title">Your training starts here.</Copy>
     <Card>
       <Copy kind="heading">{verifying ? 'Check your email' : 'Continue with email'}</Copy>

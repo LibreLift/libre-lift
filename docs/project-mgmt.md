@@ -1,6 +1,6 @@
 # Project Management
 
-The [LibreLift MVP project board](https://github.com/orgs/LibreLift/projects/1)
+The [OpenFit MVP project board](https://github.com/orgs/open-source-fitness/projects/1)
 tracks planned work, priorities, and progress. Use the Plan view to see task sizes
 and milestone groupings, and the Backlog view to follow workflow states. Check
 the view's filters if an expected issue is not visible.

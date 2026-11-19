@@ -1,6 +1,6 @@
-# libre-lift
+# OpenFit
 
-LibreLift is a native mobile app for creating workout templates, recording workout
+OpenFit is a native mobile app for creating workout templates, recording workout
 sessions, and reviewing workout history. It is designed for people who want to
 plan and record their training on a phone without paying for a subscription.
 
@@ -55,7 +55,7 @@ See the [roadmap](./docs/roadmap.md) for the scoped MVP and its two milestones,
 features planned next, longer-term ideas, and features outside the current plan.
 
 Track current work, priorities, and milestone progress on the
-[LibreLift MVP project board](https://github.com/orgs/LibreLift/projects/1).
+[OpenFit MVP project board](https://github.com/orgs/open-source-fitness/projects/1).
 
 ## Contributing
 

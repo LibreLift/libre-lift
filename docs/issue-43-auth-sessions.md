@@ -12,7 +12,7 @@ Prerequisites #38, #39, #41, and #42 are closed. There are no sub-issues. Downst
 
 ## Problem Statement
 
-LibreLift stores Supabase credentials on the device but does not restore them into application state when the app launches. Returning users must repeat account access, and the app does not yet respond to session lifecycle changes or provide sign-out.
+OpenFit stores Supabase credentials on the device but does not restore them into application state when the app launches. Returning users must repeat account access, and the app does not yet respond to session lifecycle changes or provide sign-out.
 
 Training services, cached reads, and unfinished work can outlive protected routes. Simply returning to email entry would therefore leave the previous account's state available in memory. Users need reliable returning access and a clear boundary that prevents one account's state from appearing under another account.
 

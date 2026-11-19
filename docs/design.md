@@ -1,4 +1,4 @@
-# LibreLift - Design Document
+# OpenFit - Design Document
 
 |                  |                                                                                                                                                           |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -6,7 +6,7 @@
 | **Reviewers**    | [who reviewed it — a teammate, the instructor, a design-review partner]                                                                                   |
 | **Status**       | In review                                                                                                                                                 |
 | **Last updated** | 11-17-26                                                                                                                                                  |
-| **Links**        | [proposal](../cp3/cp3-proposal) · [repository](https://github.com/LibreLift/expo_suite) · [issue tracker](https://github.com/LibreLift/expo_suite/issues) |
+| **Links**        | [proposal](../cp3/cp3-proposal) · [repository](https://github.com/open-source-fitness/open-fit) · [issue tracker](https://github.com/open-source-fitness/open-fit/issues) |
 
 ## Revision history
 
@@ -23,7 +23,7 @@
 
 ## 1. Context and scope
 
-LibreLift is a native mobile app for planning, logging, and tracking workouts for those who want to use their phones to do so. It aims to provide the basic functions of creating reusable workout templates, using a template for a workout and logging reps and weight, and reviewing the details of past workouts. For more information about the context of this project, see the [proposal document](../cp3/cp3-proposal).
+OpenFit is a native mobile app for planning, logging, and tracking workouts for those who want to use their phones to do so. It aims to provide the basic functions of creating reusable workout templates, using a template for a workout and logging reps and weight, and reviewing the details of past workouts. For more information about the context of this project, see the [proposal document](../cp3/cp3-proposal).
 
 Use the [glossary](../GLOSSARY.md) for canonical domain terms. The
 [architecture decision records](./adr/README.md) and
@@ -355,7 +355,7 @@ account. Ordinary permission/transport errors preserve the draft. See the
 [validation record](./issue-125-template-production.md) and setup commands.
 
 **ERD:**
-![Entity-Relationship Diagram](./design-images/librelift-erd.jpg)
+![Entity-Relationship Diagram](./design-images/openfit-erd.jpg)
 
 
 ## 6. Technology choices and alternatives considered
@@ -371,7 +371,7 @@ account. Ordinary permission/transport errors preserve the draft. See the
 
 - **Chosen**: Supabase
 - **Alternative considered**: Firebase
-- **Why the chosen option wins, given our goals**: 2 main reasons: First, Supabase is better build for open-source contributions, since contributors can run a local version of the backend without needing access to the production credentials. Second, the data model for LibreLift (workouts, exercises, template vs session) fits well in a relational model, which is more readily available in Supabase. One advantage that Firebase does have is out of the box support for offline-synchronization.
+- **Why the chosen option wins, given our goals**: 2 main reasons: First, Supabase is better build for open-source contributions, since contributors can run a local version of the backend without needing access to the production credentials. Second, the data model for OpenFit (workouts, exercises, template vs session) fits well in a relational model, which is more readily available in Supabase. One advantage that Firebase does have is out of the box support for offline-synchronization.
 - **Evidence**: The Supabase CLI allows any developer to run backend services locally with one command (`npx supabase start`). This is a huge asset for an open-source project. Supabase is naturally relational with PostgreSQL, and Firebase is natively NoSQL. Firebase does support SQL using SQL Connect, which requires some additional configuration. Offline synchronization is possible with Supabase, but requires more manual configuration than Firebase.
 - **What would change our mind**: If offline synchronization became too complex with Supabase, switching to Firebase would become a real consideration. Or, if the scale of the project grows enough and pricing between Supabase and Firebase favor Firebase, that would also merit considering a switch.
 

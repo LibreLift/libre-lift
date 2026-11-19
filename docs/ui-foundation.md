@@ -1,7 +1,7 @@
 # UI foundation decisions
 
 This is a retrospective record of the discussion for
-[#38](https://github.com/LibreLift/libre-lift/issues/38), captured on November 9,
+[#38](https://github.com/open-source-fitness/open-fit/issues/38), captured on November 9,
 2026. It records the agreed foundation and the terminology clarification that
 followed implementation; it does not expand the feature scope.
 
@@ -48,11 +48,11 @@ November 9, 2026. The #62–#64 behavior below is implemented on the local found
 branch. Physical-device review and the published foundation remain prerequisites
 for completing the tracker workflow. The #65 investigation is deferred.
 
-- [#62: Template presentation](https://github.com/LibreLift/libre-lift/issues/62)
+- [#62: Template presentation](https://github.com/open-source-fitness/open-fit/issues/62)
   changes the list heading to “Templates,” shows exercise and total-set counts,
   and removes the template list/detail preview footers. Exercise counts already
   exist; the added total counts all sets across the template's exercises.
-- [#63: Title/description editor](https://github.com/LibreLift/libre-lift/issues/63)
+- [#63: Title/description editor](https://github.com/open-source-fitness/open-fit/issues/63)
   uses inline editing at the top of template detail, keeping exercises visible,
   with explicit Save/Cancel. It saves metadata for the running app session through
   the service/ViewModel boundary. This revises the original read-only stub scope;
@@ -63,13 +63,13 @@ for completing the tracker workflow. The #65 investigation is deferred.
   disable fields, Save, Cancel, Back/swipe, and tab switching until the request
   succeeds or fails. Success returns to read-only detail; failure retains the
   draft for retry and restores editing and navigation controls.
-- [#64: Collapsible session sets](https://github.com/LibreLift/libre-lift/issues/64)
+- [#64: Collapsible session sets](https://github.com/open-source-fitness/open-fit/issues/64)
   makes each session-detail exercise independently expandable and initially
   collapsed, with its name and set count visible. Target and recorded performance
   remain unchanged, and expanding one exercise does not close another. Switching
   tabs preserves expansion state on the still-open detail screen; leaving detail
   and opening a session again starts collapsed.
-- [#65: Duration-estimate investigation](https://github.com/LibreLift/libre-lift/issues/65)
+- [#65: Duration-estimate investigation](https://github.com/open-source-fitness/open-fit/issues/65)
   is deferred to M2: MVP. It will compare approaches and missing timing inputs
   before a display or formula is selected; duration meaning and acceptable inputs
   remain undecided for that milestone. The current UI iteration adds no estimates.

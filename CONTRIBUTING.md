@@ -1,4 +1,4 @@
-# Contributing to LibreLift
+# Contributing to OpenFit
 
 This project welcomes the time and efforts of the community.
 

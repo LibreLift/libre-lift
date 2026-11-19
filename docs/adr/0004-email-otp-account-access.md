@@ -1,6 +1,6 @@
 # Use email OTP for account access
 
-During the [#42](https://github.com/LibreLift/libre-lift/issues/42) design discussion
+During the [#42](https://github.com/open-source-fitness/open-fit/issues/42) design discussion
 on November 13, 2026, the maintainer selected email OTP as the sole account-access
 method, replacing the earlier email/password plus email OTP decision from #41.
 Users of a gym app are expected to sign in infrequently and keep a renewable
@@ -48,7 +48,7 @@ unrestricted sample browsing from the initial UI foundation.
 “Indefinitely” means no application-imposed session lifetime or inactivity
 timeout, using renewable sessions rather than non-expiring access tokens.
 Sign-out, revoked credentials, or loss of the stored session require another
-sign-in. [#43](https://github.com/LibreLift/libre-lift/issues/43) retains restoration
+sign-in. [#43](https://github.com/open-source-fitness/open-fit/issues/43) retains restoration
 across launches, expiration handling, sign-out, and account-specific state cleanup.
 Training-data persistence and account isolation remain in their feature tasks.
 

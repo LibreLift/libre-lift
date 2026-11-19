@@ -21,7 +21,7 @@
 
 ### Issue tracker
 
-Use GitHub Issues and the LibreLift MVP project board. Before tracker operations,
+Use GitHub Issues and the OpenFit MVP project board. Before tracker operations,
 read [issue tracker guidance](docs/agents/issue-tracker.md).
 
 ### Triage labels

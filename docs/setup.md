@@ -22,8 +22,8 @@ Docker and Supabase CLI are optional for hosted development.
 ## Install and launch
 
 ```sh
-git clone https://github.com/LibreLift/libre-lift.git
-cd libre-lift
+git clone https://github.com/open-source-fitness/open-fit.git
+cd open-fit
 npm ci
 cp .env.example .env
 ```

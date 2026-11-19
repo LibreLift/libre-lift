@@ -7,11 +7,12 @@ export interface ThemePreferenceStore {
   write(preference: ThemePreference): Promise<void>;
 }
 
-const key = 'librelift.theme.v1';
+const key = 'openfit.theme.v1';
+const legacyKey = 'librelift.theme.v1';
 
 export const themePreferenceStore: ThemePreferenceStore = {
   async read() {
-    const value = await AsyncStorage.getItem(key);
+    const value = (await AsyncStorage.getItem(key)) ?? (await AsyncStorage.getItem(legacyKey));
     return value === 'light' || value === 'dark' ? value : 'system';
   },
   write(preference) {
