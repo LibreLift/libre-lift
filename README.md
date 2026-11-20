@@ -9,7 +9,7 @@ and account screens using sample data. Templates show exercise/set counts and
 support title/description edits for the running app session. History sets expand
 by exercise. Feature integrations are under development.
 
-Templates also opens a temporary live exercise catalog, with alphabetical
+Templates also opens a bundled exercise catalog, with alphabetical
 browsing, case-insensitive name search, one primary muscle-group filter, primary
 and secondary muscle-group summaries, and equipment. Tap a card for large
 exercise illustrations and instructions. Catalog browsing
@@ -67,7 +67,7 @@ For instructions on how to get involved and contribute, see the [contributing gu
 
 ## License
 
-Exercise data by [RepDB](https://repdb.co), fetched from its free public catalog.
+Exercise data by [RepDB](https://repdb.co), bundled from its free-tier package.
 The exercise data has its own [data license](https://github.com/RepDB/exercise-dataset/blob/main/LICENSE-DATA.md).
 
 This project uses the Gnu General Public License (GPL) to keep the code open to the public.

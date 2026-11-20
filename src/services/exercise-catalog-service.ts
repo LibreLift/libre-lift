@@ -1,45 +1,36 @@
 import { mapRepDbResponse, type CatalogMappingResult } from './repdb-exercise-mapper';
 
-export const REPDB_CATALOG_URL = 'https://exercise-dataset.com/exercises.json';
-
-export type CatalogRequest = (url: string) => Promise<{
-  readonly ok: boolean;
-  json(): Promise<unknown>;
-}>;
-
 export type CatalogLoadResult =
   | (Extract<CatalogMappingResult, { status: 'success' | 'partial' }> & {
       readonly rejectedRecords: number;
     })
   | Extract<CatalogMappingResult, { status: 'failure' }>
-  | { readonly status: 'failure'; readonly error: 'network' | 'http' | 'invalid_json' };
+  | { readonly status: 'failure'; readonly error: 'unavailable' };
 
 export interface ExerciseCatalogService {
   loadCatalog(): Promise<CatalogLoadResult>;
 }
 
-export function createExerciseCatalogService(request: CatalogRequest): ExerciseCatalogService {
+export type CatalogPayloadLoader = () => Promise<unknown>;
+
+export function createExerciseCatalogService(loadPayload: CatalogPayloadLoader): ExerciseCatalogService {
   return {
     async loadCatalog() {
-      let response: Awaited<ReturnType<CatalogRequest>>;
-      try {
-        response = await request(REPDB_CATALOG_URL);
-      } catch {
-        return { status: 'failure', error: 'network' };
-      }
-      if (!response.ok) return { status: 'failure', error: 'http' };
       let payload: unknown;
       try {
-        payload = await response.json();
+        payload = await loadPayload();
       } catch {
-        return { status: 'failure', error: 'invalid_json' };
+        return { status: 'failure', error: 'unavailable' };
       }
       const result = mapRepDbResponse(payload);
       if (result.status === 'failure') return result;
-      // Successful mapping guarantees the envelope has an exercise array. Count
-      // records, not diagnostics: optional-field diagnostics also mean partial.
+      // Optional-field diagnostics can also produce a partial result.
       const records = (payload as { exercises: unknown[] }).exercises;
       return { ...result, rejectedRecords: records.length - result.exercises.length };
     },
   };
 }
+
+export const bundledExerciseCatalogService = createExerciseCatalogService(async () =>
+  require('@repdb/exercises/exercises.json'),
+);

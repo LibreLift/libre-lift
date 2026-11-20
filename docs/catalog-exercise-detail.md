@@ -29,6 +29,10 @@ image/instruction presentation; it does not add template exercise selection.
 
 ## Implementation boundary
 
+The original HTTP implementation is described below. See [#138 offline catalog
+verification](issue-138-offline-catalog.md) for the bundled source and image
+resolution used by current builds.
+
 The existing catalog service and mapper retain their injected HTTP boundary.
 The list remains mounted beneath the detail route, keeping its native scroll
 position and ViewModel state. The provider shares only the selected catalog
