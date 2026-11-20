@@ -1,6 +1,6 @@
 # Share hosted development while keeping schema changes reproducible
 
-Contributors normally run the app against the existing LibreLift hosted development
+Contributors normally run the app against the existing OpenFit hosted development
 project, with an optional local Docker backend for isolated backend work. App access
 uses a public key and feature-defined data permissions; hosted administration and
 manual deployments remain restricted to maintainers.

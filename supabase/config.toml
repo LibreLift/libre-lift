@@ -72,11 +72,11 @@ verify_jwt = false
 entrypoint = "./functions/health/index.ts"
 
 [auth.email.template.confirmation]
-subject = "Your LibreLift code"
+subject = "Your OpenFit code"
 content_path = "./supabase/templates/email-code.html"
 
 [auth.email.template.magic_link]
-subject = "Your LibreLift code"
+subject = "Your OpenFit code"
 content_path = "./supabase/templates/email-code.html"
 
 [functions.workout-templates]

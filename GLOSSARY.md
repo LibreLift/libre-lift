@@ -1,6 +1,6 @@
-# LibreLift
+# OpenFit
 
-LibreLift helps individuals plan reusable workouts, record their performance,
+OpenFit helps individuals plan reusable workouts, record their performance,
 and review their workout history. These terms distinguish planned training from
 what happened during a particular session.
 
@@ -9,7 +9,7 @@ what happened during a particular session.
 ### People and access
 
 **User**:
-A person who plans and records their training in LibreLift and owns their workout
+A person who plans and records their training in OpenFit and owns their workout
 templates and workout sessions.
 
 **Account**:

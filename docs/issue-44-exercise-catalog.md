@@ -4,11 +4,11 @@ Design decisions agreed during the issue #44 interview and confirmed by the main
 
 ## Tracking
 
-- Source task: [#44](https://github.com/LibreLift/libre-lift/issues/44).
-- Specification: [#74](https://github.com/LibreLift/libre-lift/issues/74).
-- Core mapping and snapshots: [#75](https://github.com/LibreLift/libre-lift/issues/75).
-- Catalog recovery: [#76](https://github.com/LibreLift/libre-lift/issues/76), blocked by #75.
-- Images and localization: [#77](https://github.com/LibreLift/libre-lift/issues/77), blocked by #75.
+- Source task: [#44](https://github.com/open-source-fitness/open-fit/issues/44).
+- Specification: [#74](https://github.com/open-source-fitness/open-fit/issues/74).
+- Core mapping and snapshots: [#75](https://github.com/open-source-fitness/open-fit/issues/75).
+- Catalog recovery: [#76](https://github.com/open-source-fitness/open-fit/issues/76), blocked by #75.
+- Images and localization: [#77](https://github.com/open-source-fitness/open-fit/issues/77), blocked by #75.
 
 ## Agreed behavior
 

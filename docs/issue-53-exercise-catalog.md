@@ -4,15 +4,15 @@ Decisions agreed during the issue #53 design interview. The maintainer confirmed
 shared understanding on November 12, 2026, and subsequently authorized
 implementation of the published specification and tickets.
 
-Source task: [#53](https://github.com/LibreLift/libre-lift/issues/53).
-Template editor integration: [#46](https://github.com/LibreLift/libre-lift/issues/46).
+Source task: [#53](https://github.com/open-source-fitness/open-fit/issues/53).
+Template editor integration: [#46](https://github.com/open-source-fitness/open-fit/issues/46).
 Existing model and mapping: [catalog contract](./issue-44-exercise-catalog.md).
 
 ## Published tracking
 
-- Specification: [#82](https://github.com/LibreLift/libre-lift/issues/82).
-- Live loading and browsing: [#83](https://github.com/LibreLift/libre-lift/issues/83).
-- Combined search and group filtering: [#84](https://github.com/LibreLift/libre-lift/issues/84), blocked by #83.
+- Specification: [#82](https://github.com/open-source-fitness/open-fit/issues/82).
+- Live loading and browsing: [#83](https://github.com/open-source-fitness/open-fit/issues/83).
+- Combined search and group filtering: [#84](https://github.com/open-source-fitness/open-fit/issues/84), blocked by #83.
 
 The network-to-screen testing seam is approved. The service module calling
 RepDB accepts an injected HTTP request function, supplied through its construction

@@ -3,8 +3,8 @@
 ## Preflight: November 17, 2026
 
 Implementation: `1d3ff78`, plus Expo 58.0.26, Expo Router 58.0.32, and Jest Expo
-58.0.15 patch updates included in this PR. Sign-in emails retain the installed
-app's LibreLift branding; OpenFit is the hosted Supabase project's display name.
+58.0.15 patch updates included in this PR. Sign-in emails retain the installed app's
+branding.
 
 Local checks on this reviewed working tree:
 
@@ -23,8 +23,8 @@ Read-only configuration comparison found differences that need reconciliation:
 | Setting | Committed local value | Hosted value |
 | --- | --- | --- |
 | Email confirmations | Disabled (aligned after audit) | Disabled |
-| New-account email subject | Your LibreLift code | Confirm your email address |
-| Returning-account email subject | Your LibreLift code | Your One-Time Password |
+| New-account email subject | Branded sign-in code | Confirm your email address |
+| Returning-account email subject | Branded sign-in code | Your One-Time Password |
 
 Hosted custom SMTP is enabled. The author subsequently confirmed manual
 verification of the hosted email template. The subject differences above are

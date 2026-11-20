@@ -1,6 +1,6 @@
-# LibreLift roadmap
+# OpenFit roadmap
 
-LibreLift provides free workout planning and logging for individual users. This
+OpenFit provides free workout planning and logging for individual users. This
 roadmap follows the project proposal's feature priorities: P0 is the minimum viable
 product (MVP), P1 is the next step, and P2 is longer-term exploration. Work after
 the MVP has no committed release dates.
@@ -17,8 +17,8 @@ The MVP is scoped to two delivery milestones:
 
 | Milestone | Target date | What a user can do |
 | --- | --- | --- |
-| [M1: Runnable Demo](https://github.com/LibreLift/libre-lift/milestone/1) | November 18, 2026 | Sign in, choose catalog exercises, and create, save, reopen, edit, and delete a workout template with fixed target weights and repetitions. Workout logging and maximum-based calculations are deferred to M2. |
-| [M2: MVP](https://github.com/LibreLift/libre-lift/milestone/2) | December 2, 2026 | Start a workout from a saved template, record actual weights and repetitions, complete or stop the workout, and review its saved history. Record personal exercise maximums and use percentages to calculate template target weights. |
+| [M1: Runnable Demo](https://github.com/open-source-fitness/open-fit/milestone/1) | November 18, 2026 | Sign in, choose catalog exercises, and create, save, reopen, edit, and delete a workout template with fixed target weights and repetitions. Workout logging and maximum-based calculations are deferred to M2. |
+| [M2: MVP](https://github.com/open-source-fitness/open-fit/milestone/2) | December 2, 2026 | Start a workout from a saved template, record actual weights and repetitions, complete or stop the workout, and review its saved history. Record personal exercise maximums and use percentages to calculate template target weights. |
 
 Templates and workout history must persist across app restarts. Editing or reusing
 a template must not alter previously logged workouts. The first milestone covers
@@ -29,7 +29,7 @@ The features below are deferred from the MVP to keep the semester build focused
 on these core workflows within the available development time. Contributors can
 help with implementation, testing, and documentation; see the
 [contribution guide](../CONTRIBUTING.md) and
-[project board](https://github.com/orgs/LibreLift/projects/1) for how to get involved
+[project board](https://github.com/orgs/open-source-fitness/projects/1) for how to get involved
 and what work is currently planned.
 
 ## Next

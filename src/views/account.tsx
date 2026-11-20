@@ -17,7 +17,7 @@ export function AccountScreen() {
   usePreventRemove(model.pending, () => {});
   return (
     <Screen>
-      <Copy kind="label">LIBRELIFT</Copy>
+      <Copy kind="label">OPENFIT</Copy>
       <Copy kind="title">Your account</Copy>
       <Card>
         {editing ? (

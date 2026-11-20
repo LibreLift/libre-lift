@@ -9,6 +9,9 @@
 
 `package.json` selects Expo SDK 58; `package-lock.json` pins installed versions.
 The version in `app.json` is the app release, not the SDK. Use committed versions.
+OpenFit keeps the existing Expo slug and appearance storage key so Expo Go users
+can reopen the app with their saved session and theme. The existing URL scheme
+also keeps app links working across the rename.
 For SDK upgrades, follow [Expo's guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/),
 then run `npx expo install --fix` and `npx expo-doctor`.
 
@@ -22,8 +25,8 @@ Docker and Supabase CLI are optional for hosted development.
 ## Install and launch
 
 ```sh
-git clone https://github.com/LibreLift/libre-lift.git
-cd libre-lift
+git clone https://github.com/open-source-fitness/open-fit.git
+cd open-fit
 npm ci
 cp .env.example .env
 ```

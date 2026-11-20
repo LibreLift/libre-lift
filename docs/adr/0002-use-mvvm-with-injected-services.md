@@ -1,6 +1,6 @@
 # Use MVVM with injected asynchronous services
 
-For [#38](https://github.com/LibreLift/libre-lift/issues/38), UI stubs need to behave
+For [#38](https://github.com/open-source-fitness/open-fit/issues/38), UI stubs need to behave
 like clients of real data while backend features are still being built. Views
 therefore render ViewModel state, and ViewModels consume injected asynchronous
 service interfaces; the app's root supplies sample data and preference-storage

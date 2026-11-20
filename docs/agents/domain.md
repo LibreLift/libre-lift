@@ -1,6 +1,6 @@
 # Domain documentation
 
-LibreLift has one domain context, with a root glossary and shared ADR directory.
+OpenFit has one domain context, with a root glossary and shared ADR directory.
 
 Before exploring domain code, designing a change, or naming concepts in issues,
 tests, and documentation:
