@@ -48,6 +48,12 @@ are established. Their order below follows the CP3 proposal.
    are deferred from the MVP, which provides the underlying logs. Contributors
    can help identify useful statistics and build and test their visualizations.
 
+### Backup and recovery
+
+The [single-device architecture](./adr/0006-store-training-data-on-device.md)
+defers backup and recovery beyond the MVP. This work would let a user recover
+their training data after reinstalling the app or replacing a device.
+
 ## Later
 
 These P2 features are exploratory ideas from the project proposal. They follow the

@@ -52,6 +52,10 @@ There will only be one type of user interacting with this system. They will crea
 
 ## 4. Architecture and components
 
+[ADR 0006](./adr/0006-store-training-data-on-device.md) records the approved move
+to on-device SQLite for [#136](https://github.com/open-source-fitness/open-fit/issues/136).
+The Supabase architecture below describes the implementation before that cutover.
+
 | Component      | Responsibility                                                                   | Talks to                            | Interface (rough)                     |
 | -------------- | -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------- |
 | View           | Displays UI and accepts user input                                               | ViewModel                           | function calls, touch screen elements |
