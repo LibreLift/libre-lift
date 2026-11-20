@@ -1,5 +1,6 @@
 import type { CatalogExercise } from './exercise';
-import { MAX_TARGET_REPS } from '../../supabase/functions/_shared/template-contract';
+// Keep the existing repetition limit in the editor across the storage cutover.
+const MAX_TARGET_REPS = 2147483647;
 
 export interface TemplateSet {
   readonly setNumber: number;
