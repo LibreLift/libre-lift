@@ -4,8 +4,7 @@
 
 - Node.js 24 (`.nvmrc`) and npm. With nvm, run `nvm install` and `nvm use`.
 - Expo Go supporting SDK 58 on an iPhone or Android device.
-- A computer and phone on the same Wi-Fi network; internet for email access and
-  the live exercise catalog.
+- A computer and phone on the same Wi-Fi network and internet for email access.
 
 `package.json` selects Expo SDK 58; `package-lock.json` pins installed versions.
 The version in `app.json` is the app release, not the SDK. Use committed versions.
@@ -30,6 +29,9 @@ cp .env.example .env
 
 Configure `.env` using **Backend setup** below, then run `npm start`.
 This runs `expo start --go` on port 8081 by default; keep the terminal running.
+`npm ci` also generates Metro's illustration index from the pinned RepDB
+package. Run `npm run postinstall` to regenerate it after an install with
+lifecycle scripts disabled.
 
 1. Install the matching Expo Go build; sign into Expo Go and the CLI if prompted
    (`npx expo login`). Android builds are at [Expo Go downloads](https://expo.dev/go).
@@ -64,8 +66,8 @@ test uses Node's SQLite engine and covers reopen, rollback, and retry after a
 commit. For an optional native check before cutover, create one
 `createNativeWorkoutService('template-dev.db')` instance at module scope and
 supply it through the root layout's existing `workoutServiceFactory` injection.
-Use a disposable development build. The existing sign-in and catalog still apply
-in this composition, and local edit and delete are tracked in #140.
+Use a disposable development build with the existing sign-in and bundled
+catalog. Local edit and delete are tracked in #140.
 
 SQLite stores each complete template as one row with its exercise snapshots and
 ordered sets. The creation receipt commits with that row so a retry from the
@@ -79,8 +81,10 @@ serves the hosted adapter and Edge Function until cutover.
   Check invalid codes, resend, and failure recovery; training must stay gated.
 - Create, edit, reorder, and delete templates. Check set targets, Save/Cancel,
   draft preservation across tabs, and discard confirmation when leaving.
-- Search/filter the catalog, inspect images/instructions, and add an exercise to
-  a draft. Check Back preserves browsing state and offline errors are clear.
+- Search and filter the catalog, inspect a single illustration and both poses
+  of a paired exercise, read instructions, and add an exercise to a draft.
+  Check Back preserves browsing state. Use an installed build in airplane mode
+  to check the packaged catalog. This slice still requires account access.
 - Open saved template exercises and expand workout history to review set details.
 - Check keyboard access, increased text size, and Light/Dark/System appearance.
   Reload to confirm appearance, account names, templates, and valid account access persist.
@@ -96,7 +100,7 @@ Workout logging and real workout-history persistence are not implemented.
 - `src/viewmodels/`: Auth, theme, loading/retry, catalog, and shared template drafts.
 - `src/models/`: Template, session, and exercise types with snapshot/validation rules.
 - `src/services/`: Async service contracts, sample training data, Supabase Auth/User
-  access, HTTP catalog mapping, and appearance storage.
+  access, bundled catalog mapping, and appearance storage.
 - `src/theme/`: Shared light/dark colors.
 
 The root layout injects workout, auth, catalog, and preference dependencies.
@@ -105,10 +109,11 @@ services, so later requests use the current authenticated session after refresh.
 The injected persistence service's whole-template update and retry contract is
 documented in [template updates](issue-123-template-updates.md), including its
 disposable local service/HTTP/database check.
-Production template operations use the authenticated persistence service; views do
-not import fixtures. Controlled service factories remain available for tests. Template mutations refresh reads. Catalog requests accept injected HTTP;
-results belong to the open visit, and detail shares its selected record. Adding
-an exercise copies a snapshot into the draft. Catalog caching/retry are deferred.
+Production template operations use the authenticated persistence service, and
+template mutations refresh reads. Controlled service factories remain available
+for tests. The catalog service reads packaged RepDB data, and detail shares the
+open visit's selected record. Adding an exercise copies a snapshot into the
+draft. See [offline catalog verification](issue-138-offline-catalog.md).
 
 ## Backend setup
 

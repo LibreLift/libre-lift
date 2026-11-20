@@ -16,7 +16,7 @@ test('saved template overview opens an exercise image and compact read-only sets
   expect(screen.queryByRole('image')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Bench press. 3 sets' }));
   expect(app.getPathname()).toBe('/templates/exercise');
-  expect(await screen.findByRole('image', { name: 'Bench press — Illustration image' })).toHaveProp('source', { uri: 'https://example.org/saved-exercise.webp' });
+  expect(await screen.findByRole('image', { name: 'Bench press — Illustration image' })).toHaveProp('source', [{ uri: 'https://example.org/saved-exercise.webp' }]);
   expect(screen.getByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
   expect(screen.getByLabelText('Set 3: 8 reps × 115 lb')).toBeVisible();
   expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
@@ -34,6 +34,27 @@ test('saved exercise detail handles missing imagery and missing placements witho
   expect(await screen.findByText('Image unavailable')).toBeVisible();
   expect(screen.getByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
   expect(screen.queryByRole('button', { name: /Add set|Save|Sets for/ })).toBeNull();
+});
+
+test('an earlier RepDB snapshot uses a matching packaged image and keeps its saved name and targets', async () => {
+  const service = createSampleWorkoutService();
+  const template = (await service.listTemplates())[0];
+  await service.updateTemplate(template.id, {
+    ...template,
+    exercises: template.exercises.map((exercise) => ({
+      ...exercise,
+      name: 'Saved bench press',
+      images: { preferred: 'main', main: 'https://exercise-dataset.com/images/flat/bench-press-start.webp' },
+    })),
+  });
+  await renderRouter({
+    appDir: './app',
+    overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> },
+  }, { initialUrl: '/templates/exercise?templateId=upper-body&exerciseId=placement-bench-press' });
+  expect(await screen.findByRole('image', { name: 'Saved bench press — Illustration image' })).toHaveProp(
+    'source', [expect.objectContaining({ __packager_asset: true })],
+  );
+  expect(screen.getByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
 });
 
 test.each([

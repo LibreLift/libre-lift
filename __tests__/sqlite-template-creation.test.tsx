@@ -48,13 +48,14 @@ function service(loseSaveResponse?: () => boolean) {
 }
 
 async function templates(storage = service(), catalogAvailable = true) {
-  const catalogService = createExerciseCatalogService(async () => ({ ok: catalogAvailable, async json() {
+  const catalogService = createExerciseCatalogService(async () => {
+    if (!catalogAvailable) throw new Error('Catalog unavailable');
     return { schema_version: 3, exercises: [{
       id: 'press', name_en: 'Catalog press', equipment: 'barbell',
       primary_muscles: ['pectoralis_major'], instructions_en: ['Lower slowly.'],
-      images: { flat: { start: '/press-start.jpg', peak: '/press-peak.jpg' } },
+      images: { flat: { start: 'images/flat/bench-press-start.webp', peak: 'images/flat/bench-press-peak.webp' } },
     }, { id: 'row', name_en: 'Catalog row', equipment: 'dumbbell' }] };
-  } }));
+  });
   await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout
     workoutServiceFactory={() => storage} catalogService={catalogService} initialSession={authenticatedSession} /> } });
 }
@@ -111,9 +112,10 @@ test('opens a complete saved template after closing the app and reopening the da
   await fireEvent.press(screen.getByRole('button', { name: 'Catalog press. 2 sets' }));
   expect(await screen.findByLabelText('Set 1: 8 reps × 12.5 lb')).toBeVisible();
   expect(screen.getByLabelText('Set 2: 6 reps × 15 lb')).toBeVisible();
-  expect(screen.getByRole('image', { name: 'Catalog press — Start image' })).toBeVisible();
+  const packagedImage = [expect.objectContaining({ __packager_asset: true })];
+  expect(screen.getByRole('image', { name: 'Catalog press — Start image' })).toHaveProp('source', packagedImage);
   await fireEvent.press(screen.getByRole('button', { name: 'Next image' }));
-  expect(screen.getByRole('image', { name: 'Catalog press — Peak image' })).toBeVisible();
+  expect(screen.getByRole('image', { name: 'Catalog press — Peak image' })).toHaveProp('source', packagedImage);
   expect(await reopened.getTemplate(saved.id)).toEqual(saved);
 });
 
