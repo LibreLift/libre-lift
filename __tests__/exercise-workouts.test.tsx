@@ -72,7 +72,7 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
     const placements = screen.getAllByRole('button', { name: 'Bench press. 1 set' });
     await fireEvent.press(placements[0]);
     expect(await screen.findByLabelText('Set 1: 8 reps × 95 lb')).toBeVisible();
-    expect(screen.getByRole('image', { name: 'Bench press — Start image' })).toHaveProp('source', { uri: 'https://example.org/start.webp' });
+    expect(screen.getByRole('image', { name: 'Bench press — Start image' })).toHaveProp('source', [{ uri: 'https://example.org/start.webp' }]);
     expect(screen.getByText(/Chest/)).toBeVisible();
     await testRouter.back();
     await fireEvent.press(screen.getAllByRole('button', { name: 'Bench press. 1 set' })[1]);

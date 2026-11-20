@@ -34,7 +34,7 @@ recorded during #38.
 
 **Goals**
 
-- Connect to RepDB, an external exercise DB, and load its free exercise catalog into the app for use. Besides name, the exercises in the app should be identifiable by target muscles and equipment.
+- Bundle the free RepDB exercise catalog and its illustrations. Users can identify exercises by name, target muscles, and equipment.
 - Support creation, persistence, editing, and deletion of reusable workout templates.
 - Support starting, stopping, and completing workout sessions for an existing template. Workout sessions allow recording repetitions performed and weight used for each session exercise.
 - Support storing "one-rep" maximum weight for certain exercises, and enter weight in template exercises as a percentage of that maximum.
@@ -155,21 +155,18 @@ instructions, and German/Spanish content are retained in the model.
 Usable records are returned with diagnostics for malformed data; an unusable
 response has a distinct failure result.
 
-The #83 implementation adds a temporary standalone catalog screen opened from
-Templates. A separately injected catalog service receives an HTTP request
-function and loads the single JSON document at
-`https://exercise-dataset.com/exercises.json`, using the existing mapper. The
-ViewModel exposes loading, usable results, and defined transport/response failure
+The standalone catalog screen opens from Templates. A separately injected
+catalog service loads the JSON from the pinned RepDB package through the
+existing mapper. The ViewModel exposes loading, usable results, and failure
 states. A virtualized list shows exercises alphabetically with colloquial muscle
 groups and equipment. Primary and secondary groups remain separate; raw muscles
 remain unchanged in the model. Rejected records produce a quiet partial-results
 notice; optional-content diagnostics alone do not. Each visit loads afresh,
-retaining results while open, with Back available on failure. Caching, retries,
-and adding or saving exercises in the template editor remain separate work.
+retaining results while open, with Back available on failure.
 The #84 implementation combines case-insensitive exercise-name search with one
 primary muscle-group filter, defaulting to All muscles. Secondary targets never
 cause filter matches. No-match results offer Clear search and filter without
-another request. Search/filter state survives tab changes while the route stays
+reloading the catalog. Search/filter state survives tab changes while the route stays
 open and resets on leaving and reopening. The catalog and README credit RepDB.
 See [the agreed catalog behavior](./issue-53-exercise-catalog.md).
 
@@ -178,13 +175,14 @@ record from that visit. Start/peak images are swipeable, labeled pages with
 Previous/Next controls; single illustrations use the same uncropped image area.
 Images have independent loading/failure states. Group summaries, equipment, and
 numbered English instructions follow the images. The mounted list retains its
-scroll position and controls beneath detail without another JSON request.
+scroll position and controls beneath detail without reloading the catalog.
 The selected record is released when the catalog list unmounts. A detail route
 without it offers Open catalog. See [the confirmed detail behavior](./catalog-exercise-detail.md).
 
 Template exercises and session exercises each have their own placement identity
 and copy descriptive exercise details and sets, retaining the shared catalog
-identity. Upstream catalog changes cannot alter saved templates or history.
+identity. Bundled illustrations resolve from the image references in each
+snapshot. Catalog updates do not replace the saved exercise details.
 See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 [identity decision](./adr/issue-44-catalog-identity-and-snapshots.md).
 
@@ -194,7 +192,7 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 2. User taps the screen to create a workout template
 3. View layer sends input to ViewModel
 4. ViewModel navigates to template creator business logic, calls service to load catalog
-5. Service calls the Exercise CDN to load catalog, returns data to ViewModel
+5. Service reads the bundled exercise catalog and returns data to ViewModel
 6. ViewModel sends exercises to View
 7. View displays exercises
 8. User chooses exercises, weight, reps
@@ -213,7 +211,7 @@ See the [catalog contract and tracking](./issue-44-exercise-catalog.md) and
 2. View layer sends input to ViewModel
 3. ViewModel navigates to template creator business logic, calls service to load catalog
 4. Service checks if the catalog is cached. If not, call the Service layer
-5. Service calls the Exercise CDN to load catalog, returns data to ViewModel
+5. Service reads the bundled exercise catalog and returns data to ViewModel
 6. CDN throws an error and does not return catalog
 7. Service passes an error to the ViewModel layer
 8. ViewModel layer formats the error message to display on the UI

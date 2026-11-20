@@ -8,9 +8,10 @@ import type { WorkoutService } from '../src/services/workout-service';
 
 const bench = { id: 'bench', name_en: 'Catalog press', equipment: 'barbell', primary_muscles: ['pectoralis_major'] };
 async function builder(service = createSampleWorkoutService(), failure = false) {
-  const catalogService = createExerciseCatalogService(async () => ({ ok: !failure,
-    async json() { return { schema_version: 3, exercises: [bench] }; },
-  }));
+  const catalogService = createExerciseCatalogService(async () => {
+    if (failure) throw new Error('Catalog unavailable');
+    return { schema_version: 3, exercises: [bench] };
+  });
   const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
   return { app, service };
 }
