@@ -82,6 +82,7 @@ out
 .nuxt
 dist
 .output
+/src/services/repdb-assets.generated.ts
 
 # Gatsby files
 .cache/

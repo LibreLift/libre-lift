@@ -26,9 +26,9 @@ async function builder() {
     } },
   });
   const service = createSupabaseWorkoutService(() => client, () => `10000000-0000-4000-8000-${String(++nextId).padStart(12, '0')}`);
-  const catalogService = createExerciseCatalogService(async () => ({ ok: true, async json() {
-    return { schema_version: 3, exercises: [{ id: 'press', name_en: 'Catalog press', equipment: 'barbell', primary_muscles: ['pectoralis_major'] }] };
-  } }));
+  const catalogService = createExerciseCatalogService(async () => ({
+    schema_version: 3, exercises: [{ id: 'press', name_en: 'Catalog press', equipment: 'barbell', primary_muscles: ['pectoralis_major'] }],
+  }));
   await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout
     workoutServiceFactory={() => service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
   return service;
