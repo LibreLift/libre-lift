@@ -62,18 +62,19 @@ No CI workflow, lint, or format script is checked in. Backend checks are below.
 
 Run `npm test -- --runTestsByPath __tests__/sqlite-template-creation.test.tsx`
 to drive the existing Templates screens against a disposable SQLite file. The
-test uses Node's SQLite engine and covers reopen, rollback, and retry after a
-commit. For an optional native check before cutover, create one
-`createNativeWorkoutService('template-dev.db')` instance at module scope and
-supply it through the root layout's existing `workoutServiceFactory` injection.
+test uses Node's SQLite engine and covers create, edit, reorder, Cancel, delete,
+reopen, rollback, and retry after a commit. For an optional native check before
+cutover, create one `createNativeWorkoutService('template-dev.db')` instance at
+module scope and supply it through the root layout's `workoutServiceFactory` injection.
 Use a disposable development build with the existing sign-in and bundled
-catalog. Local edit and delete are tracked in #140.
+catalog.
 
 SQLite stores each complete template as one row with its exercise snapshots and
-ordered sets. The creation receipt commits with that row so a retry from the
-same open draft can recover the saved template. The app model owns draft
-validation and the local service uses it directly. The Supabase wire contract
-serves the hosted adapter and Edge Function until cutover.
+ordered sets. Creation and edit receipts commit with that row so a retry from the
+same open draft can recover its saved result without reversing a newer edit.
+Deleting a template keeps its receipts so delayed saves cannot restore it.
+The app model owns draft validation and the local service uses it directly.
+The Supabase wire contract serves the hosted adapter and Edge Function until cutover.
 
 ## Device review
 

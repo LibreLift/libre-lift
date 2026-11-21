@@ -21,6 +21,7 @@ const migrations = [
     content TEXT NOT NULL
   );
   CREATE INDEX template_creation_receipts_template ON template_creation_receipts (template_id);`,
+  `ALTER TABLE template_creation_receipts RENAME TO template_save_receipts;`,
 ];
 
 export function createLocalDatabase(openConnection: () => Promise<LocalSqliteConnection>) {

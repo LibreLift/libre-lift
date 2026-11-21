@@ -4,8 +4,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { cleanup, fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
+import { Alert } from 'react-native';
+import { act, cleanup, fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
+import type { TemplateContent } from '../src/models/workout';
 import { createExerciseCatalogService } from '../src/services/exercise-catalog-service';
 import { createSqliteWorkoutService } from '../src/services/sqlite-workout-service';
 import { authenticatedSession } from '../test-support/authenticated-router';
@@ -155,7 +157,7 @@ test('rolls back the complete save when SQLite rejects the creation receipt', as
   // Fail after the aggregate has been written, before the transaction can commit.
   const fixture = new DatabaseSync(join(directory, 'training.db'));
   try {
-    fixture.exec(`CREATE TRIGGER fail_receipt BEFORE INSERT ON template_creation_receipts
+    fixture.exec(`CREATE TRIGGER fail_receipt BEFORE INSERT ON template_save_receipts
       BEGIN SELECT RAISE(ABORT, 'injected write failure'); END;`);
     await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
     await screen.findByRole('button', { name: 'Retry save' });
@@ -170,4 +172,207 @@ test('rolls back the complete save when SQLite rejects the creation receipt', as
   expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
   expect(screen.getByLabelText('Set 2: 6 reps × 20 lb')).toBeVisible();
   expect(await service().listTemplates()).toHaveLength(1);
+});
+
+test('cancels a draft and durably saves reordered and replaced exercises in the existing list position', async () => {
+  const storage = service();
+  await templates(storage);
+  await startDraft('Original plan');
+  await addExercise('Catalog press', 1, [['12.5', '8'], ['15', '6']]);
+  await addExercise('Catalog row', 2, [['20', '5']]);
+  await addExercise('Catalog press', 3, [['0', '12']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Edit template details' });
+  const [original] = await storage.listTemplates();
+  await storage.createTemplate({ ...original, title: 'Another plan' });
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Discarded title');
+  await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 3 up' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+  expect(await screen.findByText('Original plan')).toBeVisible();
+  expect(await storage.getTemplate(original.id)).toEqual(original);
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Edited plan');
+  await fireEvent.changeText(screen.getByLabelText('Template description'), 'Second day');
+  await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 3 up' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 2 up' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Remove exercise 3' }));
+  await addExercise('Catalog row', 3, [['25', '10']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Edit template details' });
+
+  await cleanup();
+  for (const connection of connections.splice(0)) connection.close();
+  const reopened = service();
+  await templates(reopened, false);
+  const [edited, other] = await reopened.listTemplates();
+  expect(edited).toMatchObject({
+    id: original.id, createdAt: original.createdAt, title: 'Edited plan', description: 'Second day',
+    exercises: [original.exercises[2], original.exercises[0], {
+      name: 'Catalog row', sets: [{ setNumber: 1, targetWeight: 25, targetReps: 10 }],
+    }],
+  });
+  expect(edited.exercises[2].id).toMatch(/^[a-f0-9-]{36}$/);
+  expect(original.exercises.map(exercise => exercise.id)).not.toContain(edited.exercises[2].id);
+  expect(other.title).toBe('Another plan');
+  await fireEvent.press(await screen.findByRole('button', { name: /Edited plan.*3 exercises · 4 sets/ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
+});
+
+test('replays a metadata save after a lost response without reverting a newer whole-template edit', async () => {
+  let loseResponse = false;
+  const storage = service(() => {
+    const lose = loseResponse;
+    loseResponse = false;
+    return lose;
+  });
+  await templates(storage);
+  await startDraft('Original plan');
+  await addExercise('Catalog press', 1, [['12.5', '8']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Edit template details' });
+  const [original] = await storage.listTemplates();
+  const context = {};
+  const details = { title: '  Renamed plan  ', description: 'Saved description' };
+
+  loseResponse = true;
+  await expect(storage.updateTemplateDetails(original.id, details, context)).rejects.toThrow('Save response lost after commit');
+  const renamed = { ...original, title: 'Renamed plan', description: 'Saved description' };
+  expect(await storage.getTemplate(original.id)).toEqual(renamed);
+
+  const other = service();
+  const newer = await other.updateTemplate(original.id, {
+    ...renamed, title: 'Latest plan', exercises: [{
+      ...original.exercises[0], sets: [{ setNumber: 1, targetWeight: 25, targetReps: 6 }],
+    }],
+  });
+  expect(await storage.updateTemplateDetails(original.id, details, context)).toEqual(renamed);
+  expect(await other.getTemplate(original.id)).toEqual(newer);
+
+  await cleanup();
+  await templates(service(), false);
+  await fireEvent.press(await screen.findByRole('button', { name: /^Latest plan/ }));
+  expect(await screen.findByText('Saved description')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 6 reps × 25 lb')).toBeVisible();
+});
+
+test('retains details after a lost delete response and retries without restoring a deleted template', async () => {
+  let loseResponse = false;
+  const storage = service(() => {
+    const lose = loseResponse;
+    loseResponse = false;
+    return lose;
+  });
+  const creation = {};
+  const content: TemplateContent = {
+    title: 'Saved plan', description: '',
+    exercises: [{
+      id: 'draft-press', catalogId: 'repdb:press', name: 'Saved press', primaryMuscles: [], secondaryMuscles: [],
+      equipment: { kind: 'none' }, sets: [{ setNumber: 1, targetWeight: 12.5, targetReps: 8 }],
+    }],
+  };
+  const saved = await storage.createTemplate(content, creation);
+  const edit = {};
+  const changes = { ...saved, title: 'Edited plan' };
+  await storage.updateTemplate(saved.id, changes, edit);
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  try {
+    await templates(storage);
+    await fireEvent.press(await screen.findByRole('button', { name: /^Edited plan/ }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Delete template' }));
+    expect(alert).toHaveBeenLastCalledWith('Delete template?', 'Delete “Edited plan”?', expect.any(Array));
+    await act(async () => alert.mock.calls.at(-1)?.[2]?.find(button => button.text === 'Cancel')?.onPress?.());
+    expect(await storage.getTemplate(saved.id)).toEqual(changes);
+
+    loseResponse = true;
+    await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+    await act(async () => alert.mock.calls.at(-1)?.[2]?.find(button => button.text === 'Delete')?.onPress?.());
+    await screen.findByRole('button', { name: 'Retry delete' });
+    expect(screen.getByText('Edited plan')).toBeVisible();
+    expect(await service().getTemplate(saved.id)).toBeNull();
+    await expect(storage.updateTemplate(saved.id, changes, edit)).rejects.toThrow('couldn’t be found');
+    await expect(storage.updateTemplate(saved.id, { ...changes, title: 'Stale draft' })).rejects.toThrow('couldn’t be found');
+    await expect(storage.updateTemplateDetails(saved.id, changes)).rejects.toThrow('couldn’t be found');
+    await expect(storage.createTemplate(content, creation)).rejects.toThrow('couldn’t be found');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Retry delete' }));
+    await act(async () => alert.mock.calls.at(-1)?.[2]?.find(button => button.text === 'Delete')?.onPress?.());
+    expect(await screen.findByText('No templates yet.')).toBeVisible();
+    await cleanup();
+    for (const connection of connections.splice(0)) connection.close();
+    await templates(service());
+    expect(await screen.findByText('No templates yet.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Create template' })).toBeEnabled();
+  } finally {
+    alert.mockRestore();
+  }
+});
+
+test('keeps the previous template intact when an edit receipt fails and retains the draft for retry', async () => {
+  const storage = service();
+  await templates(storage);
+  await startDraft('Original plan');
+  await addExercise('Catalog press', 1, [['12.5', '8']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  const [original] = await storage.listTemplates();
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Edited plan');
+  await addExercise('Catalog row', 2, [['25', '6']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Move exercise 2 up' }));
+
+  const fixture = new DatabaseSync(join(directory, 'training.db'));
+  try {
+    fixture.exec(`CREATE TRIGGER fail_receipt BEFORE INSERT ON template_save_receipts
+      BEGIN SELECT RAISE(ABORT, 'injected write failure'); END;`);
+    await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByRole('button', { name: 'Retry save' });
+    expect(await service().getTemplate(original.id)).toEqual(original);
+    expect(screen.getByLabelText('Template title')).toHaveDisplayValue('Edited plan');
+    expect(screen.getByText('Catalog row')).toBeVisible();
+  } finally {
+    fixture.exec('DROP TRIGGER IF EXISTS fail_receipt');
+    fixture.close();
+  }
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
+  expect(await screen.findByText('Edited plan')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Catalog row. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 6 reps × 25 lb')).toBeVisible();
+});
+
+test('recovers a lost whole-template save in the editor without overwriting a newer save', async () => {
+  let loseResponse = false;
+  const storage = service(() => {
+    const lose = loseResponse;
+    loseResponse = false;
+    return lose;
+  });
+  await templates(storage);
+  await startDraft('Original plan');
+  await addExercise('Catalog press', 1, [['12.5', '8']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  const [original] = await storage.listTemplates();
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'First edit');
+  await addExercise('Catalog row', 2, [['25', '6']]);
+
+  loseResponse = true;
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Retry save' });
+  expect(screen.getByLabelText('Template title')).toHaveDisplayValue('First edit');
+  const [committed] = await service().listTemplates();
+  expect(committed).toMatchObject({
+    id: original.id, title: 'First edit',
+    exercises: [original.exercises[0], { name: 'Catalog row' }],
+  });
+  const other = service();
+  const newer = await other.updateTemplate(original.id, { ...original, title: 'Newer edit' });
+  await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
+  expect(await screen.findByText('Newer edit')).toBeVisible();
+  expect(screen.queryByText('Catalog row')).toBeNull();
+  expect(await service().getTemplate(original.id)).toEqual(newer);
 });
