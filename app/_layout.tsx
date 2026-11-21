@@ -3,78 +3,53 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from 'expo-router/react-navigation';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useEffect, useState, type PropsWithChildren } from 'react';
-import { randomUUID } from 'expo-crypto';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { createSupabaseWorkoutService } from '../src/services/supabase-workout-service';
-import type { WorkoutService } from '../src/services/workout-service';
-import { themePreferenceStore } from '../src/services/theme-preference-store';
-import { ThemeProvider, useTheme } from '../src/viewmodels/theme';
-import { AuthProvider, useAuth } from '../src/viewmodels/auth';
-import type { AuthClock } from '../src/services/auth-clock';
-import type { Account, AuthService, AuthSession } from '../src/services/auth-service';
-import { createAppSupabaseRuntime } from '../src/services/supabase-client';
-import { WorkoutProvider } from '../src/viewmodels/workout-provider';
+import { useState } from 'react';
+import type { DisplayNameStore } from '../src/services/display-name-store';
 import { bundledExerciseCatalogService, type ExerciseCatalogService } from '../src/services/exercise-catalog-service';
-import { AppearanceSettings } from '../src/views/account';
-import { Button } from '../src/views/ui';
-import { SignOutButton } from '../src/views/sign-out';
+import { createNativeServices } from '../src/services/native-services';
+import { themePreferenceStore } from '../src/services/theme-preference-store';
+import type { WorkoutService } from '../src/services/workout-service';
+import { DisplayNameProvider, useDisplayName } from '../src/viewmodels/display-name';
 import { ExerciseCatalogProvider } from '../src/viewmodels/exercise-catalog';
+import { ThemeProvider, useTheme } from '../src/viewmodels/theme';
+import { WorkoutProvider } from '../src/viewmodels/workout-provider';
+import { Button, FormError } from '../src/views/ui';
 
-export default function RootLayout({ authService, initialSession, authClock, catalogService: providedCatalogService, workoutServiceFactory }: {
-  authService?: AuthService;
-  initialSession?: AuthSession;
-  authClock?: AuthClock;
+export default function RootLayout({
+  catalogService = bundledExerciseCatalogService, displayNameStore, workoutServiceFactory,
+}: {
   catalogService?: ExerciseCatalogService;
-  workoutServiceFactory?: (account: Account | null) => WorkoutService;
+  displayNameStore?: DisplayNameStore;
+  workoutServiceFactory?: () => WorkoutService;
 } = {}) {
-  const [runtime] = useState(createAppSupabaseRuntime);
-  const [authentication] = useState(() => authService ?? runtime.authService);
-  const [catalogService] = useState(() => providedCatalogService ?? bundledExerciseCatalogService);
+  const [services] = useState(() => {
+    const native = createNativeServices();
+    return {
+      displayNameStore: displayNameStore ?? native.displayNameStore,
+      workoutService: workoutServiceFactory?.() ?? native.workoutService,
+    };
+  });
+
   return (
-    <AuthProvider service={authentication} initialSession={initialSession} clock={authClock}>
-      <ThemeProvider store={themePreferenceStore}>
-        <AccountScope factory={workoutServiceFactory} catalogService={catalogService} getClient={runtime.getClient}>
+    <ThemeProvider store={themePreferenceStore}>
+      <DisplayNameProvider store={services.displayNameStore}>
+        <WorkoutProvider service={services.workoutService}>
+          <ExerciseCatalogProvider service={catalogService}>
             <Navigation />
-        </AccountScope>
-      </ThemeProvider>
-    </AuthProvider>
+          </ExerciseCatalogProvider>
+        </WorkoutProvider>
+      </DisplayNameProvider>
+    </ThemeProvider>
   );
-}
-
-type AccountServicesProps = PropsWithChildren<{ catalogService: ExerciseCatalogService;
-  factory?: (account: Account | null) => WorkoutService; account?: Account | null; getClient: () => SupabaseClient }>;
-
-function AccountScope({ children, ...props }: AccountServicesProps) {
-  const { accountGeneration, session } = useAuth();
-  return <AccountServices key={`${accountGeneration}:${session?.account.id ?? 'none'}`} {...props} account={session?.account ?? null}>{children}</AccountServices>;
-}
-
-function AccountServices({ factory, account = null, catalogService, getClient, children }: AccountServicesProps) {
-  const { accountGeneration, isCurrentAccount, reportSessionEnded } = useAuth();
-  const [service] = useState(() => factory ? factory(account) : createSupabaseWorkoutService(getClient, randomUUID, {
-    accountId: account?.id ?? null,
-    isCurrent: () => isCurrentAccount(account?.id ?? null, accountGeneration),
-    onSessionEnded: error => reportSessionEnded(account?.id ?? null, accountGeneration, error),
-  }));
-  return <WorkoutProvider service={service}>
-    <ExerciseCatalogProvider service={catalogService}>{children}</ExerciseCatalogProvider>
-  </WorkoutProvider>;
 }
 
 function Navigation() {
   const { scheme, colors, ready } = useTheme();
-  const { session, restoring, loadingRestoredAccount, accountGeneration, notice } = useAuth();
-  const router = useRouter();
-  const [loadingSettings, setLoadingSettings] = useState(false);
-  const entry = session ? (session.account.name ? '/templates' : '/account-name') : '/sign-in';
-  useEffect(() => {
-    if (ready && !restoring && accountGeneration > 0) router.replace(entry);
-  }, [ready, restoring, accountGeneration, entry, router]);
+  const { displayName, status, retry } = useDisplayName();
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   return (
     <NavigationThemeProvider
@@ -92,36 +67,22 @@ function Navigation() {
       }}
     >
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      {ready && !restoring ? (
-        <View style={{ flex: 1 }}>
-          {session && notice ? <SafeAreaView edges={['top']} style={{ backgroundColor: colors.background }}>
-            <Text accessibilityRole="alert" style={{ color: colors.text, padding: 16 }}>{notice}</Text>
-          </SafeAreaView> : null}
+      {ready && status === 'ready' ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
-          <Stack.Protected guard={!session}><Stack.Screen name="sign-in" options={{ headerShown: true, title: 'Account access' }} /></Stack.Protected>
-          <Stack.Protected guard={!!session?.account.name}><Stack.Screen name="(tabs)" /></Stack.Protected>
-          <Stack.Protected guard={!!session && !session.account.name}>
-            <Stack.Screen name="account-name" options={{ headerShown: true, title: 'Account name' }} />
+          <Stack.Protected guard={displayName === null}>
+            <Stack.Screen name="onboarding" options={{ headerShown: true, title: 'Welcome' }} />
           </Stack.Protected>
-          <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
+          <Stack.Protected guard={displayName !== null}>
+            <Stack.Screen name="(tabs)" />
+          </Stack.Protected>
         </Stack>
-        </View>
       ) : (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24, gap: 16 }}>
-            {ready && loadingSettings ? <>
-              <AppearanceSettings />
-              <Button label="Back to account loading" onPress={() => setLoadingSettings(false)} />
-            </> : <>
-              <ActivityIndicator accessibilityLabel={ready ? 'Loading account access' : 'Loading appearance'} color={colors.text} />
-              {ready ? <>
-                <Text style={{ color: colors.text, fontSize: 24 }}>{loadingRestoredAccount ? 'Loading your account' : 'Restoring your account'}</Text>
-                <Button label="Settings" onPress={() => setLoadingSettings(true)} />
-                <SignOutButton />
-              </> : null}
-            </>}
-          </ScrollView>
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: colors.background }}>
+          {status === 'error' ? <>
+            <FormError message="Your local data couldn’t be opened. Please try again." />
+            <Button label="Try again" onPress={retry} />
+          </> : <ActivityIndicator accessibilityLabel="Loading your settings" color={colors.text} />}
         </SafeAreaView>
       )}
     </NavigationThemeProvider>

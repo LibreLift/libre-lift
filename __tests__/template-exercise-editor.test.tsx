@@ -1,11 +1,11 @@
-import { renderAuthenticatedRouter, authenticatedSession } from '../test-support/authenticated-router';
+import { renderLocalRouter, namedDisplayStore } from '../test-support/local-router';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
 import { createSampleWorkoutService } from '../src/services/sample-workout-service';
 
 test('template overview opens a separate set editor and keeps edits in the shared draft until Save', async () => {
   const service = createSampleWorkoutService();
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> } });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} displayNameStore={namedDisplayStore} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
@@ -35,7 +35,7 @@ test('template overview opens a separate set editor and keeps edits in the share
 
 test('removing every set and returning keeps an incomplete draft, while Cancel restores the saved template', async () => {
   const service = createSampleWorkoutService();
-  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> } });
+  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} displayNameStore={namedDisplayStore} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 2' }));
@@ -62,7 +62,7 @@ test('removing every set and returning keeps an incomplete draft, while Cancel r
 });
 
 test('direct exercise-editor entry without an active draft offers a safe return to Templates', async () => {
-  const app = await renderAuthenticatedRouter({ initialUrl: '/templates/edit-exercise?draftId=upper-body&exerciseId=placement-bench-press' });
+  const app = await renderLocalRouter({ initialUrl: '/templates/edit-exercise?draftId=upper-body&exerciseId=placement-bench-press' });
   expect(await screen.findByText('This exercise draft is no longer available.')).toBeVisible();
   expect(screen.queryByLabelText('Exercise 1 set 1 reps')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Open templates' }));

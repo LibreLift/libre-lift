@@ -22,6 +22,10 @@ const migrations = [
   );
   CREATE INDEX template_creation_receipts_template ON template_creation_receipts (template_id);`,
   `ALTER TABLE template_creation_receipts RENAME TO template_save_receipts;`,
+  `CREATE TABLE local_profile (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    display_name TEXT NOT NULL CHECK (length(trim(display_name)) > 0)
+  );`,
 ];
 
 export function createLocalDatabase(openConnection: () => Promise<LocalSqliteConnection>) {

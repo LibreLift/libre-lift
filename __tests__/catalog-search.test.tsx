@@ -1,4 +1,4 @@
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
 import { createSampleWorkoutService } from '../src/services/sample-workout-service';
@@ -14,7 +14,7 @@ const exercises = [
 async function openCatalog() {
   const loadPayload = jest.fn(async () => ({ schema_version: 3, count: exercises.length, exercises }));
   const catalogService = createExerciseCatalogService(loadPayload);
-  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={createSampleWorkoutService} initialSession={authenticatedSession} catalogService={catalogService} /> } });
+  await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={createSampleWorkoutService} displayNameStore={namedDisplayStore} catalogService={catalogService} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: 'Exercise catalog' }));
   await screen.findByText('Bench press');
   return loadPayload;

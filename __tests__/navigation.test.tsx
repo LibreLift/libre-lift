@@ -1,8 +1,8 @@
-import { renderAuthenticatedRouter } from '../test-support/authenticated-router';
+import { renderLocalRouter } from '../test-support/local-router';
 import { fireEvent, screen, testRouter, waitFor } from 'expo-router/testing-library';
 
-test('opens templates first and navigates template, history, account, and settings screens', async () => {
-  const app = await renderAuthenticatedRouter();
+test('opens templates first and navigates template, sample history and settings screens', async () => {
+  const app = await renderLocalRouter();
   const upperBody = await screen.findByRole('button', {
     name: 'Upper body. A little push. A little pull. 2 exercises · 5 sets',
   });
@@ -19,22 +19,23 @@ test('opens templates first and navigates template, history, account, and settin
   expect(screen.getAllByText('Target · 8 reps × 115 lb')).toHaveLength(2);
   await testRouter.back('/workouts');
 
-  await fireEvent.press(screen.getByRole('button', { name: /^Account, tab/ }));
-  await fireEvent.press(screen.getByRole('button', { name: /Settings/ }));
+  await fireEvent.press(screen.getByRole('button', { name: /^Settings, tab/ }));
+  expect(app.getPathname()).toBe('/settings');
   await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
   await waitFor(() => expect(screen.getByRole('radio', { name: /Dark/ })).toBeChecked());
-  await testRouter.back('/account');
-  expect(screen.getByText('alex@example.com')).toBeVisible();
+  expect(screen.getByText('Alex')).toBeVisible();
+  expect(screen.getByRole('radio', { name: 'Light' })).toBeEnabled();
+  expect(screen.getByRole('radio', { name: 'System' })).toBeEnabled();
   expect(screen.getByRole('button', { name: 'Edit name' })).toBeVisible();
 });
 
 test('an unknown template shows a useful missing-record state', async () => {
-  await renderAuthenticatedRouter( { initialUrl: '/templates/missing' });
+  await renderLocalRouter( { initialUrl: '/templates/missing' });
   expect(await screen.findByText('This template couldn’t be found.')).toBeVisible();
 });
 
 test('session exercises expand independently, survive tab changes, and reset on reopening', async () => {
-  await renderAuthenticatedRouter( { initialUrl: '/workouts' });
+  await renderLocalRouter( { initialUrl: '/workouts' });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   const bench = await screen.findByRole('button', { name: 'Bench press, 3 sets, Primary muscles · Chest · Secondary muscles · Triceps · Equipment · Barbell', expanded: false });
   expect(screen.queryByText('Recorded · 6 reps × 115 lb')).toBeNull();

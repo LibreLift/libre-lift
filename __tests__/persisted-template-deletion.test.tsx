@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Alert } from 'react-native';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { createSupabaseWorkoutService } from '../src/services/supabase-workout-service';
 
 const template = {
@@ -37,7 +37,7 @@ test('persisted deletion keeps detail after a lost response and retries safely t
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   try {
     const app = await renderRouter({ appDir: './app', overrides: {
-      _layout: () => <RootLayout initialSession={authenticatedSession} workoutServiceFactory={() => service} />,
+      _layout: () => <RootLayout displayNameStore={namedDisplayStore} workoutServiceFactory={() => service} />,
     } });
     await fireEvent.press(await screen.findByRole('button', { name: /Saved plan/ }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Delete template' }));
@@ -77,7 +77,7 @@ test('a malformed deletion acknowledgment retains saved detail and offers retry'
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   try {
     const app = await renderRouter({ appDir: './app', overrides: {
-      _layout: () => <RootLayout initialSession={authenticatedSession} workoutServiceFactory={() => service} />,
+      _layout: () => <RootLayout displayNameStore={namedDisplayStore} workoutServiceFactory={() => service} />,
     } });
     await fireEvent.press(await screen.findByRole('button', { name: /Saved plan/ }));
     await fireEvent.press(await screen.findByRole('button', { name: 'Delete template' }));

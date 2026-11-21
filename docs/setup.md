@@ -4,19 +4,16 @@
 
 - Node.js 24 (`.nvmrc`) and npm. With nvm, run `nvm install` and `nvm use`.
 - Expo Go supporting SDK 58 on an iPhone or Android device.
-- A computer and phone on the same Wi-Fi network and internet for email access.
+- A computer and phone on the same Wi-Fi network when using Expo Go over LAN.
 
 `package.json` selects Expo SDK 58; `package-lock.json` pins installed versions.
 The version in `app.json` is the app release, not the SDK. Use committed versions.
 For SDK upgrades, follow [Expo's guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/),
 then run `npx expo install --fix` and `npx expo-doctor`.
 
-Supabase settings are required to sign in and reach training screens; without
-settings, the app opens account access and appearance Settings only. Templates
-and account names persist in Supabase. Workout history remains clearly labeled
-sample data until session persistence is available. The template endpoint and
-committed migrations must be deployed before using the new app.
-Docker and Supabase CLI are optional for hosted development.
+The app uses on-device SQLite and a bundled RepDB exercise catalog. First launch
+requires a display name. App development requires no backend credentials or
+environment file.
 
 ## Install and launch
 
@@ -24,11 +21,10 @@ Docker and Supabase CLI are optional for hosted development.
 git clone https://github.com/LibreLift/libre-lift.git
 cd libre-lift
 npm ci
-cp .env.example .env
+npm start
 ```
 
-Configure `.env` using **Backend setup** below, then run `npm start`.
-This runs `expo start --go` on port 8081 by default; keep the terminal running.
+`npm start` runs `expo start --go` on port 8081 by default; keep the terminal running.
 `npm ci` also generates Metro's illustration index from the pinned RepDB
 package. Run `npm run postinstall` to regenerate it after an install with
 lifecycle scripts disabled.
@@ -43,7 +39,7 @@ For configured simulators/emulators, use `npm run ios` (Xcode) or
 `npm run android` (Android Studio).
 If LAN access fails, check permissions, VPN, firewall, and Wi-Fi device isolation.
 Alternatively, install `npm install --global @expo/ngrok` and run
-`npm start -- --tunnel`; tunneling requires internet. Restart Expo after `.env` edits.
+`npm start -- --tunnel`; tunneling requires internet.
 
 ## Checks
 
@@ -55,68 +51,63 @@ npx expo export --platform ios --platform android --output-dir dist
 ```
 
 These check types, Jest behavior, Expo dependencies, and native JavaScript bundles.
-Jest needs no backend or credentials. Bundling does not replace device review.
-No CI workflow, lint, or format script is checked in. Backend checks are below.
+Jest needs no backend or credentials. Bundling verifies package contents. Use an
+installed build for device review. No CI workflow, lint, or format script is checked in.
 
 ## Local template storage development
 
 Run `npm test -- --runTestsByPath __tests__/sqlite-template-creation.test.tsx`
-to drive the existing Templates screens against a disposable SQLite file. The
-test uses Node's SQLite engine and covers create, edit, reorder, Cancel, delete,
-reopen, rollback, and retry after a commit. For an optional native check before
-cutover, create one `createNativeWorkoutService('template-dev.db')` instance at
-module scope and supply it through the root layout's `workoutServiceFactory` injection.
-Use a disposable development build with the existing sign-in and bundled
-catalog.
+to drive the existing routes against disposable database files. Node's SQLite
+engine runs the app's SQL through a substitute for the Expo native bridge. The
+suite covers onboarding, renaming, migration of an existing local database,
+template CRUD, reorder, Cancel, reopen, rollback, and retry after a commit.
 
-SQLite stores each complete template as one row with its exercise snapshots and
-ordered sets. Creation and edit receipts commit with that row so a retry from the
-same open draft can recover its saved result without reversing a newer edit.
-Deleting a template keeps its receipts so delayed saves cannot restore it.
-The app model owns draft validation and the local service uses it directly.
-The Supabase wire contract serves the hosted adapter and Edge Function until cutover.
+The display name and workout templates share one versioned database. Each
+template is stored as one row with its exercise snapshots and ordered sets.
+Save receipts commit with the template so a retry from the same open draft can
+recover its result without reversing a newer edit. Deletion keeps those receipts
+so delayed saves cannot restore the template.
 
 ## Device review
 
-- Sign in by email code, complete name onboarding, and edit the account name.
-  Check invalid codes, resend, and failure recovery; training must stay gated.
-- Create, edit, reorder, and delete templates. Check set targets, Save/Cancel,
-  draft preservation across tabs, and discard confirmation when leaving.
-- Search and filter the catalog, inspect a single illustration and both poses
-  of a paired exercise, read instructions, and add an exercise to a draft.
-  Check Back preserves browsing state. Use an installed build in airplane mode
-  to check the packaged catalog. This slice still requires account access.
-- Open saved template exercises and expand workout history to review set details.
-- Check keyboard access, increased text size, and Light/Dark/System appearance.
-  Reload to confirm appearance, account names, templates, and valid account access persist.
+- Use a fresh installed build in airplane mode. Check the storage and backup
+  notice, enter a display name, and confirm the greeting and empty template list.
+- Search and filter RepDB, read instructions, and view both poses of a paired
+  exercise. Add an exercise to a template and save fixed weight and rep targets.
+- Force-close and reopen the app. Confirm the name and template details survived.
+  Edit the template, check Save/Cancel and draft behavior across tabs, and confirm
+  deletion persists after reopening.
+- Install an update over a build with saved data and check that the display name,
+  templates, and appearances carry forward. Change the display name in Settings
+  and confirm existing templates still open.
+- Check keyboard access, increased text size, Light/Dark/System appearance, and
+  the sample labels on workout history and detail.
 
-Saved templates survive app restarts and updates. After reinstall, email OTP access
-to the same account/backend restores them. Unsaved drafts remain temporary.
-Workout logging and real workout-history persistence are not implemented.
+Unsaved drafts remain temporary. Local training data is tied to the installation.
+Backup and recovery are planned after the MVP. Persistent workout logging is
+future work. See the [#141 verification record](issue-141-local-onboarding.md).
 
 ## Frontend structure
 
-- `app/`: Expo Router account access, name onboarding, Settings, and guarded tabs.
+- `app/`: Expo Router onboarding, Settings, and guarded training tabs.
 - `src/views/`: Native screens rendering ViewModel state.
-- `src/viewmodels/`: Auth, theme, loading/retry, catalog, and shared template drafts.
-- `src/models/`: Template, session, and exercise types with snapshot/validation rules.
-- `src/services/`: Async service contracts, sample training data, Supabase Auth/User
-  access, bundled catalog mapping, and appearance storage.
+- `src/viewmodels/`: Display name, theme, loading/retry, catalog, and template drafts.
+- `src/models/`: Templates, sessions, exercises, snapshots, and validation.
+- `src/services/`: Async service contracts, SQLite, sample workout history,
+  bundled catalog mapping, and appearance storage.
 - `src/theme/`: Shared light/dark colors.
 
-The root layout injects workout, auth, catalog, and preference dependencies.
-Its lazy Supabase runtime exposes the same client to authentication and feature
-services, so later requests use the current authenticated session after refresh.
-The injected persistence service's whole-template update and retry contract is
-documented in [template updates](issue-123-template-updates.md), including its
-disposable local service/HTTP/database check.
-Production template operations use the authenticated persistence service, and
-template mutations refresh reads. Controlled service factories remain available
-for tests. The catalog service reads packaged RepDB data, and detail shares the
-open visit's selected record. Adding an exercise copies a snapshot into the
-draft. See [offline catalog verification](issue-138-offline-catalog.md).
+The root layout supplies the display-name store, workout service, bundled catalog,
+and appearance store. The name store and workout service share a lazy SQLite
+connection. Catalog details share the open visit's selected record. Adding an
+exercise copies a snapshot into the draft. See the
+[offline catalog verification](issue-138-offline-catalog.md).
 
-## Backend setup
+## Legacy backend setup
+
+These instructions cover the retained hosted adapter and backend tools from the
+pre-cutover app. The production app runs independently of this setup.
+
 
 ### Configure the hosted connection
 
@@ -209,7 +200,7 @@ Device review and hosted delivery verification remain separate from these checks
 
 The optional [persisted template read check](./issue-121-template-reads.md) exercises
 the production service through a disposable local Edge Function and database.
-Production template composition uses that service by default.
+The pre-cutover app used that service by default.
 The same check now covers [atomic creation and retry safety](./issue-122-template-creation.md),
 including an injected late-write failure in the disposable database.
 It also verifies [retry-safe deletion](./issue-124-template-deletion.md), including

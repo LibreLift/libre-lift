@@ -2,20 +2,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router/js-tabs';
 import { PlatformPressable } from 'expo-router/react-navigation';
 import { useTheme } from '../../src/viewmodels/theme';
-import { useAuth } from '../../src/viewmodels/auth';
 import { useWorkouts } from '../../src/viewmodels/workout-provider';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { savingTemplate } = useWorkouts();
-  const { pending } = useAuth();
-  const navigationLocked = savingTemplate || pending;
   return (
     <Tabs
       backBehavior="history"
       screenListeners={{
         tabPress: (event) => {
-          if (navigationLocked) event.preventDefault();
+          if (savingTemplate) event.preventDefault();
         },
       }}
       screenOptions={{
@@ -27,9 +24,9 @@ export default function TabsLayout() {
         tabBarButton: (props) => (
           <PlatformPressable
             {...props}
-            disabled={navigationLocked}
-            accessibilityState={{ ...props.accessibilityState, disabled: navigationLocked }}
-            style={[props.style, { opacity: navigationLocked ? 0.5 : 1 }]}
+            disabled={savingTemplate}
+            accessibilityState={{ ...props.accessibilityState, disabled: savingTemplate }}
+            style={[props.style, { opacity: savingTemplate ? 0.5 : 1 }]}
           />
         ),
       }}
@@ -53,11 +50,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="account"
+        name="settings"
         options={{
-          title: 'Account',
+          title: 'Settings',
           tabBarIcon: ({ focused, size }) => (
-            <Ionicons name="person-outline" color={focused ? colors.text : colors.secondary} size={size} />
+            <Ionicons name="settings-outline" color={focused ? colors.text : colors.secondary} size={size} />
           ),
         }}
       />
