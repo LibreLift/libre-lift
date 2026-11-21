@@ -15,5 +15,5 @@ integrations. The existing backend record retains its original number.
 - [Issue 44: Separate exercise placements from catalog identity and preserve saved details](./issue-44-catalog-identity-and-snapshots.md)
 
 The [UI foundation decision summary](../ui-foundation.md) records the remaining
-agreed scope and presentation choices. [Design section 6](../design.md#6-technology-choices-and-alternatives-considered)
-documents the provider and authentication choices for the Supabase implementation.
+agreed scope and presentation choices. The [pre-cutover design](https://github.com/open-source-fitness/open-fit/blob/63065abb17793d2b217d3b5d3161d1ae143da0ce/docs/design.md#6-technology-choices-and-alternatives-considered)
+records the provider and authentication choices for the Supabase implementation.

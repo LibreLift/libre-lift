@@ -28,11 +28,11 @@ history still shows labeled samples.
   5,327,488 bytes for iOS and 5,317,600 for Android. Source maps contain no
   Supabase runtime or legacy account routes.
 
-The archived account behavior remains in the repository for #142.
+At the time of this verification, the retired account implementation was
+still present in the worktree.
 `auth-navigation.test.tsx`, `auth-sessions.test.tsx`, and
 `production-template-access.test.tsx` exercise the retired router and are
-excluded from the active Jest and TypeScript checks. Hosted backend tooling is
-tracked by #143.
+excluded from the active Jest and TypeScript checks for this run.
 
 ## Physical-device evidence pending
 

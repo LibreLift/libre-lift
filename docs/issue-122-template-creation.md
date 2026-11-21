@@ -1,8 +1,8 @@
 # Atomic template creation (#122)
 
-> Historical delivery notes for this slice. The final production composition and
-> current verification commands are documented in [setup](setup.md) and the
-> [#125 validation record](issue-125-template-production.md).
+> Historical delivery notes for this slice. See the
+> [#125 validation record](issue-125-template-production.md) for the pre-cutover
+> composition and [historical backend notes](maintainers.md) for its setup.
 
 The persistence service now creates complete templates through the authenticated
 `workout-templates` Edge Function and an invoker-rights database transaction. The
