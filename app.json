@@ -10,7 +10,8 @@
       "expo-font",
       "expo-asset",
       "expo-status-bar",
-      "expo-image"
+      "expo-image",
+      "expo-sqlite"
     ],
     "ios": {
       "supportsTablet": true
