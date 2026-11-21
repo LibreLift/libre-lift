@@ -1,5 +1,9 @@
 # Database migrations
 
+> These migrations describe the former Supabase backend. See the
+> [historical backend notes](../../docs/maintainers.md) for the pre-cutover
+> checkout and [setup](../../docs/setup.md) for the SQLite workflow.
+
 A migration is a SQL file describing a database structure change, such as adding
 a table. Contributors can create and test migrations locally; only maintainers
 apply them to the shared hosted project. Committed migrations define the schema.
@@ -81,7 +85,7 @@ test-file path; do not reset or redirect tests to a shared/hosted database.
 
 ## Create and test locally
 
-Start the local backend using [setup](../../docs/setup.md), then run from the
+At the pre-cutover checkout, start the local backend using its setup guide, then run from the
 repository root:
 
 ```sh
@@ -116,5 +120,5 @@ shared, add a new migration to correct it instead of changing its history.
 After pulling other contributors' migrations, run local `db push --include-all` to apply them,
 or `db reset` if you want to discard local data and rebuild.
 
-See the [maintainer guide](../../docs/maintainers.md) for hosted target checks,
+See the historical maintainer guide linked above for hosted target checks,
 deployments, and capturing edits made in the hosted dashboard.

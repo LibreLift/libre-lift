@@ -1,6 +1,8 @@
 import { useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
+import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ExerciseImages } from '../models/exercise';
+import { exerciseImageSource } from '../services/exercise-image-source';
 import { useTheme } from '../viewmodels/theme';
 import { Button, Copy } from './ui';
 
@@ -10,8 +12,8 @@ export function CatalogExerciseImages({ images, name }: { images?: ExerciseImage
   const [active, setActive] = useState(0);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const pages = images?.preferred === 'pair'
-    ? [{ label: 'Start', uri: images.pair.start }, { label: 'Peak', uri: images.pair.peak }]
-    : [{ label: 'Illustration', uri: images?.main }];
+    ? [{ label: 'Start', reference: images.pair.start }, { label: 'Peak', reference: images.pair.peak }]
+    : [{ label: 'Illustration', reference: images?.main }];
 
   function showPage(index: number) {
     setActive(index);
@@ -37,7 +39,7 @@ export function CatalogExerciseImages({ images, name }: { images?: ExerciseImage
       >
         {pages.map((page, index) => (
           <View key={page.label} style={{ width }} accessibilityElementsHidden={index !== active} importantForAccessibility={index === active ? 'auto' : 'no-hide-descendants'}>
-            <CatalogImage key={page.uri} uri={page.uri} name={name} label={page.label} />
+            <CatalogImage key={page.reference} reference={page.reference} name={name} label={page.label} />
           </View>
         ))}
       </ScrollView>
@@ -52,8 +54,8 @@ export function CatalogExerciseImages({ images, name }: { images?: ExerciseImage
   );
 }
 
-function CatalogImage({ uri, name, label }: { uri: string | undefined; name: string; label: string }) {
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'failed'>(uri ? 'loading' : 'failed');
+function CatalogImage({ reference, name, label }: { reference: string | undefined; name: string; label: string }) {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'failed'>(reference ? 'loading' : 'failed');
   const { colors } = useTheme();
   return (
     <View style={[styles.image, { backgroundColor: colors.surface }]}>
@@ -62,8 +64,8 @@ function CatalogImage({ uri, name, label }: { uri: string | undefined; name: str
           accessible
           accessibilityRole="image"
           accessibilityLabel={`${name} — ${label} image`}
-          source={{ uri }}
-          resizeMode="contain"
+          source={exerciseImageSource(reference)}
+          contentFit="contain"
           style={StyleSheet.absoluteFill}
           onLoad={() => setStatus('loaded')}
           onError={() => setStatus('failed')}

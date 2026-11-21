@@ -21,6 +21,11 @@ The name a user chooses to display for their account. It can be changed without
 changing the email address used to sign in.
 _Avoid_: Username when implying a unique sign-in identifier
 
+**Display name**:
+The name the user chooses for their personalized greeting in the single-device
+app.
+_Avoid_: Account name for the single-device app
+
 ### Planning
 
 **Exercise**:
@@ -84,6 +89,10 @@ _Avoid_: Round
 One occurrence of performing a workout based on a workout template. “Session” is
 its short name.
 _Avoid_: Workout when the distinction from a workout template matters
+
+**Active workout session**:
+A workout session the user has started and can continue until they finish or
+stop it.
 
 **Session exercise**:
 A placement of a catalog exercise within a workout session, with its own identity,

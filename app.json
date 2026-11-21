@@ -9,7 +9,9 @@
       "expo-router",
       "expo-font",
       "expo-asset",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-image",
+      "expo-sqlite"
     ],
     "ios": {
       "supportsTablet": true

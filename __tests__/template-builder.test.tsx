@@ -1,4 +1,4 @@
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { Alert } from 'react-native';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
@@ -8,10 +8,11 @@ import type { WorkoutService } from '../src/services/workout-service';
 
 const bench = { id: 'bench', name_en: 'Catalog press', equipment: 'barbell', primary_muscles: ['pectoralis_major'] };
 async function builder(service = createSampleWorkoutService(), failure = false) {
-  const catalogService = createExerciseCatalogService(async () => ({ ok: !failure,
-    async json() { return { schema_version: 3, exercises: [bench] }; },
-  }));
-  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
+  const catalogService = createExerciseCatalogService(async () => {
+    if (failure) throw new Error('Catalog unavailable');
+    return { schema_version: 3, exercises: [bench] };
+  });
+  const app = await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} catalogService={catalogService} displayNameStore={namedDisplayStore} /> } });
   return { app, service };
 }
 async function editSample() {

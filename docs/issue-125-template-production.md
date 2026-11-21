@@ -104,6 +104,6 @@ did not independently operate the physical device.
 
 The PR-comment Codex review loop, independent non-author contributor approval,
 maintainer merge, and the repository's post-merge author/non-author production
-audit remain separate completion requirements. See [setup](setup.md) for
-repeatable isolated checks and the [maintainer rollout checklist](maintainers.md#template-rollout-audit)
+audit remain separate completion requirements. See the [historical backend notes](maintainers.md) for
+isolated checks and the [maintainer rollout checklist](maintainers.md#template-rollout-audit)
 for deployment ordering and the individual device/hosted audit scenarios.
