@@ -1,0 +1,6 @@
+1. Yes one device is the product model. Later backup syncs or viewing across devices might be explored as an add on, but the core model is using one device consistently at the gym.
+2. Right now Supabase only contains my personal test data. It can safely be thrown away.
+3. Backup and recovery is a roadmap item.
+4. Recommend 
+5. Make it required so that the experience feels personalized and custom
+6. Yes, settle this before continuing
