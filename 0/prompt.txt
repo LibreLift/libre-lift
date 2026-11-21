@@ -1,0 +1,6 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3Af4e6e541-e713-4212-9a52-df3b0b47358e (Retire repository Supabase tooling) [completed]:
+Implemented [#143](https://github.com/open-source-fitness/open-fit/issues/143) on `chore/143-sqlite-workflow` at `f744254d3a0d51c513f05e726d16d63dc9f655bd`. The [worktree](/Users/james/.t3/worktrees/open-fit/t3-139153bc-8df488d882ac5b5d) is clean. The `feat/136-local-storage` tip was still `644b22d`, so no merge was needed.
+
+Removed the backend-only npm commands and Supabase environment template. Updated the [SQLite setup and offline audit](/Users/james/.t3/worktrees/open-fit/t3-139153bc-8df488d882ac5b5d/docs/setup.md) and [design](/Users/james/.t3/worktrees/open-fit/t3-139153bc-8df488d882ac5b5d/docs/design.md). Retained the ADRs and marked dormant backend artifacts as historical.
+
+From a clean setup, `npm ci`, Metro startup, typecheck, all 109 Jest tests, all 20 Expo Doctor checks, and both offline exports passed. The installed-build audit remains pending because no physical iOS or Android device was connected.
