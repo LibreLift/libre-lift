@@ -424,6 +424,25 @@ test('cancels a draft and durably saves reordered and replaced exercises in the 
   expect(await screen.findByLabelText('Set 1: 12 reps × 0 lb')).toBeVisible();
 });
 
+test.each(['foreign', 'invented'])('rejects a saved placement with a %s UUID without changing the target template', async (identity) => {
+  const storage = service();
+  const content: TemplateContent = {
+    title: 'Saved plan', description: '',
+    exercises: [{
+      id: 'draft-press', catalogId: 'repdb:press', name: 'Saved press', primaryMuscles: [], secondaryMuscles: [],
+      equipment: { kind: 'none' }, sets: [{ setNumber: 1, targetWeight: 12.5, targetReps: 8 }],
+    }],
+  };
+  const saved = await storage.createTemplate(content);
+  const other = await storage.createTemplate({ ...content, title: 'Other plan' });
+  const id = identity === 'foreign' ? other.exercises[0].id : '10000000-0000-4000-8000-000000000001';
+
+  await expect(storage.updateTemplate(saved.id, {
+    ...content, title: 'Changed plan', exercises: [{ ...content.exercises[0], id }],
+  })).rejects.toThrow('This exercise placement does not belong to this template.');
+  expect(await storage.listTemplates()).toEqual([saved, other]);
+});
+
 test('replays a metadata save after a lost response without reverting a newer whole-template edit', async () => {
   let loseResponse = false;
   const storage = service(() => {
@@ -561,7 +580,7 @@ test('retries a rolled-back edit and separately recovers a failed reload after t
   expect(await screen.findByLabelText('Set 1: 6 reps × 25 lb')).toBeVisible();
 });
 
-test('recovers a lost whole-template save in the editor without overwriting a newer save', async () => {
+test('recovers a lost whole-template save after a newer save removes a saved placement', async () => {
   let loseResponse = false;
   const storage = service(() => {
     const lose = loseResponse;
@@ -587,9 +606,11 @@ test('recovers a lost whole-template save in the editor without overwriting a ne
     exercises: [original.exercises[0], { name: 'Catalog row' }],
   });
   const other = service();
-  const newer = await other.updateTemplate(original.id, { ...original, title: 'Newer edit' });
+  const newer = await other.updateTemplate(original.id, {
+    ...committed, title: 'Newer edit', exercises: committed.exercises.slice(1),
+  });
   await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
   expect(await screen.findByText('Newer edit')).toBeVisible();
-  expect(screen.queryByText('Catalog row')).toBeNull();
+  expect(screen.queryByText('Catalog press')).toBeNull();
   expect(await service().getTemplate(original.id)).toEqual(newer);
 });
