@@ -1,0 +1,8 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3A21e5522d-10ec-4cde-aab8-087ff72a997e (Fix SQLite placement identity validation) [completed]:
+SQLite template updates now reject foreign and invented saved placement UUIDs while accepting temporary draft IDs. An unchanged retry returns its committed receipt before checking current placement membership, so a newer edit that removed a placement stays intact. [Service change](/Users/james/.t3/worktrees/open-fit/t3-d2d0271f-af25a6e7972e697c/src/services/sqlite-workout-service.ts:86)
+
+Both invalid UUID tests reproduced the bug before the fix. After merging integration tip `3b55c4f`, all 16 SQLite tests, TypeScript checking, and `git diff --check` passed.
+
+- Fix commit `77ca0677ea8c2229485567c23fb5c7c763b89cec`
+- Branch `t3/validate-placement-ids` at merge commit `1db074d2e14a7b287552a661813319a4b66a6516`
+- [Clean worktree](/Users/james/.t3/worktrees/open-fit/t3-d2d0271f-af25a6e7972e697c)
