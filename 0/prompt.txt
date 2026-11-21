@@ -1,0 +1,5 @@
+<environment_context>
+  <current_date>2026-11-20</current_date>
+  <timezone>America/Denver</timezone>
+  <filesystem><workspace_roots><root>/Users/james/.t3/worktrees/open-fit/t3-f7fb88c6-c306a9bb3b4ca272</root></workspace_roots><permission_profile type="disabled"><file_system type="unrestricted" /></permission_profile></filesystem>
+</environment_context>
