@@ -1,0 +1,1 @@
+Yep, that captures it. Go ahead and use $to-spec to convert this into a spec. Also, I meant to use $grill-with-docs instead of Grill-Me earlier so that an ADR would be generated. Make one retroactively please
