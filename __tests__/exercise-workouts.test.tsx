@@ -1,4 +1,4 @@
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import { createTemplateExercise, createSessionExercise, type WorkoutTemplate, type WorkoutSession } from '../src/models/workout';
 import { mapRepDbResponse } from '../src/services/repdb-exercise-mapper';
@@ -60,7 +60,7 @@ test.each(['/templates/plan', '/workouts/log'])('saved exercises remain readable
     });
   }
   await renderRouter({
-    _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} />,
+    _layout: () => <RootLayout workoutServiceFactory={() => service} displayNameStore={namedDisplayStore} />,
     'templates/[id]': TemplateDetailScreen,
     'templates/exercise': TemplateExerciseDetailScreen,
     'workouts/[id]': WorkoutDetailScreen,

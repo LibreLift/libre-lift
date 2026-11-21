@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { createSupabaseWorkoutService } from '../src/services/supabase-workout-service';
 import type { WorkoutTemplate } from '../src/models/workout';
 
@@ -39,7 +39,7 @@ test('a lost update retains the draft; a committed update with a failed reload o
   const service = createSupabaseWorkoutService(() => client,
     () => `10000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`);
   await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout
-    workoutServiceFactory={() => service} initialSession={authenticatedSession} /> } });
+    workoutServiceFactory={() => service} displayNameStore={namedDisplayStore} /> } });
   await fireEvent.press(await screen.findByRole('button', { name: /^Original/ }));
   await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
   await fireEvent.changeText(screen.getByLabelText('Template title'), 'Edited');

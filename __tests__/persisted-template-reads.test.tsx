@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { createSupabaseWorkoutService } from '../src/services/supabase-workout-service';
 
 const template = {
@@ -31,7 +31,7 @@ test('persisted template request failures retain Retry and saved detail uses its
     return json(action === 'list' ? [template] : template);
   });
   await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout initialSession={authenticatedSession} workoutServiceFactory={() => service} />,
+    _layout: () => <RootLayout displayNameStore={namedDisplayStore} workoutServiceFactory={() => service} />,
   } });
   expect(await screen.findByText('We couldn’t load this. Please try again.')).toBeVisible();
   expect(screen.queryByText('No templates yet.')).toBeNull();
@@ -46,7 +46,7 @@ test('persisted template request failures retain Retry and saved detail uses its
 test('empty accounts and missing persisted details keep the existing creation and missing states', async () => {
   const service = serviceFor(({ action }) => json(action === 'list' ? [] : null));
   await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout initialSession={authenticatedSession} workoutServiceFactory={() => service} />,
+    _layout: () => <RootLayout displayNameStore={namedDisplayStore} workoutServiceFactory={() => service} />,
   } });
   expect(await screen.findByText('No templates yet.')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Create template' })).toBeEnabled();
@@ -59,7 +59,7 @@ test('malformed nested saved descriptions fail visibly instead of becoming trust
     translations: { de: { name: 'Bankdrücken', instructions: [42] } },
   }] }]));
   await renderRouter({ appDir: './app', overrides: {
-    _layout: () => <RootLayout initialSession={authenticatedSession} workoutServiceFactory={() => service} />,
+    _layout: () => <RootLayout displayNameStore={namedDisplayStore} workoutServiceFactory={() => service} />,
   } });
   expect(await screen.findByText('We couldn’t load this. Please try again.')).toBeVisible();
   expect(screen.queryByRole('button', { name: /Saved plan/ })).toBeNull();

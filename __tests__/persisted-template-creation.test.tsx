@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
 import { createExerciseCatalogService } from '../src/services/exercise-catalog-service';
 import { createSupabaseWorkoutService } from '../src/services/supabase-workout-service';
 import type { WorkoutTemplate } from '../src/models/workout';
@@ -30,7 +30,7 @@ async function builder() {
     schema_version: 3, exercises: [{ id: 'press', name_en: 'Catalog press', equipment: 'barbell', primary_muscles: ['pectoralis_major'] }],
   }));
   await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout
-    workoutServiceFactory={() => service} catalogService={catalogService} initialSession={authenticatedSession} /> } });
+    workoutServiceFactory={() => service} catalogService={catalogService} displayNameStore={namedDisplayStore} /> } });
   return service;
 }
 async function draft(title: string) {

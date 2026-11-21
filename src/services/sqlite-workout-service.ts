@@ -1,5 +1,5 @@
 import { validateTemplate, type TemplateContent, type TemplateDetails, type WorkoutTemplate } from '../models/workout';
-import { createLocalDatabase, type LocalSqliteConnection } from './local-database';
+import type { createLocalDatabase, LocalSqliteConnection } from './local-database';
 import { createSampleWorkoutService } from './sample-workout-service';
 import type { TemplateSaveContext, WorkoutService } from './workout-service';
 
@@ -34,10 +34,9 @@ function findTemplate(db: LocalSqliteConnection, id: string) {
 }
 
 export function createSqliteWorkoutService(
-  openConnection: () => Promise<LocalSqliteConnection>,
+  database: ReturnType<typeof createLocalDatabase>,
   newId: () => string,
 ): WorkoutService {
-  const database = createLocalDatabase(openConnection);
   const samples = createSampleWorkoutService();
   const drafts = new WeakMap<TemplateSaveContext, SaveDraft>();
 

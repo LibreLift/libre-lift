@@ -46,15 +46,33 @@ recorded during #38.
 
 ## 3. System-context diagram
 
-There will only be one type of user interacting with this system. They will create workout templates and record workout sessions. The CDN/API that provides a catalog of exercises will interact with the system by providing the exercise catalog via HTTP. Lastly, Supabase will interact with the system by providing the authentication service, database and data access layer, and serverless backend to handle HTTP requests for auth and data access.
-
-![diagram](./design-images/system-context-diagram.jpg)
+A user plans workouts in the app. The app reads its exercise catalog from the
+bundled RepDB package and keeps training data in SQLite on the device.
 
 ## 4. Architecture and components
 
+### On-device template storage (#141)
+
 [ADR 0006](./adr/0006-store-training-data-on-device.md) records the approved move
-to on-device SQLite for [#136](https://github.com/open-source-fitness/open-fit/issues/136).
-The Supabase architecture below describes the implementation before that cutover.
+to SQLite for [#136](https://github.com/open-source-fitness/open-fit/issues/136).
+The Expo root layout supplies async workout, display name, and catalog services
+to the existing MVVM frontend. Templates and the display name use the same private
+`expo-sqlite` connection and versioned migrations. A missing display name routes
+to onboarding. Saving it unlocks the tabs and opens Templates. Editing it in
+Settings updates the greeting without remounting the workout and draft state.
+
+A fresh database starts with an empty template list. The cutover begins with
+local data and skips hosted records. Each template stores its ordered sets and
+exercise snapshots; save receipts share the template transaction for retry
+safety. Appearance uses the existing device preference store. Workout history
+shows labeled sample data pending workout session persistence.
+
+### Pre-cutover architecture
+
+The Supabase architecture and account behavior below describe the app before
+the SQLite cutover.
+
+![Pre-cutover system context](./design-images/system-context-diagram.jpg)
 
 | Component      | Responsibility                                                                   | Talks to                            | Interface (rough)                     |
 | -------------- | -------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------- |

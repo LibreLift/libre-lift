@@ -3,14 +3,21 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID as mockRandomUUID } from 'node:crypto';
 import { Alert } from 'react-native';
 import { act, cleanup, fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
 import type { TemplateContent } from '../src/models/workout';
 import { createExerciseCatalogService } from '../src/services/exercise-catalog-service';
+import { createLocalDatabase } from '../src/services/local-database';
 import { createSqliteWorkoutService } from '../src/services/sqlite-workout-service';
-import { authenticatedSession } from '../test-support/authenticated-router';
+import { namedDisplayStore } from '../test-support/local-router';
+
+jest.mock('expo-crypto', () => ({ randomUUID: () => mockRandomUUID() }));
+
+jest.mock('expo-sqlite', () => ({
+  openDatabaseAsync: (name: string) => mockOpenDatabase(name),
+}));
 
 // Jest replaces the native bridge. SQL still runs against a real, disposable database file.
 const { DatabaseSync } = process.getBuiltinModule('node:sqlite') as typeof import('node:sqlite');
@@ -24,30 +31,138 @@ beforeEach(() => {
 
 afterEach(async () => {
   await cleanup();
+  jest.restoreAllMocks();
   for (const connection of connections) connection.close();
   rmSync(directory, { recursive: true, force: true });
 });
 
-function service(loseSaveResponse?: () => boolean) {
-  return createSqliteWorkoutService(async () => {
-    const db = new DatabaseSync(join(directory, 'training.db'));
-    connections.push(db);
-    return {
-      async execAsync(sql) {
-        db.exec(sql);
-        if (sql === 'COMMIT' && loseSaveResponse?.()) throw new Error('Save response lost after commit');
-      },
-      async getAllAsync<T>(sql: string, ...params: (string | number)[]) {
-        return db.prepare(sql).all(...params) as T[];
-      },
-      async getFirstAsync<T>(sql: string, ...params: (string | number)[]) {
-        return (db.prepare(sql).get(...params) as T | undefined) ?? null;
-      },
-      async runAsync(sql, ...params) { db.prepare(sql).run(...params); },
-      async closeAsync() { db.close(); connections.splice(connections.indexOf(db), 1); },
-    };
-  }, randomUUID);
+async function mockOpenDatabase(name: string, loseSaveResponse?: () => boolean) {
+  const db = new DatabaseSync(join(directory, name));
+  connections.push(db);
+  return {
+    async execAsync(sql: string) {
+      db.exec(sql);
+      if (sql === 'COMMIT' && loseSaveResponse?.()) throw new Error('Save response lost after commit');
+    },
+    async getAllAsync<T>(sql: string, ...params: (string | number)[]) {
+      return db.prepare(sql).all(...params) as T[];
+    },
+    async getFirstAsync<T>(sql: string, ...params: (string | number)[]) {
+      return (db.prepare(sql).get(...params) as T | undefined) ?? null;
+    },
+    async runAsync(sql: string, ...params: (string | number)[]) { db.prepare(sql).run(...params); },
+    async closeAsync() { db.close(); connections.splice(connections.indexOf(db), 1); },
+  };
 }
+
+function service(loseSaveResponse?: () => boolean) {
+  return createSqliteWorkoutService(createLocalDatabase(() => mockOpenDatabase('training.db', loseSaveResponse)), mockRandomUUID);
+}
+
+test('requires a local name, then saves and reopens a template with the bundled catalog and no fetch', async () => {
+  const fetch = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'));
+  await renderRouter('./app', { initialUrl: '/workouts' });
+  expect(await screen.findByText('Training data is stored on this device. Backup is unavailable.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Got it' }));
+  expect(screen.queryByText('Training data is stored on this device. Backup is unavailable.')).toBeNull();
+  const name = await screen.findByLabelText('Display name');
+  expect(screen.queryByRole('button', { name: /^Workouts, tab/ })).toBeNull();
+  await fireEvent.changeText(name, '   ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(screen.getByRole('alert')).toHaveTextContent('Enter a display name.');
+
+  await fireEvent.changeText(name, '  Alex  ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(await screen.findByText('Hi, Alex!')).toBeVisible();
+  expect(await screen.findByText('No templates yet.')).toBeVisible();
+  await startDraft('Offline plan');
+  await fireEvent.press(screen.getByRole('button', { name: 'Add exercise' }));
+  await fireEvent.changeText(await screen.findByRole('search', { name: 'Search exercises' }), 'Barbell bench press');
+  await fireEvent.press(screen.getByRole('button', { name: /^View Barbell Bench Press\./ }));
+  expect(screen.getByRole('image', { name: 'Barbell Bench Press — Start image' })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Next image' }));
+  expect(screen.getByRole('image', { name: 'Barbell Bench Press — Peak image' })).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Add to template' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 weight (lb)'), '25');
+  await fireEvent.changeText(screen.getByLabelText('Exercise 1 set 1 reps'), '8');
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Edit template details' });
+  await fireEvent.press(screen.getByRole('button', { name: /^Workouts, tab/ }));
+  expect(await screen.findByText('Sample workout history')).toBeVisible();
+
+  await cleanup();
+  for (const connection of connections.splice(0)) connection.close();
+  const app = await renderRouter('./app');
+  expect(await screen.findByText('Hi, Alex!')).toBeVisible();
+  expect(app.getPathname()).toBe('/templates');
+  await fireEvent.press(await screen.findByRole('button', { name: /^Offline plan/ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
+  await fireEvent.changeText(screen.getByLabelText('Template title'), 'Revised plan');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByText('Revised plan')).toBeVisible();
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  await fireEvent.press(screen.getByRole('button', { name: 'Delete template' }));
+  await act(async () => alert.mock.lastCall?.[2]?.find(button => button.text === 'Delete')?.onPress?.());
+  expect(await screen.findByText('No templates yet.')).toBeVisible();
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('an earlier SQLite database keeps its template through onboarding, a rename, and relaunch', async () => {
+  const previous = new DatabaseSync(join(directory, 'open-fit.db'));
+  try {
+    previous.exec(`
+      CREATE TABLE workout_templates (
+        sequence INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, content TEXT NOT NULL
+      );
+      CREATE TABLE template_save_receipts (operation_id TEXT PRIMARY KEY NOT NULL, template_id TEXT NOT NULL, content TEXT NOT NULL);
+      CREATE INDEX template_creation_receipts_template ON template_save_receipts (template_id);
+      PRAGMA user_version = 2;
+    `);
+    previous.prepare('INSERT INTO workout_templates (id, created_at, content) VALUES (?, ?, ?)').run(
+      '10000000-0000-4000-8000-000000000001', '2026-11-19T00:00:00.000Z', JSON.stringify({
+        title: 'Earlier plan', description: 'Saved in schema version 2',
+        exercises: [{
+          id: '20000000-0000-4000-8000-000000000001', catalogId: 'repdb:press', name: 'Saved press',
+          primaryMuscles: [], secondaryMuscles: [], equipment: { kind: 'none' },
+          sets: [{ setNumber: 1, targetWeight: 12.5, targetReps: 8 }],
+        }],
+      }),
+    );
+  } finally {
+    previous.close();
+  }
+
+  await renderRouter('./app');
+  await fireEvent.press(await screen.findByRole('button', { name: 'Got it' }));
+  const name = await screen.findByLabelText('Display name');
+  await fireEvent.changeText(name, 'Alex');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(await screen.findByRole('button', { name: /^Earlier plan/ })).toBeVisible();
+
+  await fireEvent.press(screen.getByRole('button', { name: /^Settings, tab/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit name' }));
+  expect(screen.getByLabelText('Display name')).toHaveDisplayValue('Alex');
+  await fireEvent.changeText(screen.getByLabelText('Display name'), ' Blair ');
+  await fireEvent.press(screen.getByRole('button', { name: 'Save name' }));
+  expect(await screen.findByText('Blair')).toBeVisible();
+  await fireEvent.press(screen.getByRole('radio', { name: 'Dark' }));
+  expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
+  await fireEvent.press(screen.getByRole('button', { name: /^Templates, tab/ }));
+  expect(await screen.findByText('Hi, Blair!')).toBeVisible();
+
+  await cleanup();
+  for (const connection of connections.splice(0)) connection.close();
+  await renderRouter('./app');
+  expect(await screen.findByText('Hi, Blair!')).toBeVisible();
+  await fireEvent.press(await screen.findByRole('button', { name: /^Earlier plan/ }));
+  expect(await screen.findByText('Saved in schema version 2')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Saved press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 8 reps × 12.5 lb')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: /^Settings, tab/ }));
+  expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
+});
 
 async function templates(storage = service(), catalogAvailable = true) {
   const catalogService = createExerciseCatalogService(async () => {
@@ -59,7 +174,7 @@ async function templates(storage = service(), catalogAvailable = true) {
     }, { id: 'row', name_en: 'Catalog row', equipment: 'dumbbell' }] };
   });
   await renderRouter({ appDir: './app', overrides: { _layout: () => <RootLayout
-    workoutServiceFactory={() => storage} catalogService={catalogService} initialSession={authenticatedSession} /> } });
+    workoutServiceFactory={() => storage} catalogService={catalogService} displayNameStore={namedDisplayStore} /> } });
 }
 
 async function startDraft(title: string) {
