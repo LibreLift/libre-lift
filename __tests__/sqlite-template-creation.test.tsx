@@ -71,9 +71,10 @@ function service(loseSaveResponse?: () => boolean, beforeRead?: (sql: string) =>
 test('requires a local name, then saves and reopens a template with the bundled catalog and no fetch', async () => {
   const fetch = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'));
   await renderRouter('./app', { initialUrl: '/workouts' });
-  expect(await screen.findByText('Training data is stored on this device. Backup is unavailable.')).toBeVisible();
+  const notice = 'Training data is stored on this device. OpenFit doesn’t offer backup or recovery yet.';
+  expect(await screen.findByText(notice)).toBeVisible();
   await fireEvent.press(screen.getByRole('button', { name: 'Got it' }));
-  expect(screen.queryByText('Training data is stored on this device. Backup is unavailable.')).toBeNull();
+  expect(screen.queryByText(notice)).toBeNull();
   const name = await screen.findByLabelText('Display name');
   expect(screen.queryByRole('button', { name: /^Workouts, tab/ })).toBeNull();
   await fireEvent.changeText(name, '   ');
