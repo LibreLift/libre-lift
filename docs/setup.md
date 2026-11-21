@@ -58,6 +58,23 @@ These check types, Jest behavior, Expo dependencies, and native JavaScript bundl
 Jest needs no backend or credentials. Bundling does not replace device review.
 No CI workflow, lint, or format script is checked in. Backend checks are below.
 
+## Local template storage development
+
+Run `npm test -- --runTestsByPath __tests__/sqlite-template-creation.test.tsx`
+to drive the existing Templates screens against a disposable SQLite file. The
+test uses Node's SQLite engine and covers reopen, rollback, and retry after a
+commit. For an optional native check before cutover, create one
+`createNativeWorkoutService('template-dev.db')` instance at module scope and
+supply it through the root layout's existing `workoutServiceFactory` injection.
+Use a disposable development build with the existing sign-in and bundled
+catalog. Local edit and delete are tracked in #140.
+
+SQLite stores each complete template as one row with its exercise snapshots and
+ordered sets. The creation receipt commits with that row so a retry from the
+same open draft can recover the saved template. The app model owns draft
+validation and the local service uses it directly. The Supabase wire contract
+serves the hosted adapter and Edge Function until cutover.
+
 ## Device review
 
 - Sign in by email code, complete name onboarding, and edit the account name.
