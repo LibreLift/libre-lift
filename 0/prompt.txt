@@ -1,0 +1,6 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3Acbaf899d-600a-448b-8fcc-b2e01929fbbe (Implement SQLite template creation and reads) [completed]:
+Implemented #139 and committed it to `feat/139-sqlite-templates` at `77d3dafe3d019f1142c5c77c0e41d00915935bd1`. The branch includes integration tip `ef027b4`, and the [worktree](/Users/james/.t3/worktrees/open-fit/t3-f1ee6a2c-79bccbd69384097b) is clean.
+
+The injected service supports local template creation, listing, and detail through versioned `expo-sqlite` storage. Template data and its creation receipt commit atomically, so a failed save preserves the draft and retrying a lost commit response keeps the original template identity. The local service uses app-owned validation. Production still uses Supabase until cutover, and edit and delete remain #140.
+
+**Verification** — TypeScript, all 144 Jest tests, all 20 Expo Doctor checks, and iOS and Android exports passed. The exports also passed with SQLite injected. Router tests used real SQLite files to verify reopen, rollback, duplicate-safe retries, and saved illustration references. Physical-device acceptance remains pending because no supported device was connected.
