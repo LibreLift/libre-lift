@@ -30,7 +30,7 @@ function toContent(draft: TemplateDraft): TemplateContent {
 export function useTemplateEditorViewModel(id: string) {
   const isNew = id === 'new';
   const resource = useTemplateViewModel(isNew ? null : id);
-  const { savingTemplate, saveTemplate, deleteTemplate, setDraft: updateDraft, setDraftDirty } = useWorkouts();
+  const { savingTemplate, saveTemplate, deleteTemplate, setDraft: updateDraft } = useWorkouts();
   const draftEditor = useTemplateDraftViewModel(id);
   const { draft } = draftEditor;
   const setDraft = (update: SetStateAction<TemplateDraft | null>) => updateDraft(id, update);
@@ -84,7 +84,6 @@ export function useTemplateEditorViewModel(id: string) {
   }
   const baseline = isNew ? { title: '', description: '', exercises: [] } : template ? toDraft(template) : null;
   const dirty = !!draft && !!baseline && JSON.stringify(draft) !== JSON.stringify(baseline);
-  useEffect(() => { setDraftDirty(id, dirty); return () => setDraftDirty(id, false); }, [id, dirty, setDraftDirty]);
   return { ...resource, id, deleted, removeTemplate, createdId, error, dirty,
     ...draftEditor, startEditing, cancelEditing, save };
 }

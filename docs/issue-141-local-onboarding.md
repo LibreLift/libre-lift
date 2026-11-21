@@ -27,6 +27,10 @@ history still shows labeled samples.
   19,804,900 bytes before application packaging. The Hermes bundles measure
   5,327,488 bytes for iOS and 5,317,600 for Android. Source maps contain no
   Supabase runtime or legacy account routes.
+- Android release assembly passed from a clean copy of cutover revision
+  `644b22d` using Expo prebuild and Gradle. The resulting universal APK was
+  127,559,668 bytes. All 1,231 packaged RepDB illustrations matched their source
+  WebP files by SHA-256. The APK was inspected locally without installing it.
 
 At the time of this verification, the retired account implementation was
 still present in the worktree.

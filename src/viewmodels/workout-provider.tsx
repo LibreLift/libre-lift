@@ -10,8 +10,6 @@ interface WorkoutContextValue {
   service: WorkoutService;
   templatesVersion: number;
   savingTemplate: boolean;
-  hasUnsavedChanges: boolean;
-  setDraftDirty(id: string, dirty: boolean): void;
   deleteTemplate(id: string): Promise<void>;
   saveTemplate(id: string | null, details: TemplateContent): Promise<WorkoutTemplate>;
 }
@@ -23,10 +21,6 @@ export function WorkoutProvider({ service, children }: PropsWithChildren<{ servi
   const drafts = Object.fromEntries(Object.entries(draftRecords).map(([id, draft]) => [id, draft.content]));
   const placementNumber = useRef(0);
   const nextPlacementId = useCallback(() => `placement-${++placementNumber.current}`, []);
-  const [dirtyDrafts, setDirtyDrafts] = useState<Readonly<Record<string, boolean>>>({});
-  const setDraftDirty = useCallback((id: string, dirty: boolean) => {
-    setDirtyDrafts((current) => current[id] === dirty ? current : { ...current, [id]: dirty });
-  }, []);
   const setDraft = useCallback((id: string, update: SetStateAction<TemplateDraft | null>) => {
     setDraftRecords((current) => {
       const draft = typeof update === 'function' ? update(current[id]?.content ?? null) : update;
@@ -57,8 +51,7 @@ export function WorkoutProvider({ service, children }: PropsWithChildren<{ servi
       : service.updateTemplate(id, content, draftRecords[id]?.context)), [mutate, service, draftRecords]);
   const deleteTemplate = useCallback((id: string) => mutate(() => service.deleteTemplate(id)), [mutate, service]);
   return (
-    <WorkoutContext.Provider value={{ drafts, setDraft, nextPlacementId, service, templatesVersion, savingTemplate, saveTemplate, deleteTemplate,
-      setDraftDirty, hasUnsavedChanges: Object.values(dirtyDrafts).some(Boolean) }}>
+    <WorkoutContext.Provider value={{ drafts, setDraft, nextPlacementId, service, templatesVersion, savingTemplate, saveTemplate, deleteTemplate }}>
       {children}
     </WorkoutContext.Provider>
   );

@@ -18,7 +18,7 @@ export function OnboardingScreen() {
             <View style={styles.notice}>
               <Card>
                 <Copy kind="heading">Local storage</Copy>
-                <Copy>Training data is stored on this device. Backup is unavailable.</Copy>
+                <Copy>Training data is stored on this device. OpenFit doesn’t offer backup or recovery yet.</Copy>
                 <Button label="Got it" onPress={dismissNotice} />
               </Card>
             </View>
