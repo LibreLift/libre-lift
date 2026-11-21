@@ -1,0 +1,1 @@
+I want to investigate an architecture change. It is documented in GitHub issue 136. Access its content, scan it, and then use $grill-me to ask questions and help me crystallize understanding
