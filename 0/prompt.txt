@@ -1,0 +1,8 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3Ab833eaae-8758-48d0-a9fc-fc2940c6ced8 (Remove retired Supabase app integration) [completed]:
+Implemented #142 under #136. Removed the retired Supabase client, authentication flow, hosted template adapter, app dependencies, and obsolete tests. Removed the temporary Jest and TypeScript exclusions and carried forward display-name recovery, template read recovery, and draft cancellation coverage through the SQLite router tests.
+
+- **Commit** `e02e95b29205c75dab2f7e1421f15383745a72b7` on `refactor/142-retire-supabase`, based on `644b22d49c3202c4e2bb8c69be890bc4b34997a5`
+- **Worktree** [Clean T3 worktree](/Users/james/.t3/worktrees/open-fit/t3-03ed1b24-aab34fab0304d015)
+- **Checks** TypeScript passed, Jest passed all 97 tests across 16 suites, and offline Expo exports passed for iOS and Android with Supabase variables unset.
+
+Server modules and the wire contract are available for #143. The legacy backend scripts that import the retired app adapters require #143’s cleanup. No physical device was connected, so installed-app airplane-mode and update checks remain pending.
