@@ -86,6 +86,13 @@ export function createSqliteWorkoutService(
         const receipt = await db.getFirstAsync<{ content: string }>(
           'SELECT content FROM template_save_receipts WHERE template_id = ? AND operation_id = ?', id, operationId);
         if (receipt) return readTemplate({ ...existing, content: receipt.content });
+
+        if (mode === 'update') {
+          const savedPlacements = new Set(readTemplate(existing).exercises.map(exercise => exercise.id));
+          if (validated.exercises.some(({ id }) => savedIdentity.test(id) && !savedPlacements.has(id))) {
+            throw new Error('This exercise placement does not belong to this template.');
+          }
+        }
       }
 
       const createdAt = existing?.created_at ?? new Date().toISOString();
