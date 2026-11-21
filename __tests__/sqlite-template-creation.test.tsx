@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID as mockRandomUUID } from 'node:crypto';
+import { openDatabaseAsync } from 'expo-sqlite';
 import { Alert } from 'react-native';
 import { act, cleanup, fireEvent, renderRouter, screen, testRouter } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
@@ -16,17 +17,19 @@ import { namedDisplayStore } from '../test-support/local-router';
 jest.mock('expo-crypto', () => ({ randomUUID: () => mockRandomUUID() }));
 
 jest.mock('expo-sqlite', () => ({
-  openDatabaseAsync: (name: string) => mockOpenDatabase(name),
+  openDatabaseAsync: jest.fn((name: string) => mockOpenDatabase(name)),
 }));
 
 // Jest replaces the native bridge. SQL still runs against a real, disposable database file.
 const { DatabaseSync } = process.getBuiltinModule('node:sqlite') as typeof import('node:sqlite');
 let directory: string;
 let connections: InstanceType<typeof DatabaseSync>[];
+let beforeWrite: (() => Promise<void>) | undefined;
 
 beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), 'openfit-sqlite-'));
   connections = [];
+  beforeWrite = undefined;
 });
 
 afterEach(async () => {
@@ -36,7 +39,7 @@ afterEach(async () => {
   rmSync(directory, { recursive: true, force: true });
 });
 
-async function mockOpenDatabase(name: string, loseSaveResponse?: () => boolean) {
+async function mockOpenDatabase(name: string, loseSaveResponse?: () => boolean, beforeRead?: (sql: string) => void) {
   const db = new DatabaseSync(join(directory, name));
   connections.push(db);
   return {
@@ -45,18 +48,24 @@ async function mockOpenDatabase(name: string, loseSaveResponse?: () => boolean) 
       if (sql === 'COMMIT' && loseSaveResponse?.()) throw new Error('Save response lost after commit');
     },
     async getAllAsync<T>(sql: string, ...params: (string | number)[]) {
+      beforeRead?.(sql);
       return db.prepare(sql).all(...params) as T[];
     },
     async getFirstAsync<T>(sql: string, ...params: (string | number)[]) {
+      beforeRead?.(sql);
       return (db.prepare(sql).get(...params) as T | undefined) ?? null;
     },
-    async runAsync(sql: string, ...params: (string | number)[]) { db.prepare(sql).run(...params); },
+    async runAsync(sql: string, ...params: (string | number)[]) {
+      if (beforeWrite) await beforeWrite();
+      db.prepare(sql).run(...params);
+    },
     async closeAsync() { db.close(); connections.splice(connections.indexOf(db), 1); },
   };
 }
 
-function service(loseSaveResponse?: () => boolean) {
-  return createSqliteWorkoutService(createLocalDatabase(() => mockOpenDatabase('training.db', loseSaveResponse)), mockRandomUUID);
+function service(loseSaveResponse?: () => boolean, beforeRead?: (sql: string) => void) {
+  const database = createLocalDatabase(() => mockOpenDatabase('training.db', loseSaveResponse, beforeRead));
+  return createSqliteWorkoutService(database, mockRandomUUID);
 }
 
 test('requires a local name, then saves and reopens a template with the bundled catalog and no fetch', async () => {
@@ -109,6 +118,40 @@ test('requires a local name, then saves and reopens a template with the bundled 
   expect(fetch).not.toHaveBeenCalled();
 });
 
+test('a failed SQLite open gates a direct training link until the user retries', async () => {
+  jest.mocked(openDatabaseAsync).mockRejectedValueOnce(new Error('Database unavailable'));
+  await renderRouter('./app', { initialUrl: '/workouts' });
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your local data couldn’t be opened. Please try again.');
+  expect(screen.queryByLabelText('Display name')).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Workouts, tab/ })).toBeNull();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Got it' }));
+  expect(await screen.findByLabelText('Display name')).toBeVisible();
+});
+
+test('a failed SQLite display-name save retains the input and gates Templates until retry succeeds', async () => {
+  await renderRouter('./app');
+  await fireEvent.press(await screen.findByRole('button', { name: 'Got it' }));
+  const name = await screen.findByLabelText('Display name');
+  await fireEvent.changeText(name, '  Alex Rivera  ');
+  let rejectWrite!: (error: Error) => void;
+  const pendingWrite = new Promise<void>((_resolve, reject) => { rejectWrite = reject; });
+  beforeWrite = () => pendingWrite;
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+  expect(screen.getByLabelText('Display name')).toBeDisabled();
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+  await act(() => rejectWrite(new Error('Database write unavailable')));
+  beforeWrite = undefined;
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your display name couldn’t be saved. Please try again.');
+  expect(screen.getByLabelText('Display name')).toHaveDisplayValue('  Alex Rivera  ');
+  expect(screen.queryByRole('button', { name: /^Templates, tab/ })).toBeNull();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(await screen.findByText('Hi, Alex Rivera!')).toBeVisible();
+});
+
 test('an earlier SQLite database keeps its template through onboarding, a rename, and relaunch', async () => {
   const previous = new DatabaseSync(join(directory, 'open-fit.db'));
   try {
@@ -142,6 +185,10 @@ test('an earlier SQLite database keeps its template through onboarding, a rename
   expect(await screen.findByRole('button', { name: /^Earlier plan/ })).toBeVisible();
 
   await fireEvent.press(screen.getByRole('button', { name: /^Settings, tab/ }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Edit name' }));
+  expect(screen.getByLabelText('Display name')).toHaveDisplayValue('Alex');
+  await fireEvent.changeText(screen.getByLabelText('Display name'), 'Discard me');
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit name' }));
   expect(screen.getByLabelText('Display name')).toHaveDisplayValue('Alex');
   await fireEvent.changeText(screen.getByLabelText('Display name'), ' Blair ');
@@ -217,8 +264,17 @@ test('opens a complete saved template after closing the app and reopening the da
 
   await cleanup();
   for (const connection of connections.splice(0)) connection.close();
-  const reopened = service();
+  let failList = true;
+  const reopened = service(undefined, sql => {
+    if (!failList || !sql.includes('ORDER BY sequence')) return;
+    failList = false;
+    throw new Error('Template list unavailable');
+  });
   await templates(reopened, false);
+  expect(await screen.findByText('We couldn’t load this. Please try again.')).toBeVisible();
+  expect(screen.queryByText('No templates yet.')).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+  expect(await screen.findByRole('button', { name: /^Another plan/ })).toBeVisible();
   expect((await reopened.listTemplates()).map(template => template.title)).toEqual(['Gym plan', 'Another plan']);
   await fireEvent.press(await screen.findByRole('button', { name: /Gym plan.*3 exercises · 4 sets/ }));
   expect(await screen.findByText('First day')).toBeVisible();
@@ -260,6 +316,37 @@ test.each([false, true])('retries a lost save response with the same identity (e
   await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
   await screen.findByRole('button', { name: 'Edit template details' });
   expect(await storage.listTemplates()).toEqual([{ ...committed[0], title }]);
+});
+
+test('Cancel after a lost creation response gives the next draft its own saved template', async () => {
+  let loseResponse = false;
+  await templates(service(() => {
+    const lose = loseResponse;
+    loseResponse = false;
+    return lose;
+  }));
+  await startDraft('First plan');
+  await addExercise('Catalog press', 1, [['12.5', '8']]);
+  loseResponse = true;
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Retry save' });
+  await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+
+  await startDraft('Second plan');
+  await addExercise('Catalog press', 1, [['25', '6']]);
+  await fireEvent.press(screen.getByRole('button', { name: 'Save' }));
+  await screen.findByRole('button', { name: 'Edit template details' });
+
+  await cleanup();
+  await templates(service());
+  await fireEvent.press(await screen.findByRole('button', { name: /^First plan/ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 8 reps × 12.5 lb')).toBeVisible();
+  await testRouter.back();
+  await testRouter.back('/templates');
+  await fireEvent.press(await screen.findByRole('button', { name: /^Second plan/ }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Catalog press. 1 set' }));
+  expect(await screen.findByLabelText('Set 1: 6 reps × 25 lb')).toBeVisible();
 });
 
 test('rolls back the complete save when SQLite rejects the creation receipt', async () => {
@@ -422,13 +509,24 @@ test('retains details after a lost delete response and retries without restoring
     await templates(service());
     expect(await screen.findByText('No templates yet.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Create template' })).toBeEnabled();
+    await testRouter.navigate(`/templates/${saved.id}`);
+    expect(await screen.findByText('This template couldn’t be found.')).toBeVisible();
   } finally {
     alert.mockRestore();
   }
 });
 
-test('keeps the previous template intact when an edit receipt fails and retains the draft for retry', async () => {
-  const storage = service();
+test('retries a rolled-back edit and separately recovers a failed reload after the save', async () => {
+  let failReloadAfterCommit = false;
+  let failReload = false;
+  const storage = service(() => {
+    failReload = failReloadAfterCommit;
+    return false;
+  }, sql => {
+    if (!failReload || !sql.includes('FROM workout_templates WHERE id =')) return;
+    failReload = false;
+    throw new Error('Template detail unavailable');
+  });
   await templates(storage);
   await startDraft('Original plan');
   await addExercise('Catalog press', 1, [['12.5', '8']]);
@@ -453,8 +551,12 @@ test('keeps the previous template intact when an edit receipt fails and retains 
     fixture.close();
   }
 
+  failReloadAfterCommit = true;
   await fireEvent.press(screen.getByRole('button', { name: 'Retry save' }));
+  expect(await screen.findByText('We couldn’t load this. Please try again.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByText('Edited plan')).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Retry save' })).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: 'Catalog row. 1 set' }));
   expect(await screen.findByLabelText('Set 1: 6 reps × 25 lb')).toBeVisible();
 });
