@@ -1,0 +1,6 @@
+Subagent completed: /root/catalog_terms
+
+Result:
+RepDB explicitly supports bundling its attributed free-tier catalog inside an offline Expo app. Its license prohibits redistributing the catalog as a standalone dataset or API. I verified that the published `@repdb/exercises` package includes the free-tier license and exports the same schema version that OpenFit’s mapper expects. [Expo example](https://repdb.co/examples/react-native/) · [npm package](https://repdb.co/npm-exercise-dataset/) · [License](https://github.com/RepDB/exercise-dataset/blob/main/LICENSE-DATA.md)
+
+Pin the package and bundle its JSON at build time. This supports offline exercise search, filters, and instructions on first launch. Load illustrations online for the MVP unless offline illustrations are a firm requirement. The Unlicense-based `free-exercise-db` remains an alternative if the project wants to redistribute the raw catalog. [Alternative dataset license](https://github.com/yuhonas/free-exercise-db/blob/main/LICENSE.md)
