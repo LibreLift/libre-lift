@@ -1,0 +1,6 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3Ab8dd014e-f1c6-4bf6-be5f-076ef21a7610 (Implement SQLite template edits and deletion) [completed]:
+Implemented [#140](https://github.com/open-source-fitness/open-fit/issues/140) and committed it as `e8b7d34f4c1068dbc5a426d88205b9b7e5008e66` on `feat/140-template-mutations`. The [worktree](/Users/james/.t3/worktrees/open-fit/t3-54e105b0-92dab657fec93eb5) is clean. The integration tip is still `8f8b29e`.
+
+SQLite now supports whole-template and metadata edits and repeat-safe deletion. Edits preserve template identity, surviving placement IDs, and list position. Save retries recover the original result without reverting a newer edit, and stale drafts cannot restore a deleted template.
+
+TypeScript, all 149 Jest tests, Expo Doctor, both native bundle exports, and a populated SQLite upgrade from #139 passed. Production cutover and physical-device airplane-mode verification remain with #141.
