@@ -1,0 +1,8 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3Af0dad18a-b41f-4406-874a-f26a692ea339 (Implement production local storage cutover) [completed]:
+Implemented #141 and committed `cfbe8060a9da3eac27e07f59bfa7c8852dc310d2` on `feat/141-local-onboarding`. The [T3 worktree](/Users/james/.t3/worktrees/open-fit/t3-b5ce5b46-b513d41db8e03329) is clean. The integration tip stayed at `e2f3b73`, so no merge was needed. No push, PR, or tracker changes were made.
+
+First launch now requires a display name and shows an inline notice about device storage and backup. Templates greets the user by name, and Settings lets them rename themselves while keeping their templates and appearance preference. Production uses SQLite and bundled RepDB without Supabase configuration. Workout history retains its sample labels. Three obsolete account-router suites were excluded from active checks and retained for #142. Backend tooling remains for #143.
+
+TypeScript, all 109 Jest tests, Expo Doctor, and both native exports passed. Router tests used real SQLite files to verify template CRUD, reopening, and preservation of existing template data through a schema upgrade. Both exports included all 1,203 RepDB illustrations.
+
+**Physical-device verification is still pending** on iOS and Android, including installed-app airplane-mode use, native SQLite, illustration rendering, force-close recovery, and persistence across an installed update. [Verification record](/Users/james/.t3/worktrees/open-fit/t3-b5ce5b46-b513d41db8e03329/docs/issue-141-local-onboarding.md)
