@@ -1,20 +1,47 @@
 import { useRef, useState } from 'react';
-import { TextInput } from 'react-native';
+import { Modal, StyleSheet, TextInput, View } from 'react-native';
 import { useDisplayName } from '../viewmodels/display-name';
 import { useTheme } from '../viewmodels/theme';
 import { Button, Card, Copy, FormError, Screen } from './ui';
 
 export function OnboardingScreen() {
+  const [showNotice, setShowNotice] = useState(true);
+  const dismissNotice = () => setShowNotice(false);
+
   return (
     <Screen>
       <Copy kind="title">Make it yours</Copy>
-      <Card>
-        <Copy kind="muted">Training data is stored on this device. Backup is unavailable.</Copy>
-      </Card>
       <DisplayNameForm initialName="" />
+      {showNotice ? (
+        <Modal transparent animationType="fade" onRequestClose={dismissNotice}>
+          <View accessibilityViewIsModal style={styles.noticeBackdrop}>
+            <View style={styles.notice}>
+              <Card>
+                <Copy kind="heading">Local storage</Copy>
+                <Copy>Training data is stored on this device. Backup is unavailable.</Copy>
+                <Button label="Got it" onPress={dismissNotice} />
+              </Card>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  noticeBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  notice: {
+    width: '100%',
+    maxWidth: 420,
+  },
+});
 
 export function DisplayNameForm({ initialName, onDone }: { initialName: string; onDone?: () => void }) {
   const { colors } = useTheme();

@@ -11,8 +11,8 @@ history still shows labeled samples.
   suites), and `npx expo-doctor` (20 checks) passed.
 - The Expo Router tests start the default app with a fresh database and use
   Node's SQLite engine with the Expo SQLite bridge substituted. With JavaScript
-  fetch disabled, the tests require a nonblank display name, show the device
-  storage and backup notice, greet the user on Templates, inspect both poses of a
+  fetch disabled, the tests dismiss the device storage and backup pop-up, require
+  a nonblank display name, greet the user on Templates, inspect both poses of a
   bundled exercise, and save a template. They close the database, remount the
   app, reopen the template, edit it, and delete it.
 - A pre-cutover SQLite schema version 2 fixture retains its saved template and

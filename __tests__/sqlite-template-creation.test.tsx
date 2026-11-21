@@ -62,8 +62,10 @@ function service(loseSaveResponse?: () => boolean) {
 test('requires a local name, then saves and reopens a template with the bundled catalog and no fetch', async () => {
   const fetch = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'));
   await renderRouter('./app', { initialUrl: '/workouts' });
+  expect(await screen.findByText('Training data is stored on this device. Backup is unavailable.')).toBeVisible();
+  await fireEvent.press(screen.getByRole('button', { name: 'Got it' }));
+  expect(screen.queryByText('Training data is stored on this device. Backup is unavailable.')).toBeNull();
   const name = await screen.findByLabelText('Display name');
-  expect(screen.getByText('Training data is stored on this device. Backup is unavailable.')).toBeVisible();
   expect(screen.queryByRole('button', { name: /^Workouts, tab/ })).toBeNull();
   await fireEvent.changeText(name, '   ');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
@@ -133,6 +135,7 @@ test('an earlier SQLite database keeps its template through onboarding, a rename
   }
 
   await renderRouter('./app');
+  await fireEvent.press(await screen.findByRole('button', { name: 'Got it' }));
   const name = await screen.findByLabelText('Display name');
   await fireEvent.changeText(name, 'Alex');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
