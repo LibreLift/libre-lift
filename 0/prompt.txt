@@ -1,0 +1,6 @@
+Delegated task node:delegated-task:command%3Amcp%3A22f591da-af4a-4f43-969a-1dad06498e59%3Adelegate-task%3A8bdefb96-dd4e-4d88-9435-aeb561648fed (Implement offline exercise catalog) [completed]:
+Implemented [#138](https://github.com/open-source-fitness/open-fit/issues/138) on `feat/138-bundled-catalog` and committed it as `24e2b4a14394882d9a87e76079a6f526df75ef92`. The [worktree](/Users/james/.t3/worktrees/open-fit/t3-b61326e8-57e37c109126f3b0) is clean. The integration branch remained at `0e508fb`.
+
+The app now bundles 708 attributed RepDB exercises and all 1,231 illustrations. Search, filters, and detail work without a live catalog request. New snapshots and matching legacy references resolve to bundled images through the existing snapshot format. Workout authentication and persistence are unchanged.
+
+TypeScript, all 140 Jest tests, Expo Doctor, and iOS and Android export and embed checks passed. Each native embed contained all 1,231 source-matched WebPs, adding **19.34 MiB** of raw image data per platform. The installed-app airplane-mode check remains unverified because no supported physical device was connected. [Verification record](/Users/james/.t3/worktrees/open-fit/t3-b61326e8-57e37c109126f3b0/docs/issue-138-offline-catalog.md)
