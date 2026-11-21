@@ -76,10 +76,12 @@ fresh checkout and run `npm ci` while the build computer is online. Set up Andro
 Studio and its SDK for Android, or Xcode and CocoaPods for iOS. A physical iPhone
 requires local code signing. An emulator or simulator can be used for a rehearsal.
 
-Choose an unused application identifier for the fresh-install check so existing
-app data is safe. Before running the command, connect the test device over USB,
-enable airplane mode, and turn Wi-Fi off. The command can launch the app
-immediately after installing it. Keep Metro stopped throughout.
+In your disposable checkout, set `expo.android.package` or
+`expo.ios.bundleIdentifier` in `app.json` to an unused test identifier before
+generating the native project. Keep this identifier out of commits. Before
+running the command, connect the test device over USB, enable airplane mode,
+and turn Wi-Fi off. The command can launch the app immediately after installing
+it. Keep Metro stopped throughout.
 
 ```sh
 # Android
@@ -89,9 +91,7 @@ npx expo run:android --variant release --device --no-bundler
 npx expo run:ios --configuration Release --device --no-bundler
 ```
 
-Select the test device when prompted. When Expo asks for the Android package name
-or iOS bundle identifier, enter the identifier you chose for the audit. The
-native project is generated locally.
+Select the test device when prompted. The native project is generated locally.
 See [Expo's local build guide](https://docs.expo.dev/guides/local-app-development/).
 
 1. On first launch, confirm the storage and backup notice,
