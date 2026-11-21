@@ -1,0 +1,4 @@
+12. The size trade off for bundling is acceptable.
+13. Let’s just restore sets marked at logged by checking an indicator
+14. A user should return immediately to their in-progress workout if just leaving the app. Closing or updating the app would display the prominent Resume workout action.
+15. Yes. Count all time from start timestamp to end timestamp
