@@ -1,8 +1,8 @@
 # Persisted template reads (#121)
 
-> Historical delivery notes for this slice. The final production composition and
-> current verification commands are documented in [setup](setup.md) and the
-> [#125 validation record](issue-125-template-production.md).
+> Historical delivery notes for this slice. See the
+> [#125 validation record](issue-125-template-production.md) for the pre-cutover
+> composition and [historical backend notes](maintainers.md) for its setup.
 
 The injected `createSupabaseWorkoutService(getClient)` reads through the
 `workout-templates` Edge Function using the shared runtime's current client.

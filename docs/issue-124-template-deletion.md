@@ -1,8 +1,8 @@
 # Persisted template deletion (#124)
 
-> Historical delivery notes for this slice. The final production composition and
-> current verification commands are documented in [setup](setup.md) and the
-> [#125 validation record](issue-125-template-production.md).
+> Historical delivery notes for this slice. See the
+> [#125 validation record](issue-125-template-production.md) for the pre-cutover
+> composition and [historical backend notes](maintainers.md) for its setup.
 
 The injected persistence service now supports the existing confirmation/detail
 workflow through the authenticated template endpoint. A confirmed deletion removes

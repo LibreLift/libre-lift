@@ -31,7 +31,7 @@ It does not complete the human-led hosted/device audit in #110 or close #42.
   and the subsequent audit passed all 20 Doctor checks.
 
 Use the TypeScript/Jest commands and the opt-in disposable Supabase service check
-documented in [setup](setup.md#email-otp-configuration-and-verification) to reproduce
+documented in the [pre-cutover setup guide](https://github.com/open-source-fitness/open-fit/blob/63065abb17793d2b217d3b5d3161d1ae143da0ce/docs/setup.md#email-otp-configuration-and-verification) to reproduce
 the checks. The approved UI seam injects the auth service and clock; the real
 Supabase check independently establishes correct backend storage.
 

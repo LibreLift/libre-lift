@@ -31,9 +31,6 @@ size were unmeasured.
 Router tests exercise offline search, filtering, instructions, navigation,
 both packaged poses, and saved template detail. No supported physical device
 was connected, so native decoding and installed-app behavior in airplane mode
-remain unverified. For this slice, enter the authenticated catalog before
-going offline. From an installed build in airplane mode, search and filter,
-open a single illustration and both poses of a paired exercise, read the
-instructions, and return to the filtered list. The full fresh-install and saved
-template airplane-mode check requires the local onboarding and SQLite cutover
-in [#136](https://github.com/open-source-fitness/open-fit/issues/136).
+remain unverified in this record. Follow the current
+[native offline audit](setup.md#device-review) to verify the catalog from a fresh
+installation and exercise the SQLite template flow in airplane mode.
