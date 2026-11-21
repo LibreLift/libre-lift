@@ -1,0 +1,2 @@
+The remaining acceptance check needs a physical phone. Can you connect an Android test phone over USB with USB debugging enabled, or would you prefer to run the audit yourself using the two test APKs?
+I’ll run the audit myself
