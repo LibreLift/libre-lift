@@ -1,4 +1,4 @@
-import { renderAuthenticatedRouter, authenticatedSession } from '../test-support/authenticated-router';
+import { renderLocalRouter, namedDisplayStore } from '../test-support/local-router';
 import { Alert } from 'react-native';
 import { act, fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
 import RootLayout from '../app/_layout';
@@ -8,7 +8,7 @@ import type { WorkoutService } from '../src/services/workout-service';
 afterEach(() => jest.restoreAllMocks());
 
 test('inline template edits save to both detail and list, while Cancel discards changes', async () => {
-  await renderAuthenticatedRouter();
+  await renderLocalRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(await screen.findByRole('button', { name: 'Edit template details' }));
   expect(screen.getByText('Bench press')).toBeVisible();
@@ -29,7 +29,7 @@ test('inline template edits save to both detail and list, while Cancel discards 
 
 test('drafts survive tab changes and Back requires an explicit discard choice', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  const app = await renderAuthenticatedRouter();
+  const app = await renderLocalRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.changeText(screen.getByLabelText('Template title'), 'My draft');
@@ -83,7 +83,7 @@ test('saving locks fields and all navigation, then a failed save restores the dr
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const app = await renderRouter({
     appDir: './app',
-    overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} initialSession={authenticatedSession} /> },
+    overrides: { _layout: () => <RootLayout workoutServiceFactory={() => service} displayNameStore={namedDisplayStore} /> },
   });
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
@@ -113,7 +113,7 @@ test('saving locks fields and all navigation, then a failed save restores the dr
 });
 
 test('edit set targets, append a copied set, remove an exercise and reopen the saved template', async () => {
-  await renderAuthenticatedRouter();
+  await renderLocalRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));
@@ -136,7 +136,7 @@ test('edit set targets, append a copied set, remove an exercise and reopen the s
 });
 
 test('incomplete targets and empty exercises remain drafts until corrected', async () => {
-  await renderAuthenticatedRouter();
+  await renderLocalRouter();
   await fireEvent.press(await screen.findByRole('button', { name: /Upper body/ }));
   await fireEvent.press(screen.getByRole('button', { name: 'Edit template details' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Sets for exercise 1' }));

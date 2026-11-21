@@ -1,11 +1,11 @@
 import { fireEvent, screen, testRouter } from 'expo-router/testing-library';
-import { renderAuthenticatedRouter } from '../test-support/authenticated-router';
+import { renderLocalRouter } from '../test-support/local-router';
 
 afterEach(() => jest.restoreAllMocks());
 
 test('the default catalog can be searched and inspected without a network connection', async () => {
   const fetch = jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'));
-  const app = await renderAuthenticatedRouter({ initialUrl: '/templates' });
+  const app = await renderLocalRouter({ initialUrl: '/templates' });
   await fireEvent.press(await screen.findByRole('button', { name: 'Exercise catalog' }));
   expect(await screen.findByRole('link', { name: 'Exercise data by RepDB' })).toBeVisible();
   await fireEvent.changeText(await screen.findByRole('search', { name: 'Search exercises' }), 'BARBELL BENCH PRESS');
@@ -21,7 +21,7 @@ test('the default catalog can be searched and inspected without a network connec
 });
 
 test('both poses use packaged images when browsing and after saving a template', async () => {
-  const app = await renderAuthenticatedRouter({ initialUrl: '/templates' });
+  const app = await renderLocalRouter({ initialUrl: '/templates' });
   await fireEvent.press(await screen.findByRole('button', { name: 'Create template' }));
   await fireEvent.changeText(screen.getByLabelText('Template title'), 'Paired poses');
   await fireEvent.press(screen.getByRole('button', { name: 'Add exercise' }));

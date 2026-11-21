@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Alert } from 'react-native';
+import { useDisplayName } from '../viewmodels/display-name';
 import { useTemplatesViewModel } from '../viewmodels/workouts';
 import { useTemplateEditorViewModel } from '../viewmodels/template-editor';
 import { TemplateForm } from './template-form';
@@ -9,11 +10,10 @@ import { Button, Card, Copy, LinkCard, Resource, Screen } from './ui';
 export function TemplatesScreen() {
   const router = useRouter();
   const model = useTemplatesViewModel();
+  const { displayName } = useDisplayName();
   return (
     <Screen>
-      <Copy kind="label">YOUR TRAINING, YOUR WAY</Copy>
-      <Copy kind="title">Make a plan.{'\n'}Make it yours.</Copy>
-      <Copy kind="muted">A few good exercises. A plan you can come back to.</Copy>
+      <Copy kind="title">Hi, {displayName}!</Copy>
       <Copy kind="heading">Templates</Copy>
       <Button label="Create template" onPress={() => router.push('/templates/new')} />
       <Button label="Exercise catalog" onPress={() => router.push('/templates/catalog')} />

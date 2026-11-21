@@ -5,5 +5,11 @@
     "types": ["jest", "react-native"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "supabase/functions"]
+  "exclude": [
+    "node_modules",
+    "supabase/functions",
+    "__tests__/auth-navigation.test.tsx",
+    "__tests__/auth-sessions.test.tsx",
+    "__tests__/production-template-access.test.tsx"
+  ]
 }

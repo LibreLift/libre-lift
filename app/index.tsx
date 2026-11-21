@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
-import { useAuth } from '../src/viewmodels/auth';
+import { useDisplayName } from '../src/viewmodels/display-name';
 
 export default function Index() {
-  const { session } = useAuth();
-  return <Redirect href={session ? (session.account.name ? '/templates' : '/account-name') : '/sign-in'} />;
+  const { displayName } = useDisplayName();
+  return <Redirect href={displayName === null ? '/onboarding' : '/templates'} />;
 }
