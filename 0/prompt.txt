@@ -1,0 +1,5 @@
+7. Illustrations are essential at the gym
+8. Yes, on the templates screen they land on.
+9. I like that. Offer resume on reopen if a workout is interrupted. But will persisting  the session as the user logs sets going to slow down the app for all the DB writes?
+10. Yes, add a small pop up notice on name entry saying that data is stored locally and backup is not yet supported 
+11. I agree, when existing template flow is functional the same as it is now with Supabase, it is ready to go
